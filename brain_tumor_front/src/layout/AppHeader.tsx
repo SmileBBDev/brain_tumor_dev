@@ -4,7 +4,7 @@ import { ROLE_ICON_MAP } from './header.constants';
 import { useNavigate } from 'react-router-dom';
 
 interface AppHeaderProps {
-  role: Role | null;
+  role: Role;
 }
 
 const ROLE_LABEL: Record<Role, string> = {
@@ -37,9 +37,6 @@ export default function AppHeader({ role }: AppHeaderProps) {
     localStorage.removeItem('menus');
     navigator('/login');
   }
-  const handleLogin = () => {
-    navigator('/login');
-  };
 
 
   return (
@@ -52,7 +49,7 @@ export default function AppHeader({ role }: AppHeaderProps) {
         <div className="header-right">
             <div className="user-info">
             {/* 로그인 사용자 */}
-            {isLoggedIn && role !== null? (
+            {isLoggedIn && (
                 <>
                     <span className="role">{ROLE_LABEL[role]}</span>
                     <span className="divider">|</span>
@@ -64,13 +61,6 @@ export default function AppHeader({ role }: AppHeaderProps) {
                     <button className="btn logout-btn"onClick={handleLogout}>로그아웃</button>
                     
                 </>
-                )
-                : (
-                    <>
-                        <i className="fa-solid fa-lock-open"></i>
-                        <span className="divider">|</span>
-                        <button className="btn logout-btn" onClick={handleLogin}>로그인</button>
-                    </> 
                 )
             }
             </div>
