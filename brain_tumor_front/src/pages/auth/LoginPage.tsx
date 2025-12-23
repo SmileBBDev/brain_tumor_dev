@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 
 import type { Role } from '@/types/role';
 import type { MenuId } from '@/types/menu';
+import '@/assets/style/login.css';
 
 export default function LoginPage(){
     const [id, setId] = useState('');
@@ -18,11 +19,13 @@ export default function LoginPage(){
 
         // 🔥 2. role 지정 (테스트하고 싶은 거로)
         const getTestRole = (): Role => {
+            return 'SYSTEMMANAGER';
             //return 'ADMIN';
-            // return 'DOCTOR';
-             return 'NURSE';
+            //return 'DOCTOR';
+            // return 'NURSE';
             // return 'RIS';
             // return 'LIS';
+            // return 'PATIENT';
         };
 
         let role: Role = getTestRole();
@@ -33,6 +36,9 @@ export default function LoginPage(){
         let menus: MenuId[] = [];
 
         switch (role) {
+            case 'SYSTEMMANAGER':
+                menus = []; // 모든 메뉴 접근 가능
+                break;
             case 'ADMIN':
                 menus = [
                     'ADMIN_USER',
@@ -130,11 +136,50 @@ export default function LoginPage(){
     }
 
     return(
-        <div>
-             <input placeholder="ID" onChange={(e) => setId(e.target.value)} />
-            <input type="password" placeholder="PW" onChange={(e) => setPw(e.target.value)} />
-            <button onClick={handleLogin}>로그인</button>
+        <div className="login-page">
+            <div className="login-overlay" />
 
+            <header className="login-header">
+                <div className="logo">                
+                <span className="logo-icon">
+                    <i className="fa-solid fa-brain"></i>
+                </span>
+                <div>
+                    <strong>CDSS</strong>
+                    <span className="sub">(brain_tumor)</span>
+                    <div className="desc">CLINICAL DECISION SUPPORT SYSTEM</div>
+                </div>
+                </div>
+            </header>
+
+            <div className="login-container">
+                <div className="login-card">
+                <h2>로그인</h2>
+
+                <div className="login-field">
+                    <input
+                    placeholder="아이디"
+                    onChange={(e) => setId(e.target.value)}
+                    />
+                </div>
+
+                <div className="login-field">
+                    <input
+                    type="password"
+                    placeholder="비밀번호"
+                    onChange={(e) => setPw(e.target.value)}
+                    />
+                </div>
+
+                <button className="login-button" onClick={handleLogin}>
+                    로그인
+                </button>
+
+                <div className="login-footer">
+                    <a href="#">비밀번호를 잊으셨나요?</a>
+                </div>
+                </div>
+            </div>
         </div>
     )
 }

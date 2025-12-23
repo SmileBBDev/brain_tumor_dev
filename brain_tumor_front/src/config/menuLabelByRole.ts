@@ -9,5 +9,6 @@ export const MENU_LABEL_BY_ROLE: Partial<
     DOCTOR: '환자 목록',
     NURSE: '환자 관리',
     PATIENT: '내 진료 기록',
+    SYSTEMMANAGER: '환자 관리',
   },
 };

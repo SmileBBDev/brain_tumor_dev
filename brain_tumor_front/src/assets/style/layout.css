@@ -1,0 +1,69 @@
+.page {
+  animation: fadeIn 0.25s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 전체 레이아웃 */
+.app-layout {
+  display: flex;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* 좌측 AppBar */
+.sidebar {
+  width: 240px;
+  flex-shrink: 0;
+  background: #f8faff;
+  border-right: 1px solid #e5e7eb;
+}
+
+/* 우측 메인 영역 */
+.app-main {
+  flex: 1;
+  min-width: 0;   /* 내용이 넘칠 때를 대비 */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Header는 Sidebar 오른쪽에서만 */
+.app-header {
+  height: 56px;
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 0 24px;
+}
+
+.app-body {
+  flex: 1;          
+  min-width: 0;     /* 내부 overflow 방지 */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+
+}
+
+/* 실제 페이지 영역 */
+.app-content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: #f8fafc;
+}

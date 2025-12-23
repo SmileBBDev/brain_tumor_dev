@@ -2,6 +2,7 @@ import type {Role} from '@/types/role';
 
 // Role별 기본 진입 화면 설정
 export const Role_Home: Record<Role, string> = {
+    'SYSTEMMANAGER': '/dashboard', 
     'ADMIN' : '/admin/users',
     'DOCTOR' : '/dashboard',
     'NURSE' : '/patients',

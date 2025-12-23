@@ -2,13 +2,13 @@ import {Routes, Route} from 'react-router-dom';
 import LoginPage from '@/pages/auth/LoginPage';
 import AppLayout from '@/layout/AppLayout';
 import ProtectedRoute from '@/pages/auth/ProtectedRoute';
-import PatientListPage from '@/pages/patient/list/PatientListPage';
+import PatientListPage from '@/pages/patient/PatientListPage';
 import HomeRedirect from '@/app/HomeRedirect';
 import ImagingPage from '@/pages/imaging/ImagingPage';
 import AISummaryPage from '@/pages/ai/AISummaryPage';
-import DashboardPage from '@/pages/doctor/dashboard/DashboardPage';
-import PatientDetailPage from '@/pages/patient/detail/PatientDetail';
-import UserListPage from '@/pages/admin/user/UserList';
+import DashboardPage from '@/pages/dashboard/DashboardPage';
+import PatientDetailPage from '@/pages/patient/PatientDetailPage';
+import UserListPage from '@/pages/admin/UserList';
 
 export default function App(){
   return (

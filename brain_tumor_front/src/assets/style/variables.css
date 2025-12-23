@@ -1,0 +1,23 @@
+:root {
+  /* Color */
+  --primary: #1d4ed8;
+  --primary-dark: #1e40af;
+  --accent-ai: #7c3aed;
+
+  --bg-main: #f4f6f9;
+  --bg-card: #ffffff;
+
+  --text-main: #1f2937;
+  --text-sub: #6b7280;
+  --border: #e5e7eb;
+
+  /* Font */
+  --font-main: 'Pretendard', system-ui, sans-serif;
+
+  /* Radius */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+
+  /* Shadow */
+  --shadow-card: 0 4px 12px rgba(0,0,0,0.08);
+}

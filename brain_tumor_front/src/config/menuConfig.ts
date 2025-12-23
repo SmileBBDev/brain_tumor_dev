@@ -7,7 +7,7 @@ export interface MenuConfig {
   path?: string;
   icon?: string;
   roles: Role[];
-  label: Partial<Record<Role, string>>;
+  label: Partial<Record<Role | 'DEFAULT', string>>;
   children?: MenuConfig[];
 }
 
@@ -19,6 +19,7 @@ export const MENU_CONFIG: MenuConfig[] = [
     icon: 'home',
     roles: ['DOCTOR', 'NURSE'],
     label: {
+      DEFAULT: '대시보드',
       DOCTOR: '의사 대시보드',
       NURSE: '간호 대시보드',
     },
@@ -31,6 +32,7 @@ export const MENU_CONFIG: MenuConfig[] = [
     icon: 'users',
     roles: ['DOCTOR', 'NURSE'],
     label: {
+      DEFAULT: '환자 관리',
       DOCTOR: '환자 관리',
       NURSE: '환자 목록',
     },
@@ -43,6 +45,7 @@ export const MENU_CONFIG: MenuConfig[] = [
     icon: 'clipboard',
     roles: ['DOCTOR', 'NURSE'],
     label: {
+      DEFAULT: '검사 오더',
       DOCTOR: '검사 오더',
       NURSE: '검사 현황',
     },
@@ -53,6 +56,7 @@ export const MENU_CONFIG: MenuConfig[] = [
     path: '/orders/create',
     roles: ['DOCTOR'],
     label: {
+      DEFAULT: '오더 생성',
       DOCTOR: '오더 생성',
     },
   },
@@ -65,6 +69,7 @@ export const MENU_CONFIG: MenuConfig[] = [
     icon: 'image',
     roles: ['DOCTOR', 'RIS'],
     label: {
+      DEFAULT: '영상 판독(RIS)',
       DOCTOR: '영상 조회',
       RIS: '영상 판독',
     },
@@ -75,6 +80,7 @@ export const MENU_CONFIG: MenuConfig[] = [
     path: '/ris/worklist',
     roles: ['RIS'],
     label: {
+      DEFAULT: '판독 Worklist(RIS)',
       RIS: '판독 Worklist',
     },
   },
@@ -86,6 +92,7 @@ export const MENU_CONFIG: MenuConfig[] = [
     icon: 'brain',
     roles: ['DOCTOR', 'NURSE'],
     label: {
+      DEFAULT: 'AI 분석 요약',
       DOCTOR: 'AI 분석 요약',
       NURSE: 'AI 결과 조회',
     },
@@ -98,6 +105,7 @@ export const MENU_CONFIG: MenuConfig[] = [
     icon: 'flask',
     roles: ['LIS'],
     label: {
+      DEFAULT: '검사 결과 업로드',
       LIS: '검사 결과 업로드',
     },
   },
@@ -107,6 +115,7 @@ export const MENU_CONFIG: MenuConfig[] = [
     path: '/lab',
     roles: ['DOCTOR', 'NURSE'],
     label: {
+      DEFAULT: '검사 결과 조회',
       DOCTOR: '검사 결과',
       NURSE: '검사 결과 조회',
     },
@@ -119,6 +128,7 @@ export const MENU_CONFIG: MenuConfig[] = [
     icon: 'settings',
     roles: ['ADMIN'],
     label: {
+      DEFAULT: '사용자 관리',
       ADMIN: '사용자 관리',
     },
   },
@@ -128,6 +138,7 @@ export const MENU_CONFIG: MenuConfig[] = [
     path: '/admin/permissions',
     roles: ['ADMIN'],
     label: {
+      DEFAULT: '메뉴 권한 관리',
       ADMIN: '메뉴 권한 관리',
     },
   },
