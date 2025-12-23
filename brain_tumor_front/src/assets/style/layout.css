@@ -14,12 +14,75 @@
 }
 
 /* 전체 레이아웃 */
+/* Header(최상단 영역) */
+.app-header {
+  height: 56px;
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 0 24px;
+}
+.header-left {
+  display: flex;          /* 가로 배치 */
+  align-items: center;    /* 세로 중앙 정렬 */
+  gap: 8px;               /* 요소 사이 간격 */
+}
+
+.system-title {
+  display: flex;
+  flex-direction: column; /* 병원명 + 시스템명은 세로로 */
+}
+.system-title strong {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.system-title span {
+  font-size: 12px;
+  color: #64748b;
+}
+
+/* 로고 사이즈 조절*/
+.system-logo {
+  width: 20px;
+  height: 20px;
+}
+
+/* Header 아래 영역 */
 .app-layout {
   display: flex;
   width: 100vw;
   height: 100vh;
   overflow: hidden;
+  flex-direction: column;
 }
+
+/* 햄버거 버튼 */
+.hamburger-btn {
+  background: none;
+  border: none;
+  font-size: 20px;   /* 아이콘 크기 */
+  cursor: pointer;
+  margin-right: 12px;
+  color: #333;       /* 기본 아이콘 색상 지정 */
+
+  width: auto;
+  padding: 0;        /* 기본 패딩 제거 */
+  line-height: 1;    /* 세로 크기 줄이기 */
+}
+
+/* 햄버거 버튼 hover 시 스타일 */
+.hamburger-btn:hover {
+  background-color: #f1f5f9; /* 버튼 배경색 살짝 추가 */
+  border-radius: 4px;      /* 둥근 모서리 */
+  color: #333;       /* 기본 아이콘 색상 지정 */
+}
+
 
 /* 좌측 AppBar */
 .sidebar {
@@ -27,7 +90,22 @@
   flex-shrink: 0;
   background: #f8faff;
   border-right: 1px solid #e5e7eb;
+
+  display: flex;             /* 내부 아이템 정렬 가능 */
+  flex-direction: column;    /* 세로로 메뉴 배치 */
+  padding: 16px 0;           /* 위아래 여백 */
+  box-sizing: border-box;
+
+  height: 100%;              /* 부모(app-body) 높이에 맞추기 */
+  overflow-y: auto;          /* 메뉴가 많으면 스크롤 */
+
+  transition: transform 0.3s ease-in-out;
 }
+
+.sidebar.closed {
+  transform: translateX(-100%); /* 왼쪽으로 숨김 */
+}
+
 
 /* 우측 메인 영역 */
 .app-main {
@@ -38,24 +116,11 @@
   overflow: hidden;
 }
 
-/* Header는 Sidebar 오른쪽에서만 */
-.app-header {
-  height: 56px;
-  background: #ffffff;
-  border-bottom: 1px solid #e5e7eb;
-
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-
-  padding: 0 24px;
-}
-
 .app-body {
   flex: 1;          
   min-width: 0;     /* 내부 overflow 방지 */
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   overflow: hidden;
 
 }

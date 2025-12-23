@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { login, fetchMe, fetchMenu } from './auth.api';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/pages/auth/AuthProvider';
 
 import type { Role } from '@/types/role';
 import type { MenuId } from '@/types/menu';
@@ -12,7 +13,9 @@ export default function LoginPage(){
     const [pw, setPw] = useState('');    
     const navigate = useNavigate();
 
+    const { setRole } = useAuth();
     const handleLogin = async () => {
+        
         // 임시 로그인 처리
         // 🔥 1. 임시 토큰
         localStorage.setItem('accessToken', 'mock-token');
@@ -30,9 +33,14 @@ export default function LoginPage(){
 
         let role: Role = getTestRole();
 
+        localStorage.setItem('accessToken', 'mock-token');
         localStorage.setItem('role', role);
+        localStorage.setItem('menus', JSON.stringify([]));
 
-        // 🔥 3. 해당 role에 맞는 메뉴
+        // AuthContext 갱신 (🔥 이게 핵심)
+        setRole(role);
+
+        // 🔥 3. 해당 role에 맞는 메뉴a
         let menus: MenuId[] = [];
 
         switch (role) {
@@ -95,7 +103,7 @@ export default function LoginPage(){
         localStorage.setItem('menus', JSON.stringify(menus));
 
     // 🔁 4. 홈 이동 → HomeRedirect가 Role_Home 처리
-        navigate('/');
+        navigate('/dashboard', { replace: true });
 
 
 

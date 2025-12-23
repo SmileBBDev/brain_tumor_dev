@@ -4,11 +4,6 @@
   background: #f8fafc;
 }
 
-.page.patient-list > * {
-  max-width: 1400px;
-  margin: 0 auto;
-}
-
 /*Header 영역 스타일 */
 .page.patient-list header {
   margin-bottom: 16px;
