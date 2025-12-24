@@ -8,9 +8,15 @@ import ImagingPage from '@/pages/imaging/ImagingPage';
 import AISummaryPage from '@/pages/ai/AISummaryPage';
 import DashboardPage from '@/pages/dashboard/DashboardPage';
 import PatientDetailPage from '@/pages/patient/PatientDetailPage';
-import UserListPage from '@/pages/admin/UserList';
 import CommingSoon from '@/pages/common/CommingSoon';
 import OrdersLayout from '@/layout/OrdersLayout';
+import AdminLayout from '@/layout/AdminLayout';
+import UserListPage from '@/pages/admin/UserList';
+import MenuPermissionPage from '@/pages/admin/MenuPermissionPage';
+import AuditLogPage from '@/pages/admin/AuditLog';
+import SystemMonitorPage from '@/pages/admin/SystemMonitorPage';
+
+
 
 export default function App(){
   return (
@@ -75,13 +81,19 @@ export default function App(){
 
         {/* 관리자 */}
         <Route
-          path="/admin/users"
+          path="/admin"
           element={
             <ProtectedRoute menu="ADMIN_USER">
-              <UserListPage />
+              <AdminLayout />
             </ProtectedRoute>
           }
-        />
+        >
+          <Route path="users" element={<UserListPage />} />
+          <Route path="permissions" element={<MenuPermissionPage />} />
+          <Route path="audit" element={<AuditLogPage />} />
+          <Route path="monitor" element={<SystemMonitorPage />} />
+        </Route>
+
 
         {/* 작업해야 될 페이지들 */}
         {/* Orders */}

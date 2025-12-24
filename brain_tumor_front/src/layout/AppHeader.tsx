@@ -3,6 +3,7 @@ import type { Role } from '@/types/role';
 import { ROLE_ICON_MAP } from './header.constants';
 import { useAuth } from '@/pages/auth/AuthProvider';
 import brainIcon from '@/assets/icon/mri-brain.png';
+import Breadcrumb from '@/layout/Breadcrumb';
 
 interface AppHeaderProps {
   role: Role;
@@ -19,13 +20,6 @@ const ROLE_LABEL: Record<Role, string> = {
     SYSTEMMANAGER: 'System Manager',
 };
 
-/* 경로 → 메뉴명 매핑 */
-const MENU_LABEL_MAP: Record<string, string> = {
-  '/patients': '환자관리',
-  '/orders': '검사관리',
-  '/dashboard': '대시보드',
-};
-
 /* 초 → mm:ss */
 function formatTime(sec: number) {
   const m = Math.floor(sec / 60);
@@ -34,14 +28,10 @@ function formatTime(sec: number) {
 }
 
 export default function AppHeader({ role, onToggleSidebar }: AppHeaderProps) {
-  const location = useLocation();
-  const currentMenu = MENU_LABEL_MAP[location.pathname] ?? 'Unknown';
-  
   const navigator = useNavigate();
-  const isLoggedIn = Boolean(role);
 
   
-  const { sessionRemain, logout } = useAuth();
+  const { sessionRemain } = useAuth();
 
   const handleLogout = () => {
     // 로그아웃 처리 로직 (예: 토큰 삭제, 리다이렉트 등)
@@ -75,10 +65,8 @@ export default function AppHeader({ role, onToggleSidebar }: AppHeaderProps) {
 
       {/* 중앙 : 현재 메뉴 표시 */}
       <div className="header-center">
-          <h1>{currentMenu}</h1>
+          <h1><Breadcrumb role={role} /></h1>
       </div>
-
-      
 
       {/* 우측 : 사용자 정보 */}
       <div className="header-right">

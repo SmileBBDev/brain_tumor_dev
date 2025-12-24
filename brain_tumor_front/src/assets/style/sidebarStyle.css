@@ -1,0 +1,49 @@
+.menu-item {
+  list-style: none;
+}
+
+.menu-group {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: transparent;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.menu-group:hover {
+  background: #eef2ff;
+}
+
+.menu-group.open {
+  background: #e0e7ff;
+  color: #1d4ed8;
+}
+
+.menu-children {
+  margin-left: 12px;
+  padding-left: 8px;
+  border-left: 2px solid #e5e7eb;
+}
+
+.menu-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  color: #374151;
+}
+
+.menu-link:hover {
+  background: #f1f5f9;
+}
+
+.menu-link.active {
+  background: #1e293b;
+  color: #fff;
+}

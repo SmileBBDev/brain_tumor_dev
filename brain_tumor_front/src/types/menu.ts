@@ -1,6 +1,14 @@
 // 메뉴 ID 정의
 // TODO : 메뉴가 추가되는 경우 - menu.ts 파일에도 추가 필요
 export type MenuId =
+  // Group용 (화면 없음)
+  | 'PATIENT'
+  | 'ORDER'
+  | 'ADMIN'
+  | 'IMAGING'
+  | 'LAB'
+
+  // == 화면 영역 Menu == 
   // 공통
   | 'LOGIN'
   | 'LOGOUT'

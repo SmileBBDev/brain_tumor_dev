@@ -1,0 +1,108 @@
+.admin-page {
+  padding: 24px;
+}
+
+.admin-header h1 {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.admin-header p {
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.admin-card {
+  background: #fff;
+  border-radius: 8px;
+  padding: 16px;
+  margin-top: 16px;
+}
+
+.admin-toolbar {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.admin-table th,
+.admin-table td {
+  padding: 10px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.badge.active {
+  color: #16a34a;
+  font-weight: 600;
+}
+
+.badge.inactive {
+  color: #dc2626;
+  font-weight: 600;
+}
+
+/* 메뉴 접근 권한 관리 */
+.permission-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.permission-table th,
+.permission-table td {
+  border-bottom: 1px solid #e5e7eb;
+  padding: 8px;
+}
+
+.permission-table th {
+  background: #f9fafb;
+}
+
+.permission-table .menu-name {
+  font-weight: 600;
+}
+
+.permission-table .center {
+  text-align: center;
+}
+
+/* 접근 감사 로그 (Audit Log) */
+.success {
+  color: #16a34a;
+  font-weight: 600;
+}
+
+.fail {
+  color: #dc2626;
+  font-weight: 600;
+}
+
+
+/* 시스템 모니터링 => admin 대시보드 */
+.monitor-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.monitor-card {
+  background: #fff;
+  padding: 16px;
+  border-radius: 8px;
+  border-left: 4px solid #e5e7eb;
+}
+
+.monitor-card.ok {
+  border-left-color: #22c55e;
+}
+
+.monitor-card.warning {
+  border-left-color: #f97316;
+}

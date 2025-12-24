@@ -5,6 +5,7 @@ import PatientDetailHeader from './PatientDetailHeader';
 import PatientDetailTabs from './PatientDetailTabs';
 import PatientDetailContent from './PatientDetailContent';
 import { useEffect } from 'react';
+import '@/assets/style/patientDetailView.css';
 
 export default function PatientDetailPage() {
   const role = localStorage.getItem('role') as Role | null;

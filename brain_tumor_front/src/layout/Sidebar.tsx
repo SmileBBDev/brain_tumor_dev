@@ -1,8 +1,12 @@
+import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { MENU_CONFIG } from '@/config/menuConfig';
 import type { MenuId } from '@/types/menu';
 import type { Role } from '@/types/role';
 import { MENU_LABEL_BY_ROLE } from '@/config/menuLabelByRole';
+import type{ MenuConfig } from '@/config/menuConfig';
+import SidebarItem from '@/layout/SidebarItem';
+import '@/assets/style/sidebarStyle.css'
 
 interface Props {
   role: Role;
@@ -11,7 +15,7 @@ export default function Sidebar( { role } : Props) {
   const menus: MenuId[] = JSON.parse(
     localStorage.getItem('menus') || '[]'
   );
-  // const role = localStorage.getItem('role') as Role;
+
   const isSystemManager = role === 'SYSTEMMANAGER';
 
   /** 권한 체크 */
@@ -19,6 +23,23 @@ export default function Sidebar( { role } : Props) {
     return menus.includes(menuId);
   };
 
+  const canAccess = (menu: MenuConfig): boolean => {
+    if (isSystemManager) return true;
+
+    // leaf
+    if (menu.path) {
+      // breadcrumb-only 메뉴는 sidebar에 안 나옴
+      if (menu.breadcrumbOnly) return false;
+      return menu.roles.includes(role) && hasMenu(menu.id);
+    }
+
+    // group → children 중 하나라도 접근 가능하면 노출
+    return (
+      menu.children?.some(child => canAccess(child)) ?? false
+    );
+  };
+
+    
   /** 메뉴 라벨 결정 */
   const getMenuLabel = (menuId: MenuId) => {
     return (
@@ -33,6 +54,17 @@ export default function Sidebar( { role } : Props) {
     <aside className="sidebar">
       <nav className="sidebar-nav">
         <ul className="menu-list">
+          {MENU_CONFIG.map(menu => (
+            <SidebarItem
+              key={menu.id}
+              menu={menu}
+              role={role}
+              canAccess={canAccess}
+            />
+          ))}
+        </ul>
+
+        {/* <ul className="menu-list">
           {MENU_CONFIG
             .filter(menu => 
               isSystemManager || menu.roles.includes(role) // role 필터링
@@ -48,7 +80,7 @@ export default function Sidebar( { role } : Props) {
                 </NavLink>
               </li>
             ))}
-        </ul>
+        </ul> */}
       </nav>
     </aside>
   );
