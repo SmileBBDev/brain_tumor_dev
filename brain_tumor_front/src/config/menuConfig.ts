@@ -54,6 +54,7 @@ export const MENU_CONFIG: MenuConfig[] = [
   {
     id: 'ORDER_CREATE',
     path: '/orders/create',
+    icon: 'clipboard',
     roles: ['DOCTOR'],
     label: {
       DEFAULT: '오더 생성',
@@ -78,6 +79,7 @@ export const MENU_CONFIG: MenuConfig[] = [
   {
     id: 'RIS_WORKLIST',
     path: '/ris/worklist',
+    icon: 'x-ray',
     roles: ['RIS'],
     label: {
       DEFAULT: '판독 Worklist(RIS)',
@@ -100,6 +102,17 @@ export const MENU_CONFIG: MenuConfig[] = [
 
   // LIS
   {
+    id: 'LAB_RESULT_VIEW',
+    path: '/lab',
+    icon: 'book',
+    roles: ['DOCTOR', 'NURSE'],
+    label: {
+      DEFAULT: '검사 결과 조회',
+      DOCTOR: '검사 결과',
+      NURSE: '검사 결과 조회',
+    },
+  },
+  {
     id: 'LAB_RESULT_UPLOAD',
     path: '/lab/upload',
     icon: 'flask',
@@ -110,22 +123,12 @@ export const MENU_CONFIG: MenuConfig[] = [
     },
   },
 
-  {
-    id: 'LAB_RESULT_VIEW',
-    path: '/lab',
-    roles: ['DOCTOR', 'NURSE'],
-    label: {
-      DEFAULT: '검사 결과 조회',
-      DOCTOR: '검사 결과',
-      NURSE: '검사 결과 조회',
-    },
-  },
 
   // Admin
   {
     id: 'ADMIN_USER',
     path: '/admin/users',
-    icon: 'settings',
+    icon: 'users',
     roles: ['ADMIN'],
     label: {
       DEFAULT: '사용자 관리',
@@ -136,6 +139,7 @@ export const MENU_CONFIG: MenuConfig[] = [
   {
     id: 'ADMIN_MENU_PERMISSION',
     path: '/admin/permissions',
+    icon: 'list',
     roles: ['ADMIN'],
     label: {
       DEFAULT: '메뉴 권한 관리',
@@ -146,6 +150,7 @@ export const MENU_CONFIG: MenuConfig[] = [
   {
     id: 'ADMIN_AUDIT_LOG',
     path: '/admin/audit',
+    icon: 'check',
     roles: ['ADMIN'],
     label: {
       ADMIN: '접근 감사 로그',
@@ -155,6 +160,7 @@ export const MENU_CONFIG: MenuConfig[] = [
   {
     id: 'ADMIN_SYSTEM_MONITOR',
     path: '/admin/monitor',
+    icon: 'eye',
     roles: ['ADMIN'],
     label: {
       ADMIN: '시스템 모니터링',

@@ -125,12 +125,12 @@ body{
 
 /* Icon */
 .menu-icon {
-  font-size: 16px;
+  font-size: 12px;
   color: #64748b;
 }
 
 .menu-link.active .menu-icon {
-  color: #1d4ed8;
+  color: #38bb8f;
 }
 
 /* Label */

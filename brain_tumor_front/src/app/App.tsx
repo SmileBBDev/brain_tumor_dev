@@ -9,6 +9,8 @@ import AISummaryPage from '@/pages/ai/AISummaryPage';
 import DashboardPage from '@/pages/dashboard/DashboardPage';
 import PatientDetailPage from '@/pages/patient/PatientDetailPage';
 import UserListPage from '@/pages/admin/UserList';
+import CommingSoon from '@/pages/common/CommingSoon';
+import OrdersLayout from '@/layout/OrdersLayout';
 
 export default function App(){
   return (
@@ -80,7 +82,74 @@ export default function App(){
             </ProtectedRoute>
           }
         />
-        
+
+        {/* 작업해야 될 페이지들 */}
+        {/* Orders */}
+        <Route
+          path="/orders"
+          element={
+            <ProtectedRoute menu="ORDER_LIST">
+              <OrdersLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route
+            path="create"
+            element={
+              <ProtectedRoute menu="ORDER_CREATE">
+                <CommingSoon />
+              </ProtectedRoute>
+            }
+          />
+        </Route>
+
+        <Route
+          path="/ris/worklist"
+          element={
+            <ProtectedRoute menu="RIS_WORKLIST">
+              <CommingSoon />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/lab"
+          element={
+            <ProtectedRoute menu="LAB_RESULT_VIEW">
+              <CommingSoon />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/lab/upload"
+          element={
+            <ProtectedRoute menu="LAB_RESULT_UPLOAD">
+              <CommingSoon />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/permissions"
+          element={
+            <ProtectedRoute menu="ADMIN_MENU_PERMISSION">
+              <CommingSoon />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/audit"
+          element={
+            <ProtectedRoute menu="ADMIN_AUDIT_LOG">
+              <CommingSoon />
+            </ProtectedRoute>
+          }
+        /><Route
+          path="/admin/monitor"
+          element={
+            <ProtectedRoute menu="ADMIN_SYSTEM_MONITOR">
+              <CommingSoon />
+            </ProtectedRoute>
+          }
+        />
       </Route>
     </Routes>
   )

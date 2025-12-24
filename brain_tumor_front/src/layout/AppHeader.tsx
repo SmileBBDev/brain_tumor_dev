@@ -2,6 +2,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import type { Role } from '@/types/role';
 import { ROLE_ICON_MAP } from './header.constants';
 import { useAuth } from '@/pages/auth/AuthProvider';
+import brainIcon from '@/assets/icon/mri-brain.png';
 
 interface AppHeaderProps {
   role: Role;
@@ -62,7 +63,7 @@ export default function AppHeader({ role, onToggleSidebar }: AppHeaderProps) {
         <button className="hamburger-btn" onClick={onToggleSidebar}>
           ☰
         </button>
-        <img src="public/icon/mri-brain.png" className="system-logo" />
+        <img src={brainIcon} className="system-logo" />
         <div className="system-title">
           <a href="/dashboard" className="system-name">
             <span>{tenant.hospitalName}</span>&nbsp;

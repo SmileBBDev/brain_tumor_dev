@@ -17,6 +17,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isAuthReady, setIsAuthReady] = useState(false);
   const [sessionRemain, setSessionRemain] = useState(30 * 60);
 
+
   /** 앱 시작 시 role 복원 | localStorage → state 복원 */
   useEffect(() => {
     const savedRole = localStorage.getItem('role') as Role | null;
@@ -41,22 +42,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [role]);
 
   /** 만료 시 연장 또는 로그아웃 */
+  // 로그인 후 25분	-> 연장 모달 1회 표시
+  // 연장 클릭	세션 30분 리셋 + 다시 25분 후 재등장
+  // 무시	만료 시 자동 로그아웃
+  // 재로그인	정상 동작
   const WARNING_TIME = 5 * 60; // 5분
   const [showExtendModal, setShowExtendModal] = useState(false);
+  const [hasWarned, setHasWarned] = useState(false);
 
   useEffect(() => {
     if (sessionRemain <= 0) {
       logout();
       return;
     }
-    if (sessionRemain <= WARNING_TIME && !showExtendModal) {
+    if (sessionRemain <= WARNING_TIME && !hasWarned) {
       setShowExtendModal(true);
+      setHasWarned(true);
     }
 
   }, [sessionRemain]);
 
   const extendSession = () => {
     setSessionRemain(30 * 60); // 30분 연장
+    setHasWarned(false);          
     setShowExtendModal(false);
   };
 
@@ -65,6 +73,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.clear();
     setRole(null);
     setSessionRemain(30 * 60); // 초기값으로 복원
+    setHasWarned(false);    
     setShowExtendModal(false);
   };
 
