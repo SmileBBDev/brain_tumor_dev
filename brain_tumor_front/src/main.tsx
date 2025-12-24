@@ -8,6 +8,8 @@ import '@/assets/style/variables.css'; // CSS 변수
 import '@/assets/style/cdssCommonStyle.css'; // 공통 스타일 적용
 import '@/assets/style/layout.css'; // 레이아웃 스타일 적용
 import '@fortawesome/fontawesome-free/css/all.min.css'; // FontAwesome 아이콘 스타일
+import '@/assets/style/commingSoon.css';
+import '@/assets/style/dashboard.css';
 
 // React Query 세팅
 const queryClient = new QueryClient();
