@@ -3,10 +3,16 @@ import { useEffect, useState } from 'react';
 import { MENU_CONFIG } from '@/config/menuConfig';
 import type { Role } from '@/types/role';
 import type { MenuId } from '@/types/menu';
+import { useAuth } from '@/pages/auth/AuthProvider';
 
 const ROLES : Role[] = ['ADMIN','DOCTOR','NURSE','LIS', 'RIS', 'PATIENT'];
 
+function updateMenus(checkedMenus: MenuId[]) {
+    throw new Error('Function not implemented.');
+}
+
 export default function MenuPermissionPage(){
+    const { role: currentRole, setMenus } = useAuth();
     const [selectedRole, setSelectedRole] = useState<Role>('ADMIN');
     const [checkedMenus, setCheckedMenus] = useState<MenuId[]>([]);
     const [originMenus, setOriginMenus] = useState<MenuId[]>([]);
@@ -31,17 +37,17 @@ export default function MenuPermissionPage(){
 
     /* 메뉴 권한 변경 저장 */
     const savePermissions = () =>{
-        localStorage.setItem(
-            `menus:${selectedRole}`,
-            JSON.stringify(checkedMenus)
-        );
+        // localStorage.setItem(
+        //     `menus:${selectedRole}`,
+        //     JSON.stringify(checkedMenus)
+        // );
 
         // 현재 로그인한 Role인 경우 즉시 반영
-        const currentRole = localStorage.getItem('role') as Role;
         if(currentRole === selectedRole){
+            setMenus(checkedMenus); // 메뉴 변경 상태를 반영
             localStorage.setItem(
                 'menus',
-                JSON.stringify(checkedMenus)
+                JSON.stringify(checkedMenus) // 메뉴 저장
             );
         }
 
@@ -71,7 +77,7 @@ export default function MenuPermissionPage(){
                 {MENU_CONFIG.map(menu => (
                     <li key = {menu.id}>
                         <label>
-                            <input type = "chenckbox"
+                            <input type = "checkbox"
                                 checked = {checkedMenus.includes(menu.id)}
                                 onChange ={()=> toggleMenu(menu.id)}
                             />

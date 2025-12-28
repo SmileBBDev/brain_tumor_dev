@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import type { Role } from '@/types/role';
 import SessionExtendModal from './SessionExtendModal';
+import type { MenuId } from '@/types/menu';
 
 interface AuthContextValue {
   role: Role | null;
@@ -8,6 +9,8 @@ interface AuthContextValue {
   sessionRemain: number;
   logout: () => void;
   isAuthReady: boolean;
+  menus : MenuId[];
+  setMenus : (menus : MenuId[]) => void;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -77,9 +80,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setShowExtendModal(false);
   };
 
+
+  // 권한 변경 시 Sidebar 메뉴 변경
+  const [menus, setMenus] = useState<MenuId[]>([]);
+  useEffect(() => {
+    const savedNewMenu = JSON.parse(
+      localStorage.getItem('menus')  || '[]'
+    );
+    setMenus(savedNewMenu);
+  }, []); 
+
   return (
     <AuthContext.Provider
-      value={{ role, setRole, sessionRemain, logout, isAuthReady }}
+      value={{ role, setRole, sessionRemain, logout, isAuthReady, menus, setMenus }}
     >
       {children}
       {showExtendModal && (
@@ -93,6 +106,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
+// Context를 안전하게 가져오는 훅
 export function useAuth() {
   const ctx = useContext(AuthContext);
   if (!ctx) {

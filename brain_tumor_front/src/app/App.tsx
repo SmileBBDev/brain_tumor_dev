@@ -10,7 +10,7 @@ import DashboardPage from '@/pages/dashboard/DashboardPage';
 import PatientDetailPage from '@/pages/patient/PatientDetailPage';
 import CommingSoon from '@/pages/common/CommingSoon';
 import OrdersLayout from '@/layout/OrdersLayout';
-import AdminLayout from '@/layout/AdminLayout';
+import AdminLayout from '@/pages/admin/AdminLayout';
 import UserListPage from '@/pages/admin/UserList';
 import MenuPermissionPage from '@/pages/admin/MenuPermissionPage';
 import AuditLogPage from '@/pages/admin/AuditLog';
