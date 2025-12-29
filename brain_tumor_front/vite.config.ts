@@ -10,4 +10,14 @@ export default defineConfig({
       '@' : path.resolve(__dirname, 'src'), // @를 src 폴더로 mapping 해줌
     },
   },
+  // vite.config.ts
+  server: {
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
+    },
+  },
+
 })

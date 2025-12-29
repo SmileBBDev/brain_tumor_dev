@@ -19,9 +19,10 @@ INSTALLED_APPS = [
     'rest_framework',
     'corsheaders',
     'apps.accounts',
-    'apps.auth',
+    'apps.authorization',
     'apps.audit',
     'apps.common',
+    'channels',
 ]
 
 MIDDLEWARE = [
@@ -56,4 +57,15 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
+}
+
+ASGI_APPLICATION = "config.asgi.application"
+
+CHANNEL_LAYERS = {
+    "default" : {
+        "BACKEND" : "channels_redis.core.RedisChannelLayer",
+        "CONFIG" : {
+            "hosts" : [("127.0.0.1", 6379)],
+        }
+    }
 }

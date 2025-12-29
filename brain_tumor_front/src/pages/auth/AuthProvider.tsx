@@ -2,33 +2,77 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import type { Role } from '@/types/role';
 import SessionExtendModal from './SessionExtendModal';
 import type { MenuId } from '@/types/menu';
+import { connectPermissionSocket } from '@/socket/permissionSocket'
+
+export interface MenuNode {
+  id: string;
+  label: string;
+  path?: string;
+  children?: MenuNode[];
+}
 
 interface AuthContextValue {
   role: Role | null;
-  setRole: (role: Role | null) => void;
+  // setRole: (role: Role | null) => void;
   sessionRemain: number;
   logout: () => void;
   isAuthReady: boolean;
-  menus : MenuId[];
-  setMenus : (menus : MenuId[]) => void;
+  // menus : MenuId[];
+  // setMenus : (menus : MenuId[]) => void;
+  menus: MenuNode[];
+  // setMenus: (menus: MenuNode[]) => void;
+
+  setAuth: (payload: {
+    role: Role;
+    menus: MenuNode[];
+  }) => void;
+
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [role, setRole] = useState<Role | null>(null);
+  const [menus, setMenus] = useState<MenuNode[]>([]);
   const [isAuthReady, setIsAuthReady] = useState(false);
   const [sessionRemain, setSessionRemain] = useState(30 * 60);
 
+  // 로그인 후 메뉴 로딩 호출
 
-  /** 앱 시작 시 role 복원 | localStorage → state 복원 */
+  /** 로그인 성공 시 단일 진입점 */
+  const setAuth = ({role, menus,}: {
+    role: Role;
+    menus: MenuNode[];
+  }) => {
+    setRole(role);
+    setMenus(menus);
+    setIsAuthReady(true);
+  };
+
+
+  /** 앱 시작 시 role과 메뉴 복원 | localStorage → state 복원 */
   useEffect(() => {
-    const savedRole = localStorage.getItem('role') as Role | null;
-    if (savedRole) {
-      setRole(savedRole);
+    const role = localStorage.getItem('role') as Role | null;
+    const menus = JSON.parse(localStorage.getItem('menus') || '[]');
+
+    if (role) {
+      // setRole(savedRole);
+      setAuth({ role, menus });
     }
     setIsAuthReady(true);
   }, []);
+
+  // WebSocket 메뉴 갱신
+  useEffect(() => {
+    const ws = connectPermissionSocket(() => {
+      fetch('/api/menus')
+        .then(res => res.json())
+        .then(setMenus);
+    });
+
+    return () => ws.close();
+  }, []);
+
 
   /** ⏱ 세션 타이머 */
   useEffect(() => {
@@ -75,6 +119,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = () => {
     localStorage.clear();
     setRole(null);
+    setMenus([]);
     setSessionRemain(30 * 60); // 초기값으로 복원
     setHasWarned(false);    
     setShowExtendModal(false);
@@ -82,17 +127,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
 
   // 권한 변경 시 Sidebar 메뉴 변경
-  const [menus, setMenus] = useState<MenuId[]>([]);
-  useEffect(() => {
-    const savedNewMenu = JSON.parse(
-      localStorage.getItem('menus')  || '[]'
-    );
-    setMenus(savedNewMenu);
-  }, []); 
-
+  // const [menus, setMenus] = useState<MenuId[]>([]);
+  // useEffect(() => {
+  //   const savedNewMenu = JSON.parse(
+  //     localStorage.getItem('menus')  || '[]'
+  //   );
+  //   setMenus(savedNewMenu);
+  // }, []); 
   return (
     <AuthContext.Provider
-      value={{ role, setRole, sessionRemain, logout, isAuthReady, menus, setMenus }}
+      value={{ role, sessionRemain, logout, isAuthReady, menus, setAuth }}
     >
       {children}
       {showExtendModal && (

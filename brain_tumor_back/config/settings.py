@@ -1,6 +1,12 @@
 import environ
 import os
 from pathlib import Path
+from datetime import timedelta
+from .base import * # 공통 설정
+from .dev import *  # 개발 환경 설정
+from .prod import * # 운영 환경 설정
+from corsheaders.defaults import default_headers
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -13,21 +19,10 @@ environ.Env.read_env(os.path.join(BASE_DIR, 'dbconn.env'))  # 여기서 파일�
 SECRET_KEY = env('SECRET_KEY')
 DEBUG = env.bool('DEBUG', default=False)
 
-
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
-
-# SECURITY WARNING: keep the secret key used in production secret!
-#SECRET_KEY = "django-insecure-(!1w=-890pl^l%n@)@#^e%5r=_6ly=b0gn1b!wyx25zy+b%0m)"
-
-# SECURITY WARNING: don't run with debug turned on in production!
-#DEBUG = True
-
-ALLOWED_HOSTS = []
-
+ALLOWED_HOSTS = ["127.0.0.1", "localhost"] 
+# ALLOWED_HOSTS = [] # 운영 시 실제 도메인 입력
 
 # Application definition
-
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
@@ -35,9 +30,17 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "apps.accounts",
+    "apps.audit",
+    "apps.authorization",
+    "apps.common",
+    "apps.menus",
+    "corsheaders",
+
 ]
 
 MIDDLEWARE = [
+    "corsheaders.middleware.CorsMiddleware",  # 반드시 CommonMiddleware보다 위에
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -129,3 +132,34 @@ STATIC_URL = "static/"
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# DB와 연결된 로그인 정보 호출
+AUTH_USER_MODEL = "accounts.User"
+
+# 로그인 로직 (있어야만 로그인 처리 가능)
+AUTHENTICATION_BACKENDS = [
+    "apps.accounts.backends.LoginBackend",
+]
+
+# SimpleJWT 설정
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME" : timedelta(minutes=30),
+    "REFRESH_TOKEN_LIFETIME" : timedelta(days=1),
+    "AUTH_HEADER_TYPES" : ("Bearer",),
+}
+
+# CORS 옵션 추가
+# 허용할 오리진 지정
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",   # Vite 개발 서버
+    "http://127.0.0.1:5173",   # Vite 개발 서버
+
+    # "https://example.com",   # 운영 프론트엔드
+]
+
+# 헤더 허용 (Authorization 등) : default_headers(기본 헤더) +  Authorization 추가
+CORS_ALLOW_HEADERS = list(default_headers) + [
+    "authorization",
+]
+# 쿠키를 포함한 cross-origin 요청
+CORS_ALLOW_CREDENTIALS = True

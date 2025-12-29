@@ -35,7 +35,7 @@ export default function App(){
         {/* 대시보드 */}
         <Route path = "/dashboard" 
           element={
-            <ProtectedRoute menu="DASHBOARD">
+            <ProtectedRoute menuId="DASHBOARD">
               <DashboardPage/>
             </ProtectedRoute>
           }
@@ -44,7 +44,7 @@ export default function App(){
         {/* 환자 목록 */}
         <Route path = "/patients" 
           element={
-            <ProtectedRoute menu="PATIENT_LIST">
+            <ProtectedRoute menuId="PATIENT_LIST">
               <PatientListPage/>
             </ProtectedRoute>
           }
@@ -54,7 +54,7 @@ export default function App(){
         <Route
           path="/patients/:patientId"
           element={
-            <ProtectedRoute menu="PATIENT_DETAIL">
+            <ProtectedRoute menuId="PATIENT_DETAIL">
               <PatientDetailPage />
             </ProtectedRoute>
           }
@@ -66,7 +66,7 @@ export default function App(){
         <Route
           path="/imaging"
           element={
-            <ProtectedRoute menu="IMAGE_VIEWER">
+            <ProtectedRoute menuId="IMAGE_VIEWER">
               <ImagingPage />
             </ProtectedRoute>
           }
@@ -74,7 +74,7 @@ export default function App(){
         <Route
           path="/ris/worklist"
           element={
-            <ProtectedRoute menu="RIS_WORKLIST">
+            <ProtectedRoute menuId="RIS_WORKLIST">
               <RISWorklistPage />
             </ProtectedRoute>
           }
@@ -84,7 +84,7 @@ export default function App(){
         <Route
           path="/ai"
           element={
-            <ProtectedRoute menu="AI_SUMMARY">
+            <ProtectedRoute menuId="AI_SUMMARY">
               <AISummaryPage />
             </ProtectedRoute>
           }
@@ -94,7 +94,7 @@ export default function App(){
         <Route
           path="/admin"
           element={
-            <ProtectedRoute menu="ADMIN_USER">
+            <ProtectedRoute menuId="ADMIN_USER">
               <AdminLayout />
             </ProtectedRoute>
           }
@@ -112,7 +112,7 @@ export default function App(){
         <Route
           path="/orders"
           element={
-            <ProtectedRoute menu="ORDER_LIST">
+            <ProtectedRoute menuId="ORDER_LIST">
               <OrdersLayout />
             </ProtectedRoute>
           }
@@ -120,7 +120,7 @@ export default function App(){
           <Route
             path="list"
             element={
-              <ProtectedRoute menu="ORDER_LIST">
+              <ProtectedRoute menuId="ORDER_LIST">
                 <CommingSoon />
               </ProtectedRoute>
             }
@@ -128,7 +128,7 @@ export default function App(){
           <Route
             path="create"
             element={
-              <ProtectedRoute menu="ORDER_CREATE">
+              <ProtectedRoute menuId="ORDER_CREATE">
                 <CommingSoon />
               </ProtectedRoute>
             }
@@ -139,7 +139,7 @@ export default function App(){
         <Route
           path="/lab"
           element={
-            <ProtectedRoute menu="LAB_RESULT_VIEW">
+            <ProtectedRoute menuId="LAB_RESULT_VIEW">
               <CommingSoon />
             </ProtectedRoute>
           }
@@ -147,7 +147,7 @@ export default function App(){
         <Route
           path="/lab/upload"
           element={
-            <ProtectedRoute menu="LAB_RESULT_UPLOAD">
+            <ProtectedRoute menuId="LAB_RESULT_UPLOAD">
               <CommingSoon />
             </ProtectedRoute>
           }
