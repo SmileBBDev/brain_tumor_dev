@@ -1,3 +1,51 @@
+/* 모바일 이하 */
+@media (max-width: 480px) {
+  .user-create-modal-backdrop {
+    align-items: flex-end;   /* 아래에서 올라오는 느낌 */
+  }
+
+  .user-create-modal {
+    max-width: 100%;
+    max-height: 100vh;
+    height: 100vh;
+    border-radius: 16px 16px 0 0;  /* 하단 시트 느낌 */
+    padding: 16px;
+  }
+}
+
+/* 태블릿 이하 */
+@media (max-width: 768px) {
+  .info-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .user-info-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .form-actions {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .form-actions button {
+    width: 100%;
+  }
+
+  .user-create-modal {
+    max-width: 92vw;
+    max-height: 92vh;
+    padding: 20px;
+  }
+
+
+}
+
 .admin-page {
   padding: 24px;
 }
@@ -18,10 +66,10 @@
   padding: 16px;
 }
 
-.admin-toolbar {
+.toolbar-left {
   display: flex;
-  justify-content: space-between;
-  margin-bottom: 12px;
+  align-items: center;
+  gap: 10px;
 }
 
 .admin-table {
@@ -164,6 +212,7 @@
 
 .admin-toolbar select {
   width: 140px;
+  height: 38px;
 }
 
 .admin-toolbar button.primary {
@@ -241,4 +290,189 @@ button.danger {
 
 button.danger:hover {
   background: #b91c1c;
+}
+
+/* 검색 입력창 스타일 */
+.search-input {
+  width: 240px;
+  height: 36px;
+  padding: 0 12px;
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+  font-size: 14px;
+  transition: border 0.2s, box-shadow 0.2s;
+}
+
+.search-input::placeholder {
+  color: #9ca3af;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+}
+
+/* 역할 필터 셀렉트박스 스타일 */
+.role-select {
+  height: 36px;
+  padding: 0 36px 0 12px;
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+  font-size: 14px;
+  background-color: #fff;
+  cursor: pointer;
+
+  appearance: none;          /* 기본 화살표 제거 */
+  -webkit-appearance: none;
+  -moz-appearance: none;
+
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7' /%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 16px;
+}
+
+.role-select:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+}
+
+/* 모달 스타일 */
+.user-create-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.user-create-modal {
+  background: #fff;
+  width: 100%;
+  max-width: 640px; /* 화면이 줄어들면 자동으로 줄어듦 */
+  max-height: 90vh; /*  화면 기준 높이 제한 */
+  overflow-y: auto;
+  border-radius: 12px;
+  padding: 24px;
+}
+
+.user-create-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.user-form {
+  background: #fff;
+  padding: 20px;
+  border-radius: 6px;
+}
+
+/* 공통 섹션 */
+.form-section {
+  margin-bottom: 24px;
+}
+
+.section-title {
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+/* 개인정보 레이아웃 */
+.user-info-grid {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: 20px;
+}
+
+.profile-box {
+  display: flex;
+  justify-content: center;
+}
+
+.profile-image {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  background: #cfcfcf;
+}
+
+/* 필드 공통 */
+.info-fields {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px 20px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+}
+
+.field.inline {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+
+label {
+  font-size: 12px;
+  color: #555;
+  margin-bottom: 4px;
+}
+
+.userInfoOption {
+  height: 40px;
+  padding: 4px 8px;
+  font-size: 13px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.userInfo:disabled,
+.userInfoOption:disabled {
+  background: #f5f5f5;
+}
+
+/* 계정 영역 */
+.account-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.btn-generate {
+  height: 32px;
+  padding: 0 10px;
+  font-size: 12px;
+  background: #e0e0e0;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+/* 저장 버튼 */
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.btn-save {
+  background: #001a72;
+  color: #fff;
+  padding: 8px 20px;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.userInfo {
+  height: 32px;
+  padding: 4px 8px;
+  font-size: 13px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
 }

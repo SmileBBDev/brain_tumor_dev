@@ -6,7 +6,7 @@ from rest_framework import generics, status, filters
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from .models import User
-from .serializers import UserSerializer
+from .serializers import UserSerializer, UserCreateUpdateSerializer
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.permissions import IsAdminUser
 from django.utils import timezone
@@ -45,14 +45,15 @@ class UserListView(generics.ListCreateAPIView):
                 output_field=BooleanField(),
             )
         )
-        # for user in qs:
-        #     user.is_online = bool(
-        #         user.last_seen and user.last_seen >= online_threshold
-        #     )
-
         return qs
+    
+    # 사용자 생성
+    def get_serializer_class(self):
+        if self.request.method == "POST":
+            return UserCreateUpdateSerializer
+        return UserSerializer
 
-# 2. 사용자 상세 조회 & 수정 & 삭제
+# 2. 사용자 상세 조회(GET) & 수정(PUT) & 삭제(DELETE) API
 class UserDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
@@ -82,3 +83,4 @@ class UnlockUserView(APIView):
         user.save()
 
         return Response({"detail": "계정 잠금 해제 완료"})
+

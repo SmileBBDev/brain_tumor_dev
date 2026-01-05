@@ -10,7 +10,7 @@ import OrderCreatePage from '@/pages/orders/OrderCreate';
 import { ComingSoonPage } from '@/pages/common/CommingSoon';
 import PatientDetailPage from '@/pages/patient/PatientDetailPage';
 import MenuPermissionPage from '@/pages/admin/MenuPermissionPage';
-import UserList from '@/pages/admin/UserList';
+import UserList from '@/pages/admin/usersManagement/UserList';
 import AuditLog from '@/pages/admin/AuditLog';
 import SystemMonitorPage from '@/pages/admin/SystemMonitorPage';
 

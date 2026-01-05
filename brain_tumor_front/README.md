@@ -23,3 +23,22 @@
 | 메뉴 위치 변경   | `MENU_CONFIG`                     |
 | 접근 Role 변경 | Admin 권한관리 or `MENU_CONFIG.roles` |
 | UX만 다름     | Page 내부 Role 분기                   |
+
+## 사용자 관리 (관리자 기능)
+- GET /api/users/ → 사용자 목록 조회 (구현 완료)
+- POST /api/users/ → 사용자 추가❗
+- GET /api/users/{id}/ → 특정 사용자 조회 ❗
+- PUT/PATCH /api/users/{id}/ → 사용자 수정 ❗
+- DELETE /api/users/{id}/ → 사용자 삭제 ❗
+- PATCH /api/users/{id}/toggle-active/ → 활성/비활성 토글 (구현 완료)
+- POST   /api/users/{id}/unlock/        → 잠금 해제 (구현 완료)
+
+| 기능     | HTTP   | 프론트 API          |
+| ------ | ------ | ---------------- |
+| 목록 조회  | GET    | fetchUsers       |
+| 사용자 생성 | POST   | createUser       |
+| 상세 조회  | GET    | fetchUserDetail  |
+| 수정     | PUT    | updateUser       |
+| 삭제     | DELETE | deleteUser       |
+| 활성 토글  | PATCH  | toggleUserActive |
+| 잠금 해제  | PATCH  | unlockUser       |
