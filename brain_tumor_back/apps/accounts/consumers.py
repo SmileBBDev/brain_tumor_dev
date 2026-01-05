@@ -2,6 +2,10 @@ from channels.generic.websocket import AsyncJsonWebsocketConsumer
 from django.utils import timezone
 from channels.db import database_sync_to_async
 from django.contrib.auth import get_user_model
+import redis
+
+# Redis 클라이언트 객체 생성 (전역에서 재사용)
+redis_client = redis.Redis(host="127.0.0.1", port=6379, db=0)
 
 # 사용자 권한 변경 알림 Consumer
 class UserPermissionConsumer(AsyncJsonWebsocketConsumer):
@@ -43,10 +47,18 @@ class PresenceConsumer(AsyncJsonWebsocketConsumer):
         # 최초 접속 시 last_seen 기록
         # await self.update_last_seen()
 
+        # Redis에 온라인 상태 기록
+        mark_user_online(user.id)
+
+        await self.channel_layer.group_add(
+            "presence",
+            self.channel_name,
+        )
+
     async def receive_json(self, content):
-        print("❤️ heartbeat", content)
         #  클라이언트에서 heartbeat 메시지를 보내면 last_seen 갱신
         if content.get("type") == "heartbeat":
+            mark_user_online(self.user.id)  # TTL 연장
             await self.update_last_seen()
 
     async def disconnect(self, close_code):
@@ -63,3 +75,10 @@ class PresenceConsumer(AsyncJsonWebsocketConsumer):
             User.objects.filter(id=user.id).update(
                 last_seen=timezone.now()
             )
+# Redis 헬퍼 함수들
+def mark_user_online(user_id):
+    redis_client.set(f"user:online:{user_id}", 1, ex=30)
+
+def is_user_online(user_id):
+    return redis_client.exists(f"user:online:{user_id}") == 1
+

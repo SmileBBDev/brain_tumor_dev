@@ -353,7 +353,7 @@ button.danger:hover {
 .user-create-modal {
   background: #fff;
   width: 100%;
-  max-width: 640px; /* 화면이 줄어들면 자동으로 줄어듦 */
+  max-width: 70%; /* 화면이 줄어들면 자동으로 줄어듦 */
   max-height: 90vh; /*  화면 기준 높이 제한 */
   overflow-y: auto;
   border-radius: 12px;
