@@ -31,11 +31,20 @@ INSTALLED_APPS = [
     "django_filters",
     "corsheaders",
     "channels",
+    "rest_framework",
+    "drf_spectacular",
     "apps.accounts",
     "apps.audit",
     "apps.authorization",
     "apps.common",
     "apps.menus",
+    "apps.scripts",
+    "apps.ocs",
+    "apps.ris",
+    "apps.fhir",
+    "apps.emr",
+    "apps.lis",
+
 
 ]
 
@@ -162,3 +171,33 @@ CORS_ALLOW_HEADERS = list(default_headers) + [
 ]
 # 쿠키를 포함한 cross-origin 요청
 CORS_ALLOW_CREDENTIALS = True
+
+
+# Swagger 설정
+REST_FRAMEWORK = {
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+    ],
+
+}
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "NeuroNova CDSS API",
+    "DESCRIPTION": "Clinical Decision Support System API",
+    "VERSION": "1.0.0",
+    "USE_SESSION_AUTH": False,
+    "SERVE_INCLUDE_SCHEMA": False,  # 문서 로드시 자동 호출 방지
+    "SECURITY_SCHEMES": {
+        "bearerAuth": {
+            "type": "http",
+            "scheme": "bearer",
+            "bearerFormat": "JWT",
+        },
+    },
+}
+
+
+# 보안 기능 활성화 여부 (True/False)
+ENABLE_SECURITY = True  # 운영 환경
+# ENABLE_SECURITY = False  # 개발 환경

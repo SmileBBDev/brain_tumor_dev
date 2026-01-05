@@ -1,0 +1,4529 @@
+openapi: 3.0.3
+info:
+  title: NeuroNova CDSS API
+  version: 1.0.0
+  description: |-
+    Clinical Decision Support System API Documentation
+
+    ## 인증
+    JWT 토큰 기반 인증을 사용합니다.
+    1. `/api/acct/login/` 엔드포인트로 로그인
+    2. 응답으로 받은 `access` 토큰을 복사
+    3. 우측 상단 "Authorize" 버튼 클릭
+    4. `Bearer <access_token>` 형식으로 입력
+
+    ## 사용자 역할
+    - Admin: 시스템 관리자
+    - Doctor: 의사
+    - RIB: 영상의학과 의사
+    - Lab: 임상병리사
+    - Nurse: 간호사
+    - Patient: 환자
+    - External: 외부 시스템
+paths:
+  /api/acct/login/:
+    post:
+      operationId: acct_login_create
+      description: 사용자 인증 후 JWT Access Token과 Refresh Token을 발급합니다.
+      summary: 로그인
+      tags:
+      - acct
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - bearerAuth: []
+      - {}
+      responses:
+        '200':
+          description: 성공적으로 로그인되었습니다.
+        '401':
+          description: 인증 실패
+  /api/acct/logout/:
+    post:
+      operationId: acct_logout_create
+      description: Refresh 토큰을 블랙리스트에 추가하여 로그아웃 처리합니다.
+      summary: 로그아웃
+      tags:
+      - acct
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: {}
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              additionalProperties: {}
+          multipart/form-data:
+            schema:
+              type: object
+              additionalProperties: {}
+      security:
+      - jwtAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Successfully logged out.
+  /api/acct/me/:
+    get:
+      operationId: acct_me_retrieve
+      description: 현재 로그인한 사용자의 정보를 조회합니다.
+      summary: 내 정보 조회
+      tags:
+      - acct
+      security:
+      - jwtAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+  /api/acct/token/refresh/:
+    post:
+      operationId: acct_token_refresh_create
+      description: |-
+        Takes a refresh type JSON web token and returns an access type JSON web
+        token if the refresh token is valid.
+      tags:
+      - acct
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRefreshRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenRefreshRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenRefreshRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenRefresh'
+          description: ''
+  /api/acct/users/:
+    get:
+      operationId: acct_users_list
+      description: User CRUD (Admin only)
+      tags:
+      - acct
+      security:
+      - jwtAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+          description: ''
+    post:
+      operationId: acct_users_create
+      description: User CRUD (Admin only)
+      tags:
+      - acct
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+  /api/acct/users/{user_id}/:
+    get:
+      operationId: acct_users_retrieve
+      description: User CRUD (Admin only)
+      parameters:
+      - in: path
+        name: user_id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this user.
+        required: true
+      tags:
+      - acct
+      security:
+      - jwtAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    put:
+      operationId: acct_users_update
+      description: User CRUD (Admin only)
+      parameters:
+      - in: path
+        name: user_id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this user.
+        required: true
+      tags:
+      - acct
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    patch:
+      operationId: acct_users_partial_update
+      description: User CRUD (Admin only)
+      parameters:
+      - in: path
+        name: user_id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this user.
+        required: true
+      tags:
+      - acct
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedUserRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedUserRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedUserRequest'
+      security:
+      - jwtAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    delete:
+      operationId: acct_users_destroy
+      description: User CRUD (Admin only)
+      parameters:
+      - in: path
+        name: user_id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this user.
+        required: true
+      tags:
+      - acct
+      security:
+      - jwtAuth: []
+      - bearerAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/acct/users/register/:
+    post:
+      operationId: acct_users_register_create
+      description: 회원가입
+      tags:
+      - acct
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - bearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+  /api/ai/callback/:
+    post:
+      operationId: ai_callback_create
+      description: AI 서버로부터 분석 완료 결과를 수신합니다.
+      summary: AI 콜백 수신
+      tags:
+      - ai
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: {}
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              additionalProperties: {}
+          multipart/form-data:
+            schema:
+              type: object
+              additionalProperties: {}
+      security:
+      - jwtAuth: []
+      - bearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/ai/jobs/:
+    get:
+      operationId: ai_jobs_list
+      description: AI Job 조회 및 승인/반려
+      tags:
+      - ai
+      security:
+      - jwtAuth: []
+      - bearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AIJob'
+          description: ''
+  /api/ai/jobs/{job_id}/:
+    get:
+      operationId: ai_jobs_retrieve
+      description: AI Job 조회 및 승인/반려
+      parameters:
+      - in: path
+        name: job_id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this ai job.
+        required: true
+      tags:
+      - ai
+      security:
+      - jwtAuth: []
+      - bearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AIJob'
+          description: ''
+  /api/ai/jobs/{job_id}/review/:
+    post:
+      operationId: ai_jobs_review_create
+      description: 의료진의 분석 결과 승인/반려
+      parameters:
+      - in: path
+        name: job_id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this ai job.
+        required: true
+      tags:
+      - ai
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AIJobRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AIJobRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AIJobRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - bearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AIJob'
+          description: ''
+  /api/ai/submit/:
+    post:
+      operationId: ai_submit_create
+      description: 특정 Study에 대한 AI 분석 작업을 생성하고 RabbitMQ 큐에 추가합니다.
+      summary: AI 분석 작업 제출
+      tags:
+      - ai
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: {}
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              additionalProperties: {}
+          multipart/form-data:
+            schema:
+              type: object
+              additionalProperties: {}
+      security:
+      - jwtAuth: []
+      - bearerAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AIJob'
+          description: ''
+  /api/audit/logs/:
+    get:
+      operationId: audit_logs_list
+      description: |-
+        통합 로그 뷰어 API (UC09)
+        - 관리자만 접근 가능 (실제 운영 시 IsAdminUser 적용 권장)
+        - 기간, 사용자, 액션별 필터링 제공
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - audit
+      security:
+      - jwtAuth: []
+      - bearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AuditLog'
+          description: ''
+  /api/audit/logs/{id}/:
+    get:
+      operationId: audit_logs_retrieve
+      description: |-
+        통합 로그 뷰어 API (UC09)
+        - 관리자만 접근 가능 (실제 운영 시 IsAdminUser 적용 권장)
+        - 기간, 사용자, 액션별 필터링 제공
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this audit log.
+        required: true
+      tags:
+      - audit
+      security:
+      - jwtAuth: []
+      - bearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditLog'
+          description: ''
+  /api/emr/encounters/:
+    get:
+      operationId: emr_encounters_list
+      description: 진료 기록 CRUD ViewSet
+      summary: 진료 기록 목록 조회
+      tags:
+      - emr
+      security:
+      - jwtAuth: []
+      - bearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Encounter'
+          description: ''
+    post:
+      operationId: emr_encounters_create
+      description: 새로운 진료 기록을 생성하고 OpenEMR과 동기화합니다.
+      summary: 진료 기록 생성
+      tags:
+      - emr
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EncounterCreateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/EncounterCreateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/EncounterCreateRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - bearerAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Encounter'
+          description: ''
+  /api/emr/encounters/{encounter_id}/:
+    get:
+      operationId: emr_encounters_retrieve
+      description: 진료 기록 CRUD ViewSet
+      summary: 진료 기록 상세 조회
+      parameters:
+      - in: path
+        name: encounter_id
+        schema:
+          type: string
+          description: '진료 ID (예: E-2025-005678)'
+        required: true
+      tags:
+      - emr
+      security:
+      - jwtAuth: []
+      - bearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Encounter'
+          description: ''
+    put:
+      operationId: emr_encounters_update
+      description: 진료 기록 CRUD ViewSet
+      parameters:
+      - in: path
+        name: encounter_id
+        schema:
+          type: string
+          description: '진료 ID (예: E-2025-005678)'
+        required: true
+      tags:
+      - emr
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EncounterRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/EncounterRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/EncounterRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - bearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Encounter'
+          description: ''
+    patch:
+      operationId: emr_encounters_partial_update
+      description: 진료 기록 CRUD ViewSet
+      parameters:
+      - in: path
+        name: encounter_id
+        schema:
+          type: string
+          description: '진료 ID (예: E-2025-005678)'
+        required: true
+      tags:
+      - emr
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedEncounterRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedEncounterRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedEncounterRequest'
+      security:
+      - jwtAuth: []
+      - bearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Encounter'
+          description: ''
+    delete:
+      operationId: emr_encounters_destroy
+      description: 진료 기록 CRUD ViewSet
+      parameters:
+      - in: path
+        name: encounter_id
+        schema:
+          type: string
+          description: '진료 ID (예: E-2025-005678)'
+        required: true
+      tags:
+      - emr
+      security:
+      - jwtAuth: []
+      - bearerAuth: []
+      - {}
+      responses:
+        '204':
+          description: No response body
+  /api/emr/encounters/by_patient/:
+    get:
+      operationId: emr_encounters_by_patient_retrieve
+      description: 진료 기록 CRUD ViewSet
+      summary: 환자별 진료 기록 조회
+      parameters:
+      - in: query
+        name: patient_id
+        schema:
+          type: string
+        description: 환자 ID
+        required: true
+      tags:
+      - emr
+      security:
+      - jwtAuth: []
+      - bearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Encounter'
+          description: ''
+  /api/emr/order-items/:
+    get:
+      operationId: emr_order_items_list
+      description: 처방 항목(상세) CRUD ViewSet
+      tags:
+      - emr
+      security:
+      - jwtAuth: []
+      - bearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/OrderItem'
+          description: ''
+    post:
+      operationId: emr_order_items_create
+      description: 처방 항목(상세) CRUD ViewSet
+      tags:
+      - emr
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderItemRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/OrderItemRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/OrderItemRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - bearerAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderItem'
+          description: ''
+  /api/emr/order-items/{item_id}/:
+    get:
+      operationId: emr_order_items_retrieve
+      description: 처방 항목(상세) CRUD ViewSet
+      parameters:
+      - in: path
+        name: item_id
+        schema:
+          type: string
+          description: '처방 항목 ID (예: OI-001)'
+        required: true
+      tags:
+      - emr
+      security:
+      - jwtAuth: []
+      - bearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderItem'
+          description: ''
+    put:
+      operationId: emr_order_items_update
+      description: 처방 항목(상세) CRUD ViewSet
+      summary: 처방 항목 수정
+      parameters:
+      - in: path
+        name: item_id
+        schema:
+          type: string
+          description: '처방 항목 ID (예: OI-001)'
+        required: true
+      tags:
+      - emr
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderItemUpdateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/OrderItemUpdateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/OrderItemUpdateRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - bearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderItemUpdate'
+          description: ''
+    patch:
+      operationId: emr_order_items_partial_update
+      description: 처방 항목(상세) CRUD ViewSet
+      summary: 처방 항목 부분 수정
+      parameters:
+      - in: path
+        name: item_id
+        schema:
+          type: string
+          description: '처방 항목 ID (예: OI-001)'
+        required: true
+      tags:
+      - emr
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedOrderItemUpdateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedOrderItemUpdateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedOrderItemUpdateRequest'
+      security:
+      - jwtAuth: []
+      - bearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderItemUpdate'
+          description: ''
+    delete:
+      operationId: emr_order_items_destroy
+      description: 처방 항목(상세) CRUD ViewSet
+      summary: 처방 항목 삭제
+      parameters:
+      - in: path
+        name: item_id
+        schema:
+          type: string
+          description: '처방 항목 ID (예: OI-001)'
+        required: true
+      tags:
+      - emr
+      security:
+      - jwtAuth: []
+      - bearerAuth: []
+      - {}
+      responses:
+        '204':
+          description: No response body
+  /api/emr/orders/:
+    get:
+      operationId: emr_orders_list
+      description: 처방 CRUD ViewSet
+      summary: 처방 목록 조회
+      tags:
+      - emr
+      security:
+      - jwtAuth: []
+      - bearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Order'
+          description: ''
+    post:
+      operationId: emr_orders_create
+      description: 새로운 처방을 생성하고 OpenEMR과 동기화합니다.
+      summary: 처방 생성
+      tags:
+      - emr
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderCreateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/OrderCreateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/OrderCreateRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - bearerAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+          description: ''
+  /api/emr/orders/{order_id}/:
+    get:
+      operationId: emr_orders_retrieve
+      description: 처방 CRUD ViewSet
+      summary: 처방 상세 조회
+      parameters:
+      - in: path
+        name: order_id
+        schema:
+          type: string
+          description: '처방 ID (예: O-2025-009876)'
+        required: true
+      tags:
+      - emr
+      security:
+      - jwtAuth: []
+      - bearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+          description: ''
+    put:
+      operationId: emr_orders_update
+      description: 처방 CRUD ViewSet
+      parameters:
+      - in: path
+        name: order_id
+        schema:
+          type: string
+          description: '처방 ID (예: O-2025-009876)'
+        required: true
+      tags:
+      - emr
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/OrderRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/OrderRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - bearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+          description: ''
+    patch:
+      operationId: emr_orders_partial_update
+      description: 처방 CRUD ViewSet
+      parameters:
+      - in: path
+        name: order_id
+        schema:
+          type: string
+          description: '처방 ID (예: O-2025-009876)'
+        required: true
+      tags:
+      - emr
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedOrderRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedOrderRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedOrderRequest'
+      security:
+      - jwtAuth: []
+      - bearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+          description: ''
+    delete:
+      operationId: emr_orders_destroy
+      description: 처방 CRUD ViewSet
+      parameters:
+      - in: path
+        name: order_id
+        schema:
+          type: string
+          description: '처방 ID (예: O-2025-009876)'
+        required: true
+      tags:
+      - emr
+      security:
+      - jwtAuth: []
+      - bearerAuth: []
+      - {}
+      responses:
+        '204':
+          description: No response body
+  /api/emr/orders/{order_id}/execute/:
+    post:
+      operationId: emr_orders_execute_create
+      description: 처방 실행 (Service 레이어 및 Locking 적용)
+      summary: 처방 실행 (Locking 적용)
+      parameters:
+      - in: path
+        name: order_id
+        schema:
+          type: string
+          description: '처방 ID (예: O-2025-009876)'
+        required: true
+      tags:
+      - emr
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/OrderRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/OrderRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - bearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+          description: ''
+  /api/emr/orders/by_patient/:
+    get:
+      operationId: emr_orders_by_patient_retrieve
+      description: 처방 CRUD ViewSet
+      summary: 환자별 처방 목록 조회
+      parameters:
+      - in: query
+        name: patient_id
+        schema:
+          type: string
+        description: 환자 ID
+        required: true
+      tags:
+      - emr
+      security:
+      - jwtAuth: []
+      - bearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+          description: ''
+  /api/emr/patients/:
+    get:
+      operationId: emr_patients_list
+      description: 환자 CRUD ViewSet (Write-Through Pattern)
+      summary: 환자 목록 조회
+      tags:
+      - emr
+      security:
+      - jwtAuth: []
+      - bearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PatientCache'
+          description: ''
+    post:
+      operationId: emr_patients_create
+      description: 새로운 환자를 생성하고 OpenEMR과 동기화합니다.
+      summary: 환자 생성
+      tags:
+      - emr
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatientCreateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatientCreateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatientCreateRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - bearerAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PatientCache'
+          description: ''
+  /api/emr/patients/{patient_id}/:
+    get:
+      operationId: emr_patients_retrieve
+      description: 환자 CRUD ViewSet (Write-Through Pattern)
+      summary: 환자 상세 조회
+      parameters:
+      - in: path
+        name: patient_id
+        schema:
+          type: string
+          description: '환자 ID (예: P-2024-001234)'
+        required: true
+      tags:
+      - emr
+      security:
+      - jwtAuth: []
+      - bearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PatientCache'
+          description: ''
+    put:
+      operationId: emr_patients_update
+      description: 환자 CRUD ViewSet (Write-Through Pattern)
+      summary: 환자 정보 전체 수정
+      parameters:
+      - in: path
+        name: patient_id
+        schema:
+          type: string
+          description: '환자 ID (예: P-2024-001234)'
+        required: true
+      tags:
+      - emr
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatientCacheRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatientCacheRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatientCacheRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - bearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PatientCache'
+          description: ''
+    patch:
+      operationId: emr_patients_partial_update
+      description: 환자 프로필 수정 (PATCH) - Write-Through Pattern
+      summary: 환자 정보 부분 수정
+      parameters:
+      - in: path
+        name: patient_id
+        schema:
+          type: string
+          description: '환자 ID (예: P-2024-001234)'
+        required: true
+      tags:
+      - emr
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedPatientCacheRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedPatientCacheRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedPatientCacheRequest'
+      security:
+      - jwtAuth: []
+      - bearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PatientCache'
+          description: ''
+    delete:
+      operationId: emr_patients_destroy
+      description: 환자 CRUD ViewSet (Write-Through Pattern)
+      summary: 환자 삭제
+      parameters:
+      - in: path
+        name: patient_id
+        schema:
+          type: string
+          description: '환자 ID (예: P-2024-001234)'
+        required: true
+      tags:
+      - emr
+      security:
+      - jwtAuth: []
+      - bearerAuth: []
+      - {}
+      responses:
+        '204':
+          description: No response body
+  /api/emr/patients/search/:
+    get:
+      operationId: emr_patients_search_retrieve
+      description: 환자 검색 (이름, 전화번호, 이메일)
+      summary: 환자 검색
+      tags:
+      - emr
+      security:
+      - jwtAuth: []
+      - bearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PatientCache'
+          description: ''
+  /api/lis/results/:
+    get:
+      operationId: lis_results_list
+      description: 검사 결과 CRUD API
+      tags:
+      - lis
+      security:
+      - jwtAuth: []
+      - bearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LabResult'
+          description: ''
+    post:
+      operationId: lis_results_create
+      description: 검사 결과 등록 (Service 레이어 사용)
+      tags:
+      - lis
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LabResultCreateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LabResultCreateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LabResultCreateRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - bearerAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LabResultCreate'
+          description: ''
+  /api/lis/results/{result_id}/:
+    get:
+      operationId: lis_results_retrieve
+      description: 검사 결과 CRUD API
+      parameters:
+      - in: path
+        name: result_id
+        schema:
+          type: string
+          description: '결과 ID (예: LR-2025-000001)'
+        required: true
+      tags:
+      - lis
+      security:
+      - jwtAuth: []
+      - bearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LabResult'
+          description: ''
+    put:
+      operationId: lis_results_update
+      description: 검사 결과 CRUD API
+      parameters:
+      - in: path
+        name: result_id
+        schema:
+          type: string
+          description: '결과 ID (예: LR-2025-000001)'
+        required: true
+      tags:
+      - lis
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LabResultRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LabResultRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LabResultRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - bearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LabResult'
+          description: ''
+    patch:
+      operationId: lis_results_partial_update
+      description: 검사 결과 CRUD API
+      parameters:
+      - in: path
+        name: result_id
+        schema:
+          type: string
+          description: '결과 ID (예: LR-2025-000001)'
+        required: true
+      tags:
+      - lis
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedLabResultRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedLabResultRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedLabResultRequest'
+      security:
+      - jwtAuth: []
+      - bearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LabResult'
+          description: ''
+    delete:
+      operationId: lis_results_destroy
+      description: 검사 결과 CRUD API
+      parameters:
+      - in: path
+        name: result_id
+        schema:
+          type: string
+          description: '결과 ID (예: LR-2025-000001)'
+        required: true
+      tags:
+      - lis
+      security:
+      - jwtAuth: []
+      - bearerAuth: []
+      - {}
+      responses:
+        '204':
+          description: No response body
+  /api/lis/results/by_patient/:
+    get:
+      operationId: lis_results_by_patient_retrieve
+      description: 특정 환자의 검사 이력 조회
+      tags:
+      - lis
+      security:
+      - jwtAuth: []
+      - bearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LabResult'
+          description: ''
+  /api/lis/tests/:
+    get:
+      operationId: lis_tests_list
+      description: 검사 마스터 데이터 조회 API
+      parameters:
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - lis
+      security:
+      - jwtAuth: []
+      - bearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LabTestMaster'
+          description: ''
+  /api/lis/tests/{test_code}/:
+    get:
+      operationId: lis_tests_retrieve
+      description: 검사 마스터 데이터 조회 API
+      parameters:
+      - in: path
+        name: test_code
+        schema:
+          type: string
+          description: 검사 코드 (LOINC/자체코드)
+        required: true
+      tags:
+      - lis
+      security:
+      - jwtAuth: []
+      - bearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LabTestMaster'
+          description: ''
+  /api/ocs/diagnoses/:
+    get:
+      operationId: ocs_diagnoses_list
+      description: 진단 마스터 데이터 조회 API
+      parameters:
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - ocs
+      security:
+      - jwtAuth: []
+      - bearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DiagnosisMaster'
+          description: ''
+  /api/ocs/diagnoses/{diag_code}/:
+    get:
+      operationId: ocs_diagnoses_retrieve
+      description: 진단 마스터 데이터 조회 API
+      parameters:
+      - in: path
+        name: diag_code
+        schema:
+          type: string
+          description: 질병 코드 (ICD-10/KCD)
+        required: true
+      tags:
+      - ocs
+      security:
+      - jwtAuth: []
+      - bearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DiagnosisMaster'
+          description: ''
+  /api/ocs/medications/:
+    get:
+      operationId: ocs_medications_list
+      description: 약물 마스터 데이터 조회 API
+      parameters:
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - ocs
+      security:
+      - jwtAuth: []
+      - bearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MedicationMaster'
+          description: ''
+  /api/ocs/medications/{drug_code}/:
+    get:
+      operationId: ocs_medications_retrieve
+      description: 약물 마스터 데이터 조회 API
+      parameters:
+      - in: path
+        name: drug_code
+        schema:
+          type: string
+          description: 약물 표준 코드 (KDC/EDI)
+        required: true
+      tags:
+      - ocs
+      security:
+      - jwtAuth: []
+      - bearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MedicationMaster'
+          description: ''
+  /api/ris/health/:
+    get:
+      operationId: ris_health_retrieve
+      description: Orthanc 서버 연결 상태 확인
+      summary: Orthanc 상태 확인
+      tags:
+      - ris
+      security:
+      - jwtAuth: []
+      - bearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/ris/orders/:
+    get:
+      operationId: ris_orders_list
+      tags:
+      - ris
+      security:
+      - jwtAuth: []
+      - bearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RadiologyOrder'
+          description: ''
+    post:
+      operationId: ris_orders_create
+      tags:
+      - ris
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RadiologyOrderRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RadiologyOrderRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RadiologyOrderRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - bearerAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RadiologyOrder'
+          description: ''
+  /api/ris/orders/{order_id}/:
+    get:
+      operationId: ris_orders_retrieve
+      parameters:
+      - in: path
+        name: order_id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this radiology order.
+        required: true
+      tags:
+      - ris
+      security:
+      - jwtAuth: []
+      - bearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RadiologyOrder'
+          description: ''
+    put:
+      operationId: ris_orders_update
+      parameters:
+      - in: path
+        name: order_id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this radiology order.
+        required: true
+      tags:
+      - ris
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RadiologyOrderRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RadiologyOrderRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RadiologyOrderRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - bearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RadiologyOrder'
+          description: ''
+    patch:
+      operationId: ris_orders_partial_update
+      parameters:
+      - in: path
+        name: order_id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this radiology order.
+        required: true
+      tags:
+      - ris
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedRadiologyOrderRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedRadiologyOrderRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedRadiologyOrderRequest'
+      security:
+      - jwtAuth: []
+      - bearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RadiologyOrder'
+          description: ''
+    delete:
+      operationId: ris_orders_destroy
+      parameters:
+      - in: path
+        name: order_id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this radiology order.
+        required: true
+      tags:
+      - ris
+      security:
+      - jwtAuth: []
+      - bearerAuth: []
+      - {}
+      responses:
+        '204':
+          description: No response body
+  /api/ris/pacs/dicom-web/{path}:
+    get:
+      operationId: ris_pacs_dicom_web_retrieve
+      description: Orthanc의 DICOM-Web 인터페이스로 요청을 전달합니다.
+      summary: DICOM-Web 프록시
+      parameters:
+      - in: path
+        name: path
+        schema:
+          type: string
+        required: true
+      tags:
+      - ris
+      security:
+      - jwtAuth: []
+      - bearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: null
+          description: ''
+    post:
+      operationId: ris_pacs_dicom_web_create
+      description: Orthanc의 DICOM-Web 인터페이스로 요청을 전달합니다.
+      summary: DICOM-Web 프록시
+      parameters:
+      - in: path
+        name: path
+        schema:
+          type: string
+        required: true
+      tags:
+      - ris
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: {}
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              additionalProperties: {}
+          multipart/form-data:
+            schema:
+              type: object
+              additionalProperties: {}
+      security:
+      - jwtAuth: []
+      - bearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: null
+          description: ''
+    put:
+      operationId: ris_pacs_dicom_web_update
+      description: Orthanc의 DICOM-Web 인터페이스로 요청을 전달합니다.
+      summary: DICOM-Web 프록시
+      parameters:
+      - in: path
+        name: path
+        schema:
+          type: string
+        required: true
+      tags:
+      - ris
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: {}
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              additionalProperties: {}
+          multipart/form-data:
+            schema:
+              type: object
+              additionalProperties: {}
+      security:
+      - jwtAuth: []
+      - bearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: null
+          description: ''
+    delete:
+      operationId: ris_pacs_dicom_web_destroy
+      description: Orthanc의 DICOM-Web 인터페이스로 요청을 전달합니다.
+      summary: DICOM-Web 프록시
+      parameters:
+      - in: path
+        name: path
+        schema:
+          type: string
+        required: true
+      tags:
+      - ris
+      security:
+      - jwtAuth: []
+      - bearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: null
+          description: ''
+  /api/ris/reports/:
+    get:
+      operationId: ris_reports_list
+      tags:
+      - ris
+      security:
+      - jwtAuth: []
+      - bearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RadiologyReport'
+          description: ''
+    post:
+      operationId: ris_reports_create
+      tags:
+      - ris
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RadiologyReportRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RadiologyReportRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RadiologyReportRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - bearerAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RadiologyReport'
+          description: ''
+  /api/ris/reports/{report_id}/:
+    get:
+      operationId: ris_reports_retrieve
+      parameters:
+      - in: path
+        name: report_id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this radiology report.
+        required: true
+      tags:
+      - ris
+      security:
+      - jwtAuth: []
+      - bearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RadiologyReport'
+          description: ''
+    put:
+      operationId: ris_reports_update
+      parameters:
+      - in: path
+        name: report_id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this radiology report.
+        required: true
+      tags:
+      - ris
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RadiologyReportRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RadiologyReportRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RadiologyReportRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - bearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RadiologyReport'
+          description: ''
+    patch:
+      operationId: ris_reports_partial_update
+      parameters:
+      - in: path
+        name: report_id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this radiology report.
+        required: true
+      tags:
+      - ris
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedRadiologyReportRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedRadiologyReportRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedRadiologyReportRequest'
+      security:
+      - jwtAuth: []
+      - bearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RadiologyReport'
+          description: ''
+    delete:
+      operationId: ris_reports_destroy
+      parameters:
+      - in: path
+        name: report_id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this radiology report.
+        required: true
+      tags:
+      - ris
+      security:
+      - jwtAuth: []
+      - bearerAuth: []
+      - {}
+      responses:
+        '204':
+          description: No response body
+  /api/ris/reports/{report_id}/sign/:
+    post:
+      operationId: ris_reports_sign_create
+      description: 판독문 서명
+      parameters:
+      - in: path
+        name: report_id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this radiology report.
+        required: true
+      tags:
+      - ris
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RadiologyReportRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RadiologyReportRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RadiologyReportRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - bearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RadiologyReport'
+          description: ''
+  /api/ris/studies/:
+    get:
+      operationId: ris_studies_list
+      tags:
+      - ris
+      security:
+      - jwtAuth: []
+      - bearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RadiologyStudy'
+          description: ''
+  /api/ris/studies/{study_id}/:
+    get:
+      operationId: ris_studies_retrieve
+      parameters:
+      - in: path
+        name: study_id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this radiology study.
+        required: true
+      tags:
+      - ris
+      security:
+      - jwtAuth: []
+      - bearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RadiologyStudy'
+          description: ''
+  /api/ris/studies/search/:
+    get:
+      operationId: ris_studies_search_retrieve
+      description: 환자 이름 또는 ID로 Study 검색
+      tags:
+      - ris
+      security:
+      - jwtAuth: []
+      - bearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RadiologyStudy'
+          description: ''
+  /api/ris/sync/:
+    get:
+      operationId: ris_sync_retrieve
+      description: Orthanc에서 Study 목록을 가져와 Django DB에 동기화
+      summary: Orthanc Study 동기화
+      tags:
+      - ris
+      security:
+      - jwtAuth: []
+      - bearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/ris/test/patients/:
+    get:
+      operationId: ris_test_patients_retrieve
+      description: |-
+        Orthanc 연동 테스트: 환자 목록 조회
+
+        Orthanc에 저장된 모든 환자 데이터를 조회하여 Django에서 정상적으로
+        통신할 수 있는지 확인합니다.
+
+        Query Parameters:
+            - page: 페이지 번호 (기본값: 1)
+            - page_size: 페이지당 항목 수 (기본값: 10)
+      summary: Orthanc 환자 목록 테스트
+      tags:
+      - ris
+      security:
+      - jwtAuth: []
+      - bearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/ris/test/studies/:
+    get:
+      operationId: ris_test_studies_retrieve
+      description: |-
+        Orthanc 연동 테스트: 검사(Study) 목록 조회
+
+        Orthanc에 저장된 모든 검사 데이터를 조회합니다.
+
+        Query Parameters:
+            - page: 페이지 번호 (기본값: 1)
+            - page_size: 페이지당 항목 수 (기본값: 10)
+      summary: Orthanc Study 목록 테스트
+      tags:
+      - ris
+      security:
+      - jwtAuth: []
+      - bearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/ris/viewer/:
+    get:
+      operationId: ris_viewer_index
+      description: OHIF Viewer 메인 페이지 프록시
+      summary: OHIF Viewer 인덱스
+      tags:
+      - ris
+      security:
+      - jwtAuth: []
+      - bearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: null
+          description: ''
+  /api/ris/viewer/{path}:
+    get:
+      operationId: ris_viewer_proxy_path
+      description: OHIF Viewer의 정적 파일 및 인덱스 페이지를 제공합니다.
+      summary: OHIF Viewer 프록시
+      parameters:
+      - in: path
+        name: path
+        schema:
+          type: string
+        required: true
+      tags:
+      - ris
+      security:
+      - jwtAuth: []
+      - bearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: null
+          description: ''
+  /api/ris/wado:
+    get:
+      operationId: ris_wado_retrieve
+      description: WADO-URI 프록시
+      summary: WADO 프록시
+      tags:
+      - ris
+      security:
+      - jwtAuth: []
+      - bearerAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: null
+          description: ''
+components:
+  schemas:
+    AIJob:
+      type: object
+      properties:
+        job_id:
+          type: string
+          format: uuid
+          readOnly: true
+        study_id:
+          type: string
+          format: uuid
+          description: RadiologyStudy FK
+        model_type:
+          type: string
+          description: AI 모델 종류 (e.g., tumor_detection)
+          maxLength: 50
+        status:
+          allOf:
+          - $ref: '#/components/schemas/AIJobStatusEnum'
+          readOnly: true
+        result_data:
+          readOnly: true
+          nullable: true
+          description: AI 분석 결과
+        error_message:
+          type: string
+          readOnly: true
+          description: 실패 시 에러 메시지
+        review_status:
+          allOf:
+          - $ref: '#/components/schemas/ReviewStatusEnum'
+          readOnly: true
+        reviewed_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        reviewed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        review_comment:
+          type: string
+          readOnly: true
+          description: 의료진 검토 의견
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        queued_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+          description: RabbitMQ 큐 추가 시간
+        started_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        completed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+      required:
+      - completed_at
+      - created_at
+      - error_message
+      - job_id
+      - model_type
+      - queued_at
+      - result_data
+      - review_comment
+      - review_status
+      - reviewed_at
+      - reviewed_by
+      - started_at
+      - status
+      - study_id
+    AIJobRequest:
+      type: object
+      properties:
+        study_id:
+          type: string
+          format: uuid
+          description: RadiologyStudy FK
+        model_type:
+          type: string
+          minLength: 1
+          description: AI 모델 종류 (e.g., tumor_detection)
+          maxLength: 50
+      required:
+      - model_type
+      - study_id
+    AIJobStatusEnum:
+      enum:
+      - PENDING
+      - QUEUED
+      - PROCESSING
+      - COMPLETED
+      - FAILED
+      type: string
+      description: |-
+        * `PENDING` - Pending
+        * `QUEUED` - Queued
+        * `PROCESSING` - Processing
+        * `COMPLETED` - Completed
+        * `FAILED` - Failed
+    ActionEnum:
+      enum:
+      - CREATE
+      - UPDATE
+      - DELETE
+      - LOGIN
+      - LOGOUT
+      - ACCESS
+      - DOWNLOAD
+      type: string
+      description: |-
+        * `CREATE` - 생성
+        * `UPDATE` - 수정
+        * `DELETE` - 삭제
+        * `LOGIN` - 로그인
+        * `LOGOUT` - 로그아웃
+        * `ACCESS` - 접근
+        * `DOWNLOAD` - 다운로드
+    AuditLog:
+      type: object
+      description: 감사 로그 시리얼라이저
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        user:
+          type: string
+          format: uuid
+          nullable: true
+          description: 활동 사용자
+        user_name:
+          type: string
+          readOnly: true
+        action:
+          allOf:
+          - $ref: '#/components/schemas/ActionEnum'
+          description: |-
+            행위
+
+            * `CREATE` - 생성
+            * `UPDATE` - 수정
+            * `DELETE` - 삭제
+            * `LOGIN` - 로그인
+            * `LOGOUT` - 로그아웃
+            * `ACCESS` - 접근
+            * `DOWNLOAD` - 다운로드
+        action_display:
+          type: string
+          readOnly: true
+        app_label:
+          type: string
+          description: '대상 앱 (예: emr, ocs)'
+          maxLength: 100
+        model_name:
+          type: string
+          description: 대상 모델
+          maxLength: 100
+        object_id:
+          type: string
+          nullable: true
+          description: 대상 객체 ID
+          maxLength: 100
+        change_summary:
+          type: string
+          nullable: true
+          description: '변경 요약 (예: [이름] 홍길동 -> 김철수)'
+        previous_data:
+          nullable: true
+          description: 변경 전 데이터
+        current_data:
+          nullable: true
+          description: 변경 후 데이터
+        ip_address:
+          type: string
+          nullable: true
+          description: 접속 IP
+        user_agent:
+          type: string
+          nullable: true
+          description: 브라우저 정보
+        path:
+          type: string
+          nullable: true
+          description: API 경로
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+          description: 발생 일시
+      required:
+      - action
+      - action_display
+      - app_label
+      - created_at
+      - id
+      - model_name
+      - user_name
+    DiagnosisMaster:
+      type: object
+      properties:
+        diag_code:
+          type: string
+          description: 질병 코드 (ICD-10/KCD)
+          maxLength: 20
+        name_ko:
+          type: string
+          description: 질병명 (한글)
+          maxLength: 255
+        name_en:
+          type: string
+          nullable: true
+          description: 질병명 (영문)
+          maxLength: 255
+        category:
+          type: string
+          nullable: true
+          description: 분류 (대분류)
+          maxLength: 100
+        is_active:
+          type: boolean
+          description: 사용 여부
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - diag_code
+      - name_ko
+      - updated_at
+    Encounter:
+      type: object
+      description: 진료 기록 시리얼라이저
+      properties:
+        encounter_id:
+          type: string
+          readOnly: true
+          description: '진료 ID (예: E-2025-005678)'
+        patient:
+          type: string
+          description: 환자
+        patient_name:
+          type: string
+          readOnly: true
+        doctor_id:
+          type: string
+          description: 의사 user_id (ACCT_USERS 외래키)
+          maxLength: 36
+        encounter_type:
+          allOf:
+          - $ref: '#/components/schemas/EncounterTypeEnum'
+          description: |-
+            진료 유형
+
+            * `outpatient` - 외래
+            * `emergency` - 응급
+            * `inpatient` - 입원
+            * `discharge` - 퇴원
+        department:
+          type: string
+          description: 진료 부서
+          maxLength: 100
+        chief_complaint:
+          type: string
+          nullable: true
+          description: 주 호소
+        diagnosis:
+          type: string
+          nullable: true
+          description: 진단
+        status:
+          allOf:
+          - $ref: '#/components/schemas/EncounterStatusEnum'
+          description: |-
+            진료 상태
+
+            * `scheduled` - 예정
+            * `in_progress` - 진행중
+            * `completed` - 완료
+            * `cancelled` - 취소
+        encounter_date:
+          type: string
+          format: date-time
+          description: 진료 일시
+        diagnoses:
+          type: array
+          items:
+            $ref: '#/components/schemas/EncounterDiagnosis'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - department
+      - diagnoses
+      - doctor_id
+      - encounter_date
+      - encounter_id
+      - encounter_type
+      - patient
+      - patient_name
+      - updated_at
+    EncounterCreateRequest:
+      type: object
+      description: 진료 기록 생성 시리얼라이저
+      properties:
+        patient:
+          type: string
+          minLength: 1
+          description: 환자
+        doctor_id:
+          type: string
+          minLength: 1
+          description: 의사 user_id (ACCT_USERS 외래키)
+          maxLength: 36
+        encounter_type:
+          allOf:
+          - $ref: '#/components/schemas/EncounterTypeEnum'
+          description: |-
+            진료 유형
+
+            * `outpatient` - 외래
+            * `emergency` - 응급
+            * `inpatient` - 입원
+            * `discharge` - 퇴원
+        department:
+          type: string
+          minLength: 1
+          description: 진료 부서
+          maxLength: 100
+        chief_complaint:
+          type: string
+          nullable: true
+          description: 주 호소
+        diagnosis:
+          type: string
+          nullable: true
+          description: 진단
+        diagnoses:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+          writeOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/EncounterStatusEnum'
+          description: |-
+            진료 상태
+
+            * `scheduled` - 예정
+            * `in_progress` - 진행중
+            * `completed` - 완료
+            * `cancelled` - 취소
+        encounter_date:
+          type: string
+          format: date-time
+          description: 진료 일시
+      required:
+      - department
+      - doctor_id
+      - encounter_date
+      - encounter_type
+      - patient
+    EncounterDiagnosis:
+      type: object
+      description: 진료 진단 시리얼라이저
+      properties:
+        diag_code:
+          type: string
+          description: 질병 코드 (ICD-10/KCD)
+          maxLength: 20
+        diagnosis_name:
+          type: string
+          description: 진단명 (한글/영문)
+          maxLength: 255
+        comments:
+          type: string
+          nullable: true
+          description: 진단 상세 설명/메모
+        priority:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+          description: '진단 우선순위 (1: 주진단, 2 이상: 부진단)'
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - diag_code
+      - diagnosis_name
+    EncounterDiagnosisRequest:
+      type: object
+      description: 진료 진단 시리얼라이저
+      properties:
+        diag_code:
+          type: string
+          minLength: 1
+          description: 질병 코드 (ICD-10/KCD)
+          maxLength: 20
+        diagnosis_name:
+          type: string
+          minLength: 1
+          description: 진단명 (한글/영문)
+          maxLength: 255
+        comments:
+          type: string
+          nullable: true
+          description: 진단 상세 설명/메모
+        priority:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+          description: '진단 우선순위 (1: 주진단, 2 이상: 부진단)'
+      required:
+      - diag_code
+      - diagnosis_name
+    EncounterRequest:
+      type: object
+      description: 진료 기록 시리얼라이저
+      properties:
+        patient:
+          type: string
+          minLength: 1
+          description: 환자
+        doctor_id:
+          type: string
+          minLength: 1
+          description: 의사 user_id (ACCT_USERS 외래키)
+          maxLength: 36
+        encounter_type:
+          allOf:
+          - $ref: '#/components/schemas/EncounterTypeEnum'
+          description: |-
+            진료 유형
+
+            * `outpatient` - 외래
+            * `emergency` - 응급
+            * `inpatient` - 입원
+            * `discharge` - 퇴원
+        department:
+          type: string
+          minLength: 1
+          description: 진료 부서
+          maxLength: 100
+        chief_complaint:
+          type: string
+          nullable: true
+          description: 주 호소
+        diagnosis:
+          type: string
+          nullable: true
+          description: 진단
+        status:
+          allOf:
+          - $ref: '#/components/schemas/EncounterStatusEnum'
+          description: |-
+            진료 상태
+
+            * `scheduled` - 예정
+            * `in_progress` - 진행중
+            * `completed` - 완료
+            * `cancelled` - 취소
+        encounter_date:
+          type: string
+          format: date-time
+          description: 진료 일시
+      required:
+      - department
+      - doctor_id
+      - encounter_date
+      - encounter_type
+      - patient
+    EncounterStatusEnum:
+      enum:
+      - scheduled
+      - in_progress
+      - completed
+      - cancelled
+      type: string
+      description: |-
+        * `scheduled` - 예정
+        * `in_progress` - 진행중
+        * `completed` - 완료
+        * `cancelled` - 취소
+    EncounterTypeEnum:
+      enum:
+      - outpatient
+      - emergency
+      - inpatient
+      - discharge
+      type: string
+      description: |-
+        * `outpatient` - 외래
+        * `emergency` - 응급
+        * `inpatient` - 입원
+        * `discharge` - 퇴원
+    GenderEnum:
+      enum:
+      - male
+      - female
+      - other
+      - unknown
+      type: string
+      description: |-
+        * `male` - 남성
+        * `female` - 여성
+        * `other` - 기타
+        * `unknown` - 미상
+    LabResult:
+      type: object
+      description: 검사 결과 시리얼라이저
+      properties:
+        result_id:
+          type: string
+          readOnly: true
+          description: '결과 ID (예: LR-2025-000001)'
+        order:
+          type: string
+          description: 연관된 처방
+        patient:
+          type: string
+          description: 환자
+        test_master:
+          type: string
+          description: 검사 마스터 정보
+        test_name:
+          type: string
+          description: 검사명
+          readOnly: true
+        result_value:
+          type: string
+          description: 검사 결과값 (수치 또는 텍스트)
+          maxLength: 100
+        result_unit:
+          type: string
+          nullable: true
+          description: 결과 단위
+          maxLength: 50
+        reference_range:
+          type: string
+          nullable: true
+          description: '참고치 범위 (예: 70-110)'
+          readOnly: true
+        result_details:
+          nullable: true
+          description: 상세 결과 데이터 (JSON)
+        is_abnormal:
+          type: boolean
+          readOnly: true
+          description: 이상치 여부
+        abnormal_flag:
+          type: string
+          readOnly: true
+          nullable: true
+          description: '이상치 플래그 (H: High, L: Low, etc.)'
+        reported_at:
+          type: string
+          format: date-time
+          readOnly: true
+          description: 보고 일시
+        reported_by:
+          type: string
+          description: 보고자 user_id
+          maxLength: 36
+        version:
+          type: integer
+          readOnly: true
+          description: 낙관적 락을 위한 버전 필드
+      required:
+      - abnormal_flag
+      - is_abnormal
+      - order
+      - patient
+      - reference_range
+      - reported_at
+      - reported_by
+      - result_id
+      - result_value
+      - test_master
+      - test_name
+      - version
+    LabResultCreate:
+      type: object
+      description: 검사 결과 등록용 시리얼라이저
+      properties:
+        order:
+          type: string
+          description: 연관된 처방
+        patient:
+          type: string
+          description: 환자
+        test_master:
+          type: string
+          description: 검사 마스터 정보
+        result_value:
+          type: string
+          description: 검사 결과값 (수치 또는 텍스트)
+          maxLength: 100
+        result_unit:
+          type: string
+          nullable: true
+          description: 결과 단위
+          maxLength: 50
+        reported_by:
+          type: string
+          description: 보고자 user_id
+          maxLength: 36
+        result_details:
+          nullable: true
+          description: 상세 결과 데이터 (JSON)
+      required:
+      - order
+      - patient
+      - reported_by
+      - result_value
+      - test_master
+    LabResultCreateRequest:
+      type: object
+      description: 검사 결과 등록용 시리얼라이저
+      properties:
+        order:
+          type: string
+          minLength: 1
+          description: 연관된 처방
+        patient:
+          type: string
+          minLength: 1
+          description: 환자
+        test_master:
+          type: string
+          minLength: 1
+          description: 검사 마스터 정보
+        result_value:
+          type: string
+          minLength: 1
+          description: 검사 결과값 (수치 또는 텍스트)
+          maxLength: 100
+        result_unit:
+          type: string
+          nullable: true
+          description: 결과 단위
+          maxLength: 50
+        reported_by:
+          type: string
+          minLength: 1
+          description: 보고자 user_id
+          maxLength: 36
+        results:
+          writeOnly: true
+          description: 상세 결과 데이터 (JSON)
+        result_details:
+          nullable: true
+          description: 상세 결과 데이터 (JSON)
+      required:
+      - order
+      - patient
+      - reported_by
+      - result_value
+      - test_master
+    LabResultRequest:
+      type: object
+      description: 검사 결과 시리얼라이저
+      properties:
+        order:
+          type: string
+          minLength: 1
+          description: 연관된 처방
+        patient:
+          type: string
+          minLength: 1
+          description: 환자
+        test_master:
+          type: string
+          minLength: 1
+          description: 검사 마스터 정보
+        result_value:
+          type: string
+          minLength: 1
+          description: 검사 결과값 (수치 또는 텍스트)
+          maxLength: 100
+        result_unit:
+          type: string
+          nullable: true
+          description: 결과 단위
+          maxLength: 50
+        result_details:
+          nullable: true
+          description: 상세 결과 데이터 (JSON)
+        reported_by:
+          type: string
+          minLength: 1
+          description: 보고자 user_id
+          maxLength: 36
+      required:
+      - order
+      - patient
+      - reported_by
+      - result_value
+      - test_master
+    LabTestMaster:
+      type: object
+      properties:
+        test_code:
+          type: string
+          description: 검사 코드 (LOINC/자체코드)
+          maxLength: 50
+        test_name:
+          type: string
+          description: 검사명
+          maxLength: 255
+        sample_type:
+          type: string
+          nullable: true
+          description: '검체 유형 (예: Blood, Urine)'
+          maxLength: 100
+        method:
+          type: string
+          nullable: true
+          description: 검사 방법
+          maxLength: 100
+        unit:
+          type: string
+          nullable: true
+          description: '검사 단위 (예: mg/dL, g/L)'
+          maxLength: 50
+        reference_range:
+          type: string
+          nullable: true
+          description: '참고치 범위 (예: 70-110)'
+          maxLength: 255
+        is_active:
+          type: boolean
+          description: 사용 여부
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - test_code
+      - test_name
+      - updated_at
+    LoginRequest:
+      type: object
+      description: 로그인용 Serializer
+      properties:
+        username:
+          type: string
+          minLength: 1
+        password:
+          type: string
+          writeOnly: true
+          minLength: 1
+      required:
+      - password
+      - username
+    MedicationMaster:
+      type: object
+      properties:
+        drug_code:
+          type: string
+          description: 약물 표준 코드 (KDC/EDI)
+          maxLength: 50
+        drug_name:
+          type: string
+          description: 약물명 (상품명)
+          maxLength: 255
+        generic_name:
+          type: string
+          nullable: true
+          description: 성분명 (일반명)
+          maxLength: 255
+        dosage_form:
+          type: string
+          nullable: true
+          description: '제형 (예: 정제, 주사제)'
+          maxLength: 100
+        strength:
+          type: string
+          nullable: true
+          description: '함량 (예: 500mg)'
+          maxLength: 100
+        unit:
+          type: string
+          nullable: true
+          description: '단위 (예: 정, 바이알)'
+          maxLength: 50
+        manufacturer:
+          type: string
+          nullable: true
+          description: 제조사/수입사
+          maxLength: 255
+        is_active:
+          type: boolean
+          description: 사용 여부
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - drug_code
+      - drug_name
+      - updated_at
+    ModalityEnum:
+      enum:
+      - CT
+      - MRI
+      - XR
+      - US
+      - NM
+      type: string
+      description: |-
+        * `CT` - CT
+        * `MRI` - MRI
+        * `XR` - X-Ray
+        * `US` - Ultrasound
+        * `NM` - Nuclear Medicine
+    Order:
+      type: object
+      description: 처방 시리얼라이저 (조회용)
+      properties:
+        order_id:
+          type: string
+          readOnly: true
+          description: '처방 ID (예: O-2025-009876)'
+        patient:
+          type: string
+          description: 환자
+        patient_name:
+          type: string
+          readOnly: true
+        encounter:
+          type: string
+          description: 진료 기록
+          nullable: true
+        ordered_by:
+          type: string
+          description: 처방 의사 user_id
+          maxLength: 36
+        order_type:
+          allOf:
+          - $ref: '#/components/schemas/OrderTypeEnum'
+          description: |-
+            처방 유형
+
+            * `medication` - 약물
+            * `lab` - 검사
+            * `radiology` - 영상
+            * `procedure` - 시술
+        urgency:
+          allOf:
+          - $ref: '#/components/schemas/UrgencyEnum'
+          description: |-
+            긴급도
+
+            * `routine` - 일반
+            * `urgent` - 긴급
+            * `stat` - 즉시
+        status:
+          allOf:
+          - $ref: '#/components/schemas/OrderStatusEnum'
+          description: |-
+            처방 상태
+
+            * `pending` - 대기
+            * `approved` - 승인
+            * `in_progress` - 진행중
+            * `completed` - 완료
+            * `cancelled` - 취소
+        notes:
+          type: string
+          nullable: true
+          description: 처방 메모
+        ordered_at:
+          type: string
+          format: date-time
+          readOnly: true
+          description: 처방 시간
+        executed_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: 실행 시간
+        executed_by:
+          type: string
+          nullable: true
+          description: 실행자 user_id
+          maxLength: 36
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItem'
+          readOnly: true
+      required:
+      - items
+      - order_id
+      - order_type
+      - ordered_at
+      - ordered_by
+      - patient
+      - patient_name
+    OrderCreateRequest:
+      type: object
+      description: 처방 생성 시리얼라이저
+      properties:
+        patient:
+          type: string
+          minLength: 1
+          description: 환자
+        encounter:
+          type: string
+          minLength: 1
+          description: 진료 기록
+          nullable: true
+        ordered_by:
+          type: string
+          minLength: 1
+          description: 처방 의사 user_id
+          maxLength: 36
+        order_type:
+          allOf:
+          - $ref: '#/components/schemas/OrderTypeEnum'
+          description: |-
+            처방 유형
+
+            * `medication` - 약물
+            * `lab` - 검사
+            * `radiology` - 영상
+            * `procedure` - 시술
+        urgency:
+          allOf:
+          - $ref: '#/components/schemas/UrgencyEnum'
+          description: |-
+            긴급도
+
+            * `routine` - 일반
+            * `urgent` - 긴급
+            * `stat` - 즉시
+        status:
+          allOf:
+          - $ref: '#/components/schemas/OrderStatusEnum'
+          description: |-
+            처방 상태
+
+            * `pending` - 대기
+            * `approved` - 승인
+            * `in_progress` - 진행중
+            * `completed` - 완료
+            * `cancelled` - 취소
+        notes:
+          type: string
+          nullable: true
+          description: 처방 메모
+        order_items:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+          writeOnly: true
+      required:
+      - order_type
+      - ordered_by
+      - patient
+    OrderItem:
+      type: object
+      description: 처방 항목 시리얼라이저
+      properties:
+        item_id:
+          type: string
+          readOnly: true
+          description: '처방 항목 ID (예: OI-001)'
+        drug_code:
+          type: string
+          nullable: true
+          description: 약물 코드
+          maxLength: 50
+        drug_name:
+          type: string
+          description: 약물명
+          maxLength: 200
+        dosage:
+          type: string
+          description: '용량 (예: 1정)'
+          maxLength: 50
+        frequency:
+          type: string
+          description: '횟수 (예: 1일 1회)'
+          maxLength: 50
+        duration:
+          type: string
+          description: '기간 (예: 7일)'
+          maxLength: 20
+        route:
+          type: string
+          description: '투여 경로 (예: 경구)'
+          maxLength: 50
+        instructions:
+          type: string
+          nullable: true
+          description: 복용 지시사항
+        master_info:
+          readOnly: true
+      required:
+      - dosage
+      - drug_name
+      - duration
+      - frequency
+      - item_id
+      - master_info
+      - route
+    OrderItemRequest:
+      type: object
+      description: 처방 항목 시리얼라이저
+      properties:
+        drug_code:
+          type: string
+          nullable: true
+          description: 약물 코드
+          maxLength: 50
+        drug_name:
+          type: string
+          minLength: 1
+          description: 약물명
+          maxLength: 200
+        dosage:
+          type: string
+          minLength: 1
+          description: '용량 (예: 1정)'
+          maxLength: 50
+        frequency:
+          type: string
+          minLength: 1
+          description: '횟수 (예: 1일 1회)'
+          maxLength: 50
+        duration:
+          type: string
+          minLength: 1
+          description: '기간 (예: 7일)'
+          maxLength: 20
+        route:
+          type: string
+          minLength: 1
+          description: '투여 경로 (예: 경구)'
+          maxLength: 50
+        instructions:
+          type: string
+          nullable: true
+          description: 복용 지시사항
+      required:
+      - dosage
+      - drug_name
+      - duration
+      - frequency
+      - route
+    OrderItemUpdate:
+      type: object
+      description: 처방 항목 수정 시리얼라이저
+      properties:
+        drug_code:
+          type: string
+          nullable: true
+          description: 약물 코드
+          maxLength: 50
+        drug_name:
+          type: string
+          description: 약물명
+          maxLength: 200
+        dosage:
+          type: string
+          description: '용량 (예: 1정)'
+          maxLength: 50
+        frequency:
+          type: string
+          description: '횟수 (예: 1일 1회)'
+          maxLength: 50
+        duration:
+          type: string
+          description: '기간 (예: 7일)'
+          maxLength: 20
+        route:
+          type: string
+          description: '투여 경로 (예: 경구)'
+          maxLength: 50
+        instructions:
+          type: string
+          nullable: true
+          description: 복용 지시사항
+      required:
+      - dosage
+      - drug_name
+      - duration
+      - frequency
+      - route
+    OrderItemUpdateRequest:
+      type: object
+      description: 처방 항목 수정 시리얼라이저
+      properties:
+        drug_code:
+          type: string
+          nullable: true
+          description: 약물 코드
+          maxLength: 50
+        drug_name:
+          type: string
+          minLength: 1
+          description: 약물명
+          maxLength: 200
+        dosage:
+          type: string
+          minLength: 1
+          description: '용량 (예: 1정)'
+          maxLength: 50
+        frequency:
+          type: string
+          minLength: 1
+          description: '횟수 (예: 1일 1회)'
+          maxLength: 50
+        duration:
+          type: string
+          minLength: 1
+          description: '기간 (예: 7일)'
+          maxLength: 20
+        route:
+          type: string
+          minLength: 1
+          description: '투여 경로 (예: 경구)'
+          maxLength: 50
+        instructions:
+          type: string
+          nullable: true
+          description: 복용 지시사항
+      required:
+      - dosage
+      - drug_name
+      - duration
+      - frequency
+      - route
+    OrderRequest:
+      type: object
+      description: 처방 시리얼라이저 (조회용)
+      properties:
+        patient:
+          type: string
+          minLength: 1
+          description: 환자
+        encounter:
+          type: string
+          minLength: 1
+          description: 진료 기록
+          nullable: true
+        ordered_by:
+          type: string
+          minLength: 1
+          description: 처방 의사 user_id
+          maxLength: 36
+        order_type:
+          allOf:
+          - $ref: '#/components/schemas/OrderTypeEnum'
+          description: |-
+            처방 유형
+
+            * `medication` - 약물
+            * `lab` - 검사
+            * `radiology` - 영상
+            * `procedure` - 시술
+        urgency:
+          allOf:
+          - $ref: '#/components/schemas/UrgencyEnum'
+          description: |-
+            긴급도
+
+            * `routine` - 일반
+            * `urgent` - 긴급
+            * `stat` - 즉시
+        status:
+          allOf:
+          - $ref: '#/components/schemas/OrderStatusEnum'
+          description: |-
+            처방 상태
+
+            * `pending` - 대기
+            * `approved` - 승인
+            * `in_progress` - 진행중
+            * `completed` - 완료
+            * `cancelled` - 취소
+        notes:
+          type: string
+          nullable: true
+          description: 처방 메모
+        executed_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: 실행 시간
+        executed_by:
+          type: string
+          nullable: true
+          description: 실행자 user_id
+          maxLength: 36
+      required:
+      - order_type
+      - ordered_by
+      - patient
+    OrderStatusEnum:
+      enum:
+      - pending
+      - approved
+      - in_progress
+      - completed
+      - cancelled
+      type: string
+      description: |-
+        * `pending` - 대기
+        * `approved` - 승인
+        * `in_progress` - 진행중
+        * `completed` - 완료
+        * `cancelled` - 취소
+    OrderTypeEnum:
+      enum:
+      - medication
+      - lab
+      - radiology
+      - procedure
+      type: string
+      description: |-
+        * `medication` - 약물
+        * `lab` - 검사
+        * `radiology` - 영상
+        * `procedure` - 시술
+    PatchedEncounterRequest:
+      type: object
+      description: 진료 기록 시리얼라이저
+      properties:
+        patient:
+          type: string
+          minLength: 1
+          description: 환자
+        doctor_id:
+          type: string
+          minLength: 1
+          description: 의사 user_id (ACCT_USERS 외래키)
+          maxLength: 36
+        encounter_type:
+          allOf:
+          - $ref: '#/components/schemas/EncounterTypeEnum'
+          description: |-
+            진료 유형
+
+            * `outpatient` - 외래
+            * `emergency` - 응급
+            * `inpatient` - 입원
+            * `discharge` - 퇴원
+        department:
+          type: string
+          minLength: 1
+          description: 진료 부서
+          maxLength: 100
+        chief_complaint:
+          type: string
+          nullable: true
+          description: 주 호소
+        diagnosis:
+          type: string
+          nullable: true
+          description: 진단
+        status:
+          allOf:
+          - $ref: '#/components/schemas/EncounterStatusEnum'
+          description: |-
+            진료 상태
+
+            * `scheduled` - 예정
+            * `in_progress` - 진행중
+            * `completed` - 완료
+            * `cancelled` - 취소
+        encounter_date:
+          type: string
+          format: date-time
+          description: 진료 일시
+    PatchedLabResultRequest:
+      type: object
+      description: 검사 결과 시리얼라이저
+      properties:
+        order:
+          type: string
+          minLength: 1
+          description: 연관된 처방
+        patient:
+          type: string
+          minLength: 1
+          description: 환자
+        test_master:
+          type: string
+          minLength: 1
+          description: 검사 마스터 정보
+        result_value:
+          type: string
+          minLength: 1
+          description: 검사 결과값 (수치 또는 텍스트)
+          maxLength: 100
+        result_unit:
+          type: string
+          nullable: true
+          description: 결과 단위
+          maxLength: 50
+        result_details:
+          nullable: true
+          description: 상세 결과 데이터 (JSON)
+        reported_by:
+          type: string
+          minLength: 1
+          description: 보고자 user_id
+          maxLength: 36
+    PatchedOrderItemUpdateRequest:
+      type: object
+      description: 처방 항목 수정 시리얼라이저
+      properties:
+        drug_code:
+          type: string
+          nullable: true
+          description: 약물 코드
+          maxLength: 50
+        drug_name:
+          type: string
+          minLength: 1
+          description: 약물명
+          maxLength: 200
+        dosage:
+          type: string
+          minLength: 1
+          description: '용량 (예: 1정)'
+          maxLength: 50
+        frequency:
+          type: string
+          minLength: 1
+          description: '횟수 (예: 1일 1회)'
+          maxLength: 50
+        duration:
+          type: string
+          minLength: 1
+          description: '기간 (예: 7일)'
+          maxLength: 20
+        route:
+          type: string
+          minLength: 1
+          description: '투여 경로 (예: 경구)'
+          maxLength: 50
+        instructions:
+          type: string
+          nullable: true
+          description: 복용 지시사항
+    PatchedOrderRequest:
+      type: object
+      description: 처방 시리얼라이저 (조회용)
+      properties:
+        patient:
+          type: string
+          minLength: 1
+          description: 환자
+        encounter:
+          type: string
+          minLength: 1
+          description: 진료 기록
+          nullable: true
+        ordered_by:
+          type: string
+          minLength: 1
+          description: 처방 의사 user_id
+          maxLength: 36
+        order_type:
+          allOf:
+          - $ref: '#/components/schemas/OrderTypeEnum'
+          description: |-
+            처방 유형
+
+            * `medication` - 약물
+            * `lab` - 검사
+            * `radiology` - 영상
+            * `procedure` - 시술
+        urgency:
+          allOf:
+          - $ref: '#/components/schemas/UrgencyEnum'
+          description: |-
+            긴급도
+
+            * `routine` - 일반
+            * `urgent` - 긴급
+            * `stat` - 즉시
+        status:
+          allOf:
+          - $ref: '#/components/schemas/OrderStatusEnum'
+          description: |-
+            처방 상태
+
+            * `pending` - 대기
+            * `approved` - 승인
+            * `in_progress` - 진행중
+            * `completed` - 완료
+            * `cancelled` - 취소
+        notes:
+          type: string
+          nullable: true
+          description: 처방 메모
+        executed_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: 실행 시간
+        executed_by:
+          type: string
+          nullable: true
+          description: 실행자 user_id
+          maxLength: 36
+    PatchedPatientCacheRequest:
+      type: object
+      description: 환자 캐시 시리얼라이저
+      properties:
+        family_name:
+          type: string
+          minLength: 1
+          description: 성
+          maxLength: 50
+        given_name:
+          type: string
+          minLength: 1
+          description: 이름
+          maxLength: 50
+        birth_date:
+          type: string
+          format: date
+          description: 생년월일
+        gender:
+          allOf:
+          - $ref: '#/components/schemas/GenderEnum'
+          description: |-
+            성별
+
+            * `male` - 남성
+            * `female` - 여성
+            * `other` - 기타
+            * `unknown` - 미상
+        phone:
+          type: string
+          nullable: true
+          description: 전화번호
+          maxLength: 20
+        email:
+          type: string
+          format: email
+          nullable: true
+          description: 이메일
+          maxLength: 100
+        address:
+          type: string
+          nullable: true
+          description: 주소
+        ssn:
+          type: string
+          nullable: true
+          description: 주민등록번호 (13자리 숫자)
+          maxLength: 13
+        emergency_contact:
+          nullable: true
+          description: '응급 연락처 정보 {''name'': ''...'', ''relationship'': ''...'', ''phone'':
+            ''...''}'
+        allergies:
+          nullable: true
+          description: 알레르기 목록 ['페니실린', '땅콩']
+        blood_type:
+          type: string
+          nullable: true
+          description: '혈액형 (예: A+, B-, O+, AB-)'
+          maxLength: 5
+        openemr_patient_id:
+          type: string
+          nullable: true
+          description: OpenEMR의 환자 ID (FHIR Patient resource ID)
+          maxLength: 100
+        last_synced_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: OpenEMR과 마지막 동기화 시간
+    PatchedRadiologyOrderRequest:
+      type: object
+      properties:
+        patient_id:
+          type: string
+          minLength: 1
+          description: OpenEMR patient ID
+          maxLength: 100
+        ordered_by:
+          type: string
+          format: uuid
+          nullable: true
+        modality:
+          $ref: '#/components/schemas/ModalityEnum'
+        body_part:
+          type: string
+          minLength: 1
+          maxLength: 100
+        clinical_info:
+          type: string
+          description: 임상 정보 및 검사 목적
+        status:
+          $ref: '#/components/schemas/RadiologyOrderStatusEnum'
+        priority:
+          type: string
+          minLength: 1
+          maxLength: 20
+    PatchedRadiologyReportRequest:
+      type: object
+      properties:
+        study:
+          type: string
+          format: uuid
+        radiologist:
+          type: string
+          format: uuid
+          nullable: true
+        findings:
+          type: string
+          minLength: 1
+          description: 판독 소견
+        impression:
+          type: string
+          minLength: 1
+          description: 판독 결론
+        status:
+          $ref: '#/components/schemas/RadiologyReportStatusEnum'
+    PatchedUserRequest:
+      type: object
+      description: User Serializer
+      properties:
+        username:
+          type: string
+          minLength: 1
+          maxLength: 150
+        email:
+          type: string
+          format: email
+          minLength: 1
+          maxLength: 254
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+        full_name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        department:
+          type: string
+          maxLength: 100
+        license_number:
+          type: string
+          maxLength: 50
+        is_active:
+          type: boolean
+    PatientCache:
+      type: object
+      description: 환자 캐시 시리얼라이저
+      properties:
+        patient_id:
+          type: string
+          readOnly: true
+          description: '환자 ID (예: P-2024-001234)'
+        family_name:
+          type: string
+          description: 성
+          maxLength: 50
+        given_name:
+          type: string
+          description: 이름
+          maxLength: 50
+        birth_date:
+          type: string
+          format: date
+          description: 생년월일
+        gender:
+          allOf:
+          - $ref: '#/components/schemas/GenderEnum'
+          description: |-
+            성별
+
+            * `male` - 남성
+            * `female` - 여성
+            * `other` - 기타
+            * `unknown` - 미상
+        phone:
+          type: string
+          nullable: true
+          description: 전화번호
+          maxLength: 20
+        email:
+          type: string
+          format: email
+          nullable: true
+          description: 이메일
+          maxLength: 100
+        address:
+          type: string
+          nullable: true
+          description: 주소
+        ssn:
+          type: string
+          nullable: true
+          description: 주민등록번호 (13자리 숫자)
+          maxLength: 13
+        emergency_contact:
+          nullable: true
+          description: '응급 연락처 정보 {''name'': ''...'', ''relationship'': ''...'', ''phone'':
+            ''...''}'
+        allergies:
+          nullable: true
+          description: 알레르기 목록 ['페니실린', '땅콩']
+        blood_type:
+          type: string
+          nullable: true
+          description: '혈액형 (예: A+, B-, O+, AB-)'
+          maxLength: 5
+        openemr_patient_id:
+          type: string
+          nullable: true
+          description: OpenEMR의 환자 ID (FHIR Patient resource ID)
+          maxLength: 100
+        last_synced_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: OpenEMR과 마지막 동기화 시간
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+          description: 생성 시간
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+          description: 수정 시간
+        full_name:
+          type: string
+          readOnly: true
+        is_synced:
+          type: boolean
+          readOnly: true
+      required:
+      - birth_date
+      - created_at
+      - family_name
+      - full_name
+      - gender
+      - given_name
+      - is_synced
+      - patient_id
+      - updated_at
+    PatientCacheRequest:
+      type: object
+      description: 환자 캐시 시리얼라이저
+      properties:
+        family_name:
+          type: string
+          minLength: 1
+          description: 성
+          maxLength: 50
+        given_name:
+          type: string
+          minLength: 1
+          description: 이름
+          maxLength: 50
+        birth_date:
+          type: string
+          format: date
+          description: 생년월일
+        gender:
+          allOf:
+          - $ref: '#/components/schemas/GenderEnum'
+          description: |-
+            성별
+
+            * `male` - 남성
+            * `female` - 여성
+            * `other` - 기타
+            * `unknown` - 미상
+        phone:
+          type: string
+          nullable: true
+          description: 전화번호
+          maxLength: 20
+        email:
+          type: string
+          format: email
+          nullable: true
+          description: 이메일
+          maxLength: 100
+        address:
+          type: string
+          nullable: true
+          description: 주소
+        ssn:
+          type: string
+          nullable: true
+          description: 주민등록번호 (13자리 숫자)
+          maxLength: 13
+        emergency_contact:
+          nullable: true
+          description: '응급 연락처 정보 {''name'': ''...'', ''relationship'': ''...'', ''phone'':
+            ''...''}'
+        allergies:
+          nullable: true
+          description: 알레르기 목록 ['페니실린', '땅콩']
+        blood_type:
+          type: string
+          nullable: true
+          description: '혈액형 (예: A+, B-, O+, AB-)'
+          maxLength: 5
+        openemr_patient_id:
+          type: string
+          nullable: true
+          description: OpenEMR의 환자 ID (FHIR Patient resource ID)
+          maxLength: 100
+        last_synced_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: OpenEMR과 마지막 동기화 시간
+      required:
+      - birth_date
+      - family_name
+      - gender
+      - given_name
+    PatientCreateRequest:
+      type: object
+      description: 환자 생성 시리얼라이저
+      properties:
+        family_name:
+          type: string
+          minLength: 1
+          description: 성
+          maxLength: 50
+        given_name:
+          type: string
+          minLength: 1
+          description: 이름
+          maxLength: 50
+        birth_date:
+          type: string
+          format: date
+          description: 생년월일
+        gender:
+          allOf:
+          - $ref: '#/components/schemas/GenderEnum'
+          description: |-
+            성별
+
+            * `male` - 남성
+            * `female` - 여성
+            * `other` - 기타
+            * `unknown` - 미상
+        phone:
+          type: string
+          nullable: true
+          description: 전화번호
+          maxLength: 20
+        email:
+          type: string
+          format: email
+          nullable: true
+          description: 이메일
+          maxLength: 100
+        address:
+          type: string
+          nullable: true
+          description: 주소
+        ssn:
+          type: string
+          nullable: true
+          description: 주민등록번호 (13자리 숫자)
+          maxLength: 13
+        emergency_contact:
+          nullable: true
+          description: '응급 연락처 정보 {''name'': ''...'', ''relationship'': ''...'', ''phone'':
+            ''...''}'
+        allergies:
+          nullable: true
+          description: 알레르기 목록 ['페니실린', '땅콩']
+        blood_type:
+          type: string
+          nullable: true
+          description: '혈액형 (예: A+, B-, O+, AB-)'
+          maxLength: 5
+      required:
+      - birth_date
+      - family_name
+      - gender
+      - given_name
+    RadiologyOrder:
+      type: object
+      properties:
+        order_id:
+          type: string
+          format: uuid
+          readOnly: true
+        patient_id:
+          type: string
+          description: OpenEMR patient ID
+          maxLength: 100
+        ordered_by:
+          type: string
+          format: uuid
+          nullable: true
+        ordered_by_username:
+          type: string
+          readOnly: true
+        modality:
+          $ref: '#/components/schemas/ModalityEnum'
+        body_part:
+          type: string
+          maxLength: 100
+        clinical_info:
+          type: string
+          description: 임상 정보 및 검사 목적
+        status:
+          $ref: '#/components/schemas/RadiologyOrderStatusEnum'
+        priority:
+          type: string
+          maxLength: 20
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - body_part
+      - created_at
+      - modality
+      - order_id
+      - ordered_by_username
+      - patient_id
+      - updated_at
+    RadiologyOrderRequest:
+      type: object
+      properties:
+        patient_id:
+          type: string
+          minLength: 1
+          description: OpenEMR patient ID
+          maxLength: 100
+        ordered_by:
+          type: string
+          format: uuid
+          nullable: true
+        modality:
+          $ref: '#/components/schemas/ModalityEnum'
+        body_part:
+          type: string
+          minLength: 1
+          maxLength: 100
+        clinical_info:
+          type: string
+          description: 임상 정보 및 검사 목적
+        status:
+          $ref: '#/components/schemas/RadiologyOrderStatusEnum'
+        priority:
+          type: string
+          minLength: 1
+          maxLength: 20
+      required:
+      - body_part
+      - modality
+      - patient_id
+    RadiologyOrderStatusEnum:
+      enum:
+      - ORDERED
+      - SCHEDULED
+      - IN_PROGRESS
+      - COMPLETED
+      - CANCELLED
+      type: string
+      description: |-
+        * `ORDERED` - Ordered
+        * `SCHEDULED` - Scheduled
+        * `IN_PROGRESS` - In Progress
+        * `COMPLETED` - Completed
+        * `CANCELLED` - Cancelled
+    RadiologyReport:
+      type: object
+      properties:
+        report_id:
+          type: string
+          format: uuid
+          readOnly: true
+        study:
+          type: string
+          format: uuid
+        study_patient_name:
+          type: string
+          readOnly: true
+        radiologist:
+          type: string
+          format: uuid
+          nullable: true
+        radiologist_name:
+          type: string
+          readOnly: true
+        findings:
+          type: string
+          description: 판독 소견
+        impression:
+          type: string
+          description: 판독 결론
+        status:
+          $ref: '#/components/schemas/RadiologyReportStatusEnum'
+        signed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        signed_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        signed_by_name:
+          type: string
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - findings
+      - impression
+      - radiologist_name
+      - report_id
+      - signed_at
+      - signed_by
+      - signed_by_name
+      - study
+      - study_patient_name
+      - updated_at
+    RadiologyReportRequest:
+      type: object
+      properties:
+        study:
+          type: string
+          format: uuid
+        radiologist:
+          type: string
+          format: uuid
+          nullable: true
+        findings:
+          type: string
+          minLength: 1
+          description: 판독 소견
+        impression:
+          type: string
+          minLength: 1
+          description: 판독 결론
+        status:
+          $ref: '#/components/schemas/RadiologyReportStatusEnum'
+      required:
+      - findings
+      - impression
+      - study
+    RadiologyReportStatusEnum:
+      enum:
+      - DRAFT
+      - PRELIMINARY
+      - FINAL
+      - AMENDED
+      type: string
+      description: |-
+        * `DRAFT` - Draft
+        * `PRELIMINARY` - Preliminary
+        * `FINAL` - Final
+        * `AMENDED` - Amended
+    RadiologyStudy:
+      type: object
+      properties:
+        study_id:
+          type: string
+          format: uuid
+          readOnly: true
+        order:
+          type: string
+          format: uuid
+          nullable: true
+        order_id:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        orthanc_study_id:
+          type: string
+          description: Orthanc 내부 Study ID
+          maxLength: 100
+        study_instance_uid:
+          type: string
+          description: DICOM StudyInstanceUID
+          maxLength: 255
+        patient_name:
+          type: string
+          maxLength: 200
+        patient_id:
+          type: string
+          maxLength: 100
+        study_date:
+          type: string
+          format: date
+          nullable: true
+        study_time:
+          type: string
+          format: time
+          nullable: true
+        study_description:
+          type: string
+        modality:
+          type: string
+          maxLength: 10
+        referring_physician:
+          type: string
+          maxLength: 200
+        num_series:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+        num_instances:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        synced_at:
+          type: string
+          format: date-time
+          readOnly: true
+          description: Orthanc와 마지막 동기화 시간
+      required:
+      - created_at
+      - order_id
+      - orthanc_study_id
+      - patient_id
+      - patient_name
+      - study_id
+      - study_instance_uid
+      - synced_at
+    ReviewStatusEnum:
+      enum:
+      - PENDING
+      - APPROVED
+      - REJECTED
+      type: string
+      description: |-
+        * `PENDING` - Pending
+        * `APPROVED` - Approved
+        * `REJECTED` - Rejected
+    RoleEnum:
+      enum:
+      - admin
+      - doctor
+      - rib
+      - lab
+      - nurse
+      - patient
+      - external
+      type: string
+      description: |-
+        * `admin` - Administrator
+        * `doctor` - Doctor
+        * `rib` - Radiologist
+        * `lab` - Laboratory Technician
+        * `nurse` - Nurse
+        * `patient` - Patient
+        * `external` - External Organization
+    TokenRefresh:
+      type: object
+      properties:
+        access:
+          type: string
+          readOnly: true
+        refresh:
+          type: string
+      required:
+      - access
+      - refresh
+    TokenRefreshRequest:
+      type: object
+      properties:
+        refresh:
+          type: string
+          minLength: 1
+      required:
+      - refresh
+    UrgencyEnum:
+      enum:
+      - routine
+      - urgent
+      - stat
+      type: string
+      description: |-
+        * `routine` - 일반
+        * `urgent` - 긴급
+        * `stat` - 즉시
+    User:
+      type: object
+      description: User Serializer
+      properties:
+        user_id:
+          type: string
+          format: uuid
+          readOnly: true
+        username:
+          type: string
+          maxLength: 150
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+        role_display:
+          type: string
+          readOnly: true
+        full_name:
+          type: string
+          maxLength: 200
+        department:
+          type: string
+          maxLength: 100
+        license_number:
+          type: string
+          maxLength: 50
+        is_active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        last_login:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+      required:
+      - created_at
+      - email
+      - full_name
+      - last_login
+      - role
+      - role_display
+      - user_id
+      - username
+    UserRequest:
+      type: object
+      description: User Serializer
+      properties:
+        username:
+          type: string
+          minLength: 1
+          maxLength: 150
+        email:
+          type: string
+          format: email
+          minLength: 1
+          maxLength: 254
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+        full_name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        department:
+          type: string
+          maxLength: 100
+        license_number:
+          type: string
+          maxLength: 50
+        is_active:
+          type: boolean
+      required:
+      - email
+      - full_name
+      - role
+      - username
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    jwtAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+tags:
+- name: acct
+  description: 인증/권한 (Authentication & Authorization)
+- name: emr
+  description: EMR 관리 (Electronic Medical Records)
+- name: ocs
+  description: 처방 관리 (Order Communication System)
+- name: lis
+  description: 검사 관리 (Laboratory Information System)
+- name: ris
+  description: 영상 관리 (Radiology Information System)
+- name: ai
+  description: AI 분석 (AI Job Management)
+- name: alert
+  description: 알림 (Notification System)
+- name: audit
+  description: 감사 로그 (Audit Logs)

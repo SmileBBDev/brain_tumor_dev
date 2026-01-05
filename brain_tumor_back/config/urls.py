@@ -3,6 +3,11 @@ from django.urls import path, include
 
 from rest_framework_simplejwt.views import TokenRefreshView
 from apps.authorization.views import CustomTokenObtainPairView
+from drf_spectacular.views import (
+    SpectacularAPIView,
+    SpectacularSwaggerView,
+)
+
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -12,4 +17,18 @@ urlpatterns = [
 
     # 사용자 관리 API
     path("api/users/", include("apps.accounts.urls")),
+    
+    # API 문서화 엔드포인트
+    path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
+    path(
+        "api/docs/",
+        SpectacularSwaggerView.as_view(url_name="schema"),
+        name="swagger-ui",
+    ),
+
+    path("api/emr/", include("apps.emr.urls")),
+    path("api/ris/", include("apps.ris.urls")),
+    path("api/ocs/", include("apps.ocs.urls")),
+    path("api/lis/", include("apps.lis.urls")),
+    path("api/fhir/", include("apps.fhir.urls")),
 ]
