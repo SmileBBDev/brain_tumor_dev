@@ -3,17 +3,7 @@ import SessionExtendModal from './SessionExtendModal';
 import { connectPermissionSocket } from '@/socket/permissionSocket'
 import type { MenuNode } from '@/types/menu';
 import { fetchMe, fetchMenu } from '../../services/auth.api';
-
-interface User {
-  id: number;
-  login_id: string;
-  name: string;
-  role: {
-    code: string;
-    name: string;
-  };
-}
-
+import type { User } from '@/types/user';
 
 interface AuthContextValue {
   user : User | null;

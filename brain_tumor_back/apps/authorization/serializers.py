@@ -2,6 +2,8 @@ from django.contrib.auth import authenticate
 from rest_framework import serializers
 from apps.accounts.models import User
 from apps.accounts.models.role import Role
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from django.utils import timezone
 
 class RoleSerializer(serializers.ModelSerializer):
     class Meta:
@@ -43,3 +45,15 @@ class MeSerializer(serializers.ModelSerializer) :
             "is_staff",
             "role",
         )
+
+# 로그인 성공 시 last_login 갱신을 위한 커스텀 시리얼라이저
+class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+
+    def validate(self, attrs):
+        data = super().validate(attrs)
+
+        # 로그인 성공 → last_login 갱신
+        self.user.last_login = timezone.now()
+        self.user.save(update_fields=["last_login"])
+
+        return data
