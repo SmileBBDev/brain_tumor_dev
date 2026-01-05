@@ -88,6 +88,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
   }, [isAuthenticated]);
 
+  // WebSocket 연결 - 서버로부터 실시간 알림 수신
+  useEffect(() => {
+    if (!user) return;
+    const token = localStorage.getItem("accessToken");
+    if (!token) return;
+    const ws = new WebSocket(`ws://localhost:8000/ws/presence/?token=${token}`);
+
+    // const ws = new WebSocket("ws://localhost:8000/ws/presence/");
+
+    let interval: number | null = null;
+
+    ws.onopen = () => {
+      console.log("🟢 Presence connected");
+      interval = window.setInterval(() => {
+        ws.send(JSON.stringify({ type: "heartbeat" }));
+      }, 30000);
+    };
+    ws.onclose = () => {
+      console.log("🔴 Presence disconnected");
+    };
+
+    return () => {
+      if (interval) clearInterval(interval);
+      ws.close();
+    };
+  }, [user]);
+  
+
   /** ⏱ 세션 타이머 */
   useEffect(() => {
     if (!isAuthenticated) return;

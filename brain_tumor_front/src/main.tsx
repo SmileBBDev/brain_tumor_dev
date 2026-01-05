@@ -15,7 +15,7 @@ import '@/assets/style/dashboard.css';
 const queryClient = new QueryClient();
 
 ReactDom.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
+  // <React.StrictMode> // 실시간 기능으로 인해 주석처리
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <BrowserRouter>
@@ -23,5 +23,5 @@ ReactDom.createRoot(document.getElementById('root')!).render(
         </BrowserRouter>
       </AuthProvider>
     </QueryClientProvider>
-  </React.StrictMode>
+  // </React.StrictMode>
 );

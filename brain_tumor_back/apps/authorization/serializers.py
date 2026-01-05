@@ -1,14 +1,21 @@
+from urllib import request
 from django.contrib.auth import authenticate
 from rest_framework import serializers
 from apps.accounts.models import User
 from apps.accounts.models.role import Role
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.utils import timezone
+from django.db.models import F
+
+from apps.audit.services import create_audit_log
 
 class RoleSerializer(serializers.ModelSerializer):
     class Meta:
         model = Role
         fields = ["id", "code", "name", "description", "created_at"]
+
+# 로그인 실패 최대 허용 횟수
+MAX_LOGIN_FAIL = 5
 
 # 로그인 관련 데이터를 JSON 타입의 데이터로 변환
 class LoginSerializer(serializers.Serializer):
@@ -16,19 +23,74 @@ class LoginSerializer(serializers.Serializer):
     password = serializers.CharField(write_only = True)
     
     def validate(self, data):
+        request = self.context["request"]
         login_id = data.get("login_id")
         password = data.get("password")
 
         user = authenticate(login_id = login_id, password = password)
         
+        data["login_locked"] = False
+        
+        # 로그인 실패
         if not user :
-            raise serializers.ValidationError("아이디 또는 비밀번호가 올바르지 않습니다.")
+            qs = User.objects.filter(login_id=login_id)
+            # 실패 횟수 증가 (존재하는 계정일 경우만)
+            qs.update(
+                failed_login_count=F("failed_login_count") + 1
+            )
+
+            user_obj = qs.first()
+            remain = None
+
+            if user_obj:
+                # 로그인 남은 횟수 계산
+                remain = max( MAX_LOGIN_FAIL - user_obj.failed_login_count, 0)
+                
+                # 로그인 잠금 발생 시
+                if user_obj.failed_login_count >= MAX_LOGIN_FAIL:
+                    qs.update(
+                        is_locked=True,
+                        locked_at=timezone.now()
+                    )
+                    create_audit_log(
+                        request,
+                        "LOGIN_LOCKED",
+                        user_obj
+                    )
+
+                    raise serializers.ValidationError({
+                        "code": "LOGIN_LOCKED",
+                        "message": "로그인 실패 횟수 초과로 계정이 잠겼습니다. 관리자에게 문의하세요.",
+                        "remain": 0,
+                    })
+                    
+            # 일반 실패
+            raise serializers.ValidationError({
+                "code": "LOGIN_FAIL",
+                "message": "아이디 또는 비밀번호가 올바르지 않습니다.",
+                "remain": remain,
+            })
+
         
+        # 이미 잠긴 계정
+        if user.is_locked:
+            data["login_locked"] = True
+            raise serializers.ValidationError({
+                "code": "LOGIN_LOCKED",
+                "message": "로그인 실패 횟수 초과로 계정이 잠겼습니다. 관리자에게 문의하세요.",
+                "remain": 0,
+            })
+
+        # 비활성 계정
         if not user.is_active:
-            raise serializers.ValidationError("비활성화된 계정입니다.")
-        
+            raise serializers.ValidationError({
+                "code": "INACTIVE_USER",
+                "message": "비활성화된 계정입니다."
+            })
+            
         data["user"] = user
         return data
+    
 
 # 현재 사용자 정보(내 정보 조회) 데이터
 class MeSerializer(serializers.ModelSerializer) :

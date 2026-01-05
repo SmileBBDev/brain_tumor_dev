@@ -1,4 +1,4 @@
-// WebSocket 연결
+// WebSocket 연결 - 권한 변경 이벤트 수신
 export function connectPermissionSocket(onChanged: () => void) {
   const ws = new WebSocket('ws://localhost:8000/ws/permissions/');
 

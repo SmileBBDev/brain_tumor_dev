@@ -3,9 +3,10 @@ from apps.accounts.models import User
 
 class AuditLog(models.Model):
     ACTION_CHOICES = (
-        ("LOGIN_SUCCESS", "Login Success"),
-        ("LOGIN_FAIL", "Login Fail"),
-        ("LOGOUT", "Logout"),
+        ("LOGIN_SUCCESS", "Login Success"), # 로그인 성공
+        ("LOGIN_FAIL", "Login Fail"), # 로그인 실패
+        ("LOGIN_LOCKED", "Login Locked"), # 로그인 잠금
+        ("LOGOUT", "Logout"), # 로그아웃
     )
     
     user = models.ForeignKey(

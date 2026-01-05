@@ -62,6 +62,10 @@ class User(AbstractBaseUser, PermissionsMixin):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
+    failed_login_count = models.PositiveIntegerField(default=0)  # 로그인 실패 횟수
+    is_locked = models.BooleanField(default=False)   # 자동 잠금 여부
+    locked_at = models.DateTimeField(null=True, blank=True)  # 계정 잠금 시각
+    
     # 충돌 방지 : related_name 지정
     groups = models.ManyToManyField(
         "auth.Group",
@@ -75,6 +79,15 @@ class User(AbstractBaseUser, PermissionsMixin):
     )
     
     objects = UserManager()
+    
+    # 마지막 로그인 IP 주소
+    last_login_ip = models.GenericIPAddressField(
+        null=True,
+        blank=True
+    )
+    
+    last_seen = models.DateTimeField(null=True, blank=True)
+
     
     USERNAME_FIELD = "login_id"
     REQUIRED_FIELDS = ["name"]

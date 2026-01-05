@@ -54,12 +54,43 @@ export default function LoginPage(){
 
             //  홈으로 이동
             navigate('/dashboard', {replace : true});
-        }catch(error){
-            // 로그인 실패
+        }catch(error : any){
+            const code = error?.response?.data?.code;
+            const message = error?.response?.data?.message;
+            const remain = error?.response?.data?.remain;
+
+            // 계정 잠김
+            if(code === 'LOGIN_LOCKED'){
+                Swal.fire({
+                    icon: 'warning',
+                    title: '계정 잠김',
+                    text: message ?? '로그인 실패 횟수 초과로 계정이 잠겼습니다. 관리자에게 문의하세요.',
+                    width: 424,
+                    padding: '1.25rem',
+                    confirmButtonText: '확인',
+                    confirmButtonColor: '#dc2626',
+                
+                });
+                return;
+            }
+            // 비활성 계정
+            if (code === 'INACTIVE_USER') {
+                Swal.fire({
+                    icon: 'error',
+                    title: '비활성 계정',
+                    text: message ?? '현재 비활성화된 계정입니다. 관리자에게 문의하세요.',
+                    confirmButtonText: '확인',
+                });
+                return;
+            }
+
+            // 일반 로그인 실패
             Swal.fire({
                 icon: 'error',
                 title: '인증 실패',
-                text: '아이디 또는 비밀번호를 확인해주세요.',
+                text: remain
+                        ? `${message}\n(남은 시도 횟수: ${remain}회)`
+                        : '아이디 또는 비밀번호를 확인해주세요.',
                 width: 424,
                 padding: '1.25rem',
                 confirmButtonText: '확인',
