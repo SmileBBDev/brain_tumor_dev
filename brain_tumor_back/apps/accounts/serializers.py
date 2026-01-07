@@ -1,6 +1,7 @@
-from django.forms import ValidationError
+from venv import logger
+from rest_framework.exceptions import ValidationError
 from rest_framework import serializers
-from apps.authorization.serializers import RoleSerializer;
+from apps.authorization.serializers import RoleSerializer
 from .models import User, Role, UserProfile
 from django.db import transaction
 from django.core.mail import send_mail
@@ -105,11 +106,13 @@ class UserCreateUpdateSerializer(serializers.ModelSerializer):
         user.save()
         
         # UserProfile 생성
-        UserProfile.objects.create(
-            user=user,
-            **profile_data
-        )
-        
+        if profile_data:
+            UserProfile.objects.create(
+                user=user,
+                **profile_data
+            )
+        user.save()
+
         # 이메일 발송
         try :
             send_mail(
@@ -125,8 +128,9 @@ class UserCreateUpdateSerializer(serializers.ModelSerializer):
                 recipient_list=[user.email],
                 fail_silently=False,
             )
-        except Exception :
-            raise ValidationError({"email": "이메일 발송에 실패했습니다."})
+        except Exception as e:
+            # 로그만 남기고 사용자 생성은 유지
+            logger.error(f"메일 발송 실패: {e}")
         
         return user
     
