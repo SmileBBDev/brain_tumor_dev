@@ -5,7 +5,9 @@
       "Bash(.venvScriptspython.exe -m pip install python-dotenv)",
       "Bash(python.exe -m pip install:*)",
       "Bash(C:0000brain_tumor_devbrain_tumor_backvenvScriptspython.exe -m pip install python-dotenv)",
-      "Bash(./venv/Scripts/pip.exe install:*)"
+      "Bash(./venv/Scripts/pip.exe install:*)",
+      "Bash(python manage.py showmigrations:*)",
+      "Bash(done)"
     ]
   }
 }
