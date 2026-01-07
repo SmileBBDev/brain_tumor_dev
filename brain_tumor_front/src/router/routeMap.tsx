@@ -5,6 +5,8 @@ import PatientListPage from '@/pages/patient/PatientListPage';
 import PatientDetailPage from '@/pages/patient/PatientDetailPage';
 import EncounterListPage from '@/pages/encounter/EncounterListPage';
 import ImagingPage from '@/pages/imaging/ImagingPage';
+import ImagingListPage from '@/pages/imaging/ImagingListPage';
+import ImagingWorklistPage from '@/pages/imaging/ImagingWorklistPage';
 import AISummaryPage from '@/pages/ai/AISummaryPage';
 import RISWorklistPage from '@/pages/ris/RISWorklistPage';
 import OrderListPage from '@/pages/orders/OrderListPage';
@@ -16,6 +18,8 @@ import AuditLog from '@/pages/admin/AuditLog';
 import SystemMonitorPage from '@/pages/admin/SystemMonitorPage';
 import UserDetailPage from '@/pages/admin/usersManagement/UserDetailPage';
 
+
+
 // DB에서 호출된 메뉴명과 react 화면 컴포넌트 연결하는 곳(DB 메뉴 ↔ 화면 계약서)
 export const routeMap: Record<string, ComponentType> = {
   DASHBOARD: DashboardPage,
@@ -26,6 +30,9 @@ export const routeMap: Record<string, ComponentType> = {
   ENCOUNTER_LIST: EncounterListPage,
 
   IMAGE_VIEWER: ImagingPage,
+  IMAGING_STUDY_LIST: ImagingListPage,
+  IMAGING_REPORT: ImagingListPage,
+  IMAGING_WORKLIST: ImagingWorklistPage,
   AI_SUMMARY :AISummaryPage,
   ORDER_LIST: OrderListPage,
   ORDER_CREATE: OrderCreatePage,
@@ -35,9 +42,10 @@ export const routeMap: Record<string, ComponentType> = {
   LAB_RESULT_UPLOAD: () => <ComingSoonPage title="검사 결과 업로드" />,
 
   ADMIN_USER: UserList,
-  ADMIN_USER_DETAIL: UserDetailPage,
   ADMIN_ROLE: () => <ComingSoonPage title="역할 관리" />,
   ADMIN_MENU_PERMISSION: MenuPermissionPage,
   ADMIN_AUDIT_LOG: AuditLog,
   ADMIN_SYSTEM_MONITOR: SystemMonitorPage,
+  ADMIN_USER_DETAIL: UserDetailPage,
+
 };
