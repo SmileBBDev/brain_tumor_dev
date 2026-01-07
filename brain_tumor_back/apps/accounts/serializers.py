@@ -12,6 +12,7 @@ import string
 # Serialzer는 데이터 변환
 
 class UserProfileSerializer(serializers.ModelSerializer):    
+    departmentId = serializers.IntegerField()
     class Meta:
         model = UserProfile
         fields = [
