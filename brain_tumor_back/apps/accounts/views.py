@@ -1,17 +1,18 @@
 # 비즈니스 로직 (권한 변경 처리)
 # apps/accounts/views.py → 요청을 받아서 서비스 함수를 호출
-# apps/accounts/views.py
 from django.shortcuts import get_object_or_404
 from rest_framework import generics, status, filters
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from .models import User
-from .serializers import UserSerializer, UserCreateUpdateSerializer
+from .serializers import UserSerializer, UserCreateUpdateSerializer, UserUpdateSerializer
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from django.utils import timezone
 from datetime import timedelta
 from django.db.models import BooleanField, Case, When, Value
+from apps.common.pagination import UserPagination
+from .filters import UserFilter
 
 ALLOWED_CREATE_ROLES = {"ADMIN", "SYSTEMMANAGER"}
 # 1. 사용자 목록 조회 & 추가 API(관리자 전용 view)
@@ -20,19 +21,20 @@ class UserListView(generics.ListCreateAPIView):
     # permission_classes = [IsAdminUser]
     permission_classes = [IsAuthenticated]
     serializer_class = UserSerializer
-    filter_backends = [filters.SearchFilter]
+    pagination_class = UserPagination
     
     filter_backends = [
         filters.SearchFilter,
         DjangoFilterBackend,
     ]
 
+    search_fields = ["login_id", "name"] # 검색 필드 설정
+    filterset_class = UserFilter  # 필터링 필드 설정
     # /api/users/?search=doctor01 → ID 검색
     # /api/users/?search=홍길동 → 이름 검색
     # /api/users/?role=DOCTOR → 역할 필터링
     # /api/users/?is_active=true → 활성 사용자만 조회
-    search_fields = ["login_id", "name"] # 검색 필드 설정
-    filterset_fields = ["role", "is_active"] # 필터링 필드 설정
+    # filterset_fields = ["role__code", "is_active"]
     
     def get_queryset(self):
         qs = User.objects.select_related("role")
@@ -66,6 +68,12 @@ class UserListView(generics.ListCreateAPIView):
 class UserDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
+    
+    def get_serializer_class(self):
+        # 사용자 수정(PUT)
+        if self.request.method in ["PUT", "PATCH"]:
+            return UserUpdateSerializer
+        return UserSerializer
 
 # 3. 사용자 활성/비활성 토글
 class UserToggleActiveView(APIView):

@@ -135,3 +135,45 @@ class UserCreateUpdateSerializer(serializers.ModelSerializer):
         
         return user
     
+# 사용자 정보 수정
+class UserUpdateSerializer(serializers.ModelSerializer):
+    role = serializers.CharField(required=False)
+    profile = UserProfileSerializer(required=False)
+    login_id = serializers.CharField(read_only=True)
+
+    class Meta:
+        model = User
+        fields = [ 
+            "login_id",
+            "name",
+            "email",
+            "role",
+            "is_active",
+            "profile",
+        ]
+
+    @transaction.atomic
+    def update(self, instance, validated_data):
+        # role 변경
+        role_code = validated_data.pop("role", None)
+        if role_code:
+            try:
+                instance.role = Role.objects.get(code=role_code)
+            except Role.DoesNotExist:
+                raise ValidationError({"role": "유효하지 않은 역할입니다."})
+
+        # profile 업데이트
+        profile_data = validated_data.pop("profile", None)
+        if profile_data is not None:
+            profile, _ = UserProfile.objects.get_or_create(user=instance)
+
+            for attr, value in profile_data.items():
+                setattr(profile, attr, value)
+            profile.save()
+
+        # user 기본 필드
+        for key, value in validated_data.items():
+            setattr(instance, key, value)
+
+        instance.save()
+        return instance
