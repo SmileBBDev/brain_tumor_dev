@@ -7,7 +7,19 @@
       "Bash(C:0000brain_tumor_devbrain_tumor_backvenvScriptspython.exe -m pip install python-dotenv)",
       "Bash(./venv/Scripts/pip.exe install:*)",
       "Bash(python manage.py showmigrations:*)",
-      "Bash(done)"
+      "Bash(done)",
+      "Bash(python manage.py makemigrations:*)",
+      "Bash(python manage.py migrate:*)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(python manage.py startapp:*)",
+      "Bash(python manage.py runserver:*)",
+      "Bash(taskkill:*)",
+      "Bash(for app in doctor nurse patient radiologist lab_tech admin_clinical external)",
+      "Bash(do python manage.py startapp $app apps/$app)",
+      "Bash(grep:*)",
+      "Bash(python manage.py check:*)",
+      "Bash(powershell -Command \"Stop-Process -Id 28556 -Force\")"
     ]
   }
 }

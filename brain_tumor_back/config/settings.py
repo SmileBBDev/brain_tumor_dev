@@ -35,19 +35,27 @@ INSTALLED_APPS = [
     "channels",
     "rest_framework",
     "drf_spectacular",
+    # 기존 앱들
     "apps.accounts",
     "apps.audit",
     "apps.authorization",
     "apps.common",
     "apps.menus",
     "apps.scripts",
+    # 새로운 권한별 앱들
+    "apps.doctor",
+    "apps.nurse",
+    "apps.patient",
+    "apps.radiologist",
+    "apps.lab_tech",
+    "apps.admin_clinical",
+    "apps.external",
+    # 기존 기능 앱들 (단계적으로 제거 예정)
     "apps.ocs",
     "apps.ris",
     "apps.fhir",
     "apps.emr",
     "apps.lis",
-
-
 ]
 
 MIDDLEWARE = [

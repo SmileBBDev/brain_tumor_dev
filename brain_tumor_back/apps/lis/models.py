@@ -1,5 +1,5 @@
 from django.db import models
-from apps.emr.models import Order, PatientCache
+from apps.common.models import Order, Patient
 
 class LabTestMaster(models.Model):
     """
@@ -32,7 +32,7 @@ class LabResult(models.Model):
     """
     result_id = models.CharField(max_length=20, help_text="결과 ID (예: LR-2025-000001)")
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='lab_results', help_text="연관된 처방")
-    patient = models.ForeignKey(PatientCache, on_delete=models.CASCADE, related_name='lab_results', help_text="환자")
+    patient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name='lab_results', help_text="환자")
     
     # test_master = models.ForeignKey(LabTestMaster, on_delete=models.PROTECT, help_text="검사 마스터 정보")
     test_master = models.ForeignKey(

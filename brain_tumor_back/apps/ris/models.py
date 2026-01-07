@@ -1,6 +1,7 @@
 import uuid
 from django.db import models
 from django.conf import settings
+from apps.common.models import Patient
 
 
 class RadiologyOrder(models.Model):
@@ -55,7 +56,7 @@ class RadiologyStudy(models.Model):
     # DICOM 메타데이터
     patient_name = models.CharField(max_length=200)
     # DB에는 'patient_id' 컬럼만 있으므로 이를 ForeignKey로 사용
-    patient = models.ForeignKey('emr.PatientCache', on_delete=models.SET_NULL, null=True, blank=True, related_name='radiology_studies', db_column='patient_id', help_text="매칭된 환자 정보")
+    patient = models.ForeignKey(Patient, on_delete=models.SET_NULL, null=True, blank=True, related_name='radiology_studies', db_column='patient_id', help_text="매칭된 환자 정보")
 
     
     study_date = models.DateField(null=True, blank=True)

@@ -58,23 +58,8 @@ export const fetchUserDetail = async (id: number) => {
 
 /* 사용자 생성 */
 export const createUser = async (payload: CreateUserPayload) => {
-  const token = localStorage.getItem("accessToken");
-
-  const res = await fetch("/api/users/", {
-    method: "POST",
-    headers: {
-      "Content-Type" : "application/json",
-      "Authorization" : `Bearer ${token}`,
-    },
-    body: JSON.stringify(payload),
-  });
-
-  if (!res.ok) {
-    const error = await res.json();
-    throw new Error(error.message || "사용자 생성 실패");
-  }
-
-  return res.json();
+  const res = await api.post<User>("/users/", payload);
+  return res.data;
 }
 
 /* 사용자 수정 */
