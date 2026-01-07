@@ -1,0 +1,29 @@
+/* 검색 가능한 Select 스타일 */
+.search-input {
+  margin-bottom: 0.5rem;
+}
+
+.searchable-select {
+  width: 100%;
+  padding: 0.6rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 0.95rem;
+  min-height: 150px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.searchable-select:focus {
+  outline: none;
+  border-color: #4CAF50;
+}
+
+.searchable-select option {
+  padding: 0.5rem;
+  cursor: pointer;
+}
+
+.searchable-select option:hover {
+  background-color: #f0f0f0;
+}

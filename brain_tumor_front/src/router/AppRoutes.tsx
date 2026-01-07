@@ -20,6 +20,19 @@ export default function AppRoutes() {
 
   return (
     <Routes>
+      {/* 환자 상세 페이지 동적 라우트 - 먼저 매칭되도록 */}
+      <Route
+        path="/patients/:patientId"
+        element={
+          <ProtectedRoute menuId="PATIENT_DETAIL">
+            {(() => {
+              const Component = routeMap['PATIENT_DETAIL'];
+              return Component ? <Component /> : <Navigate to="/403" replace />;
+            })()}
+          </ProtectedRoute>
+        }
+      />
+
       {flatMenus.map(menu => {
         if (!menu.path) return null;
 

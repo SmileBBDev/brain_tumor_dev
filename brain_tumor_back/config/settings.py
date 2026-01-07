@@ -41,6 +41,9 @@ INSTALLED_APPS = [
     "apps.authorization",   # 인증/권한 (로그인 시스템)
     "apps.common",          # 공통 모델
     "apps.menus",           # 메뉴 관리
+    # CDSS 앱들
+    "apps.patients",        # 환자 관리
+    "apps.encounters",      # 진료 관리
     # "apps.scripts",         # 스크립트
     # # 새로운 권한별 앱들
     # "apps.doctor",          # 의사용 앱

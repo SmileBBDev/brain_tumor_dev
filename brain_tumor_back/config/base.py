@@ -21,7 +21,8 @@ INSTALLED_APPS = [
     'apps.accounts',
     'apps.authorization',
     'apps.audit',
-    'apps.common',
+    'apps.menus',
+    'apps.patients',
     'channels',
 ]
 

@@ -5,12 +5,12 @@ from apps.accounts.services.permission_service import get_user_permission
 def get_user_menus(user):
     # 유저가 가진 권한 코드 리스트
     # user_permission = get_user_permission(user)
-    
+
     # MenuPermission 테이블에서 해당 권한 코드에 매핑된 메뉴 id 추출
     # menu_ids = MenuPermission.objects.filter(
     #     permission__code__in = user_permission
     # ).values_list("menu_id", flat = True).distinct()
-    
+
     role = user.role
     permissions = role.permissions.all()
 

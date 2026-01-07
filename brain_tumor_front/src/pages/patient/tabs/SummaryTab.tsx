@@ -4,12 +4,12 @@ type Props = {
   role: string;
 };
 
-export default function SummaryTab({ role }: Props ) {
+export default function SummaryTab({ role }: Props) {
   const isDoctor = role === 'DOCTOR';
   const isSystemManager = role === 'SYSTEMMANAGER';
+
   return (
     <div className="summary-layout">
-
       {/* 좌측 영역 */}
       <div className="summary-left">
         <div className="card">
@@ -24,7 +24,6 @@ export default function SummaryTab({ role }: Props ) {
 
       {/* 우측 영역 */}
       <div className="summary-right">
-
         <div className="row">
           <div className="card small">
             <h4>영상 요약</h4>
@@ -48,7 +47,6 @@ export default function SummaryTab({ role }: Props ) {
           </div>
         )}
       </div>
-
     </div>
   );
 }

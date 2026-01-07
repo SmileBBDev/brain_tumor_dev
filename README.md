@@ -88,6 +88,8 @@ accounts	&nbsp; &nbsp;    | &nbsp; &nbsp;  로그인 / 사용자 <br/>
 roles	 &nbsp; &nbsp;    | &nbsp; &nbsp;  역할(Role) <br/>
 menus	 &nbsp; &nbsp;    | &nbsp; &nbsp;  메뉴 정보 <br/>
 permissions	&nbsp; &nbsp;    | &nbsp; &nbsp;  권한 관리 <br/>
+patients	&nbsp; &nbsp;    | &nbsp; &nbsp;  환자 관리 <br/>
+encounters	&nbsp; &nbsp;    | &nbsp; &nbsp;  진료 관리 <br/>
 
 
 <br/>
@@ -116,4 +118,169 @@ daphne -b 127.0.0.1 -p 8000 config.asgi:application
 * 실행성공 :  http://localhost:8000
 
 
-<h3>초기 더미데이터 sql파일 실행하면 메뉴, 사용자 데이터 생성가능</h3>
+<h3>초기 더미데이터 생성</h3>
+
+**SQL 파일 실행**
+- 메뉴, 사용자 데이터 생성 가능
+
+**환자 더미 데이터 생성**
+```bash
+cd brain_tumor_back
+python manage.py shell -c "exec(open('apps/patients/create_dummy_patients.py', encoding='utf-8').read())"
+```
+- 30명의 환자 데이터 생성
+- 환자번호: P2026-0001 ~ P2026-0030
+
+**진료 더미 데이터 생성**
+```bash
+cd brain_tumor_back
+python manage.py shell -c "exec(open('apps/encounters/create_dummy_encounters.py', encoding='utf-8').read())"
+```
+- 30건의 진료 데이터 생성
+- 외래/입원/응급 진료 포함
+- 입원중(discharge_date NULL) 및 퇴원완료 데이터 포함
+- 랜덤하게 환자 및 담당 의사 배정
+
+<br/>
+<br/>
+
+<h2> 📋 주요 기능 </h2>
+
+<h3>1. 환자 관리 (Patient Management)</h3>
+
+**기능**
+- 환자 목록 조회 (페이지네이션)
+- 환자 상세 정보 조회
+- 환자 등록/수정/삭제 (Soft Delete)
+- 환자 검색 (이름, 환자번호)
+
+**권한**
+- 조회: 모든 역할 (DOCTOR, NURSE, SYSTEMMANAGER)
+- 등록/수정: DOCTOR, SYSTEMMANAGER
+- 삭제: SYSTEMMANAGER만 가능
+
+**API 엔드포인트**
+- `GET /api/patients/` - 환자 목록
+- `GET /api/patients/{id}/` - 환자 상세
+- `POST /api/patients/` - 환자 등록
+- `PUT /api/patients/{id}/` - 환자 수정
+- `DELETE /api/patients/{id}/` - 환자 삭제 (Soft Delete)
+
+<h3>2. 진료 관리 (Encounter Management)</h3>
+
+**기능**
+- 진료 목록 조회 (페이지네이션, 20건/페이지)
+- 진료 상세 정보 조회
+- 진료 등록/수정/삭제 (Soft Delete)
+- 진료 검색 및 필터링
+  - 환자명, 환자번호, 주호소로 검색
+  - 진료 유형, 상태, 진료과, 담당의사로 필터링
+  - 날짜 범위 검색
+- 진료 완료/취소 처리
+- 진료 통계 조회
+
+**권한**
+- 조회: 모든 역할 (DOCTOR, NURSE, SYSTEMMANAGER)
+- 등록/수정: DOCTOR, SYSTEMMANAGER
+- 삭제: SYSTEMMANAGER만 가능
+
+**주요 특징**
+- 입원중 환자 표시: 퇴원 일시 = 입원 일시면 자동으로 '(입원중)' 표시
+- 담당 의사: DOCTOR role 사용자만 선택 가능
+- 검색 가능한 Select: 환자/의사 검색 후 선택
+- 부 진단명: JSON 배열로 저장, 여러 개 등록 가능
+
+**API 엔드포인트**
+- `GET /api/encounters/` - 진료 목록
+- `GET /api/encounters/{id}/` - 진료 상세
+- `POST /api/encounters/` - 진료 등록
+- `PATCH /api/encounters/{id}/` - 진료 수정
+- `DELETE /api/encounters/{id}/` - 진료 삭제 (Soft Delete)
+- `POST /api/encounters/{id}/complete/` - 진료 완료
+- `POST /api/encounters/{id}/cancel/` - 진료 취소
+- `GET /api/encounters/statistics/` - 진료 통계
+
+<h3>3. 권한 기반 메뉴 시스템</h3>
+
+**역할(Role)**
+- DOCTOR: 의사
+- NURSE: 간호사
+- SYSTEMMANAGER: 시스템 관리자
+
+**메뉴 구조**
+- 대시보드
+- 환자 관리 → 환자 목록
+- 진료 관리 → 진료 목록
+- (추가 예정)
+
+**실시간 권한 업데이트**
+- WebSocket을 통한 권한 변경 실시간 반영
+- 권한 변경 시 메뉴 자동 업데이트
+
+
+
+
+
+<br/>
+<br/>
+
+<h2> 🔧 개발 현황 </h2>
+
+<h3>✅ 완료된 기능</h3>
+
+1. **인증/권한 시스템**
+   - JWT 기반 로그인/로그아웃
+   - Role 기반 권한 관리 (DOCTOR, NURSE, SYSTEMMANAGER)
+   - 메뉴별 권한 설정
+   - WebSocket을 통한 실시간 권한 업데이트
+
+2. **환자 관리**
+   - CRUD (Create, Read, Update, Delete - Soft Delete)
+   - 페이지네이션 (20건/페이지)
+   - 검색 기능 (이름, 환자번호)
+   - 권한 기반 접근 제어
+
+3. **진료 관리**
+   - CRUD (Create, Read, Update, Delete - Soft Delete)
+   - 페이지네이션 (20건/페이지)
+   - 고급 검색 및 필터링
+   - 진료 완료/취소 처리
+   - 진료 통계
+   - 입원중 환자 표시
+   - 검색 가능한 환자/의사 선택
+
+<h3>🚧 진행중/예정 기능</h3>
+
+1. **사용자 관리**
+   - 사용자 목록 페이지네이션 추가 예정
+
+2. **대시보드**
+   - 권한별 대시보드 접근 제어 추가 예정
+   - 통계 위젯 추가 예정
+
+3. **추가 모듈** (계획중)
+   - 처방 관리 (Orders)
+   - 진단 검사 (Diagnostics)
+   - 영상 관리 (RIS)
+   - 임상병리 (LIS)
+
+<br/>
+<br/>
+
+<h2> 📝 개발 참고사항 </h2>
+
+<h3>데이터베이스</h3>
+- **Soft Delete 패턴 사용**: 실제 삭제 대신 `is_deleted` 플래그 사용
+- **Pagination**: 모든 리스트 API는 페이지네이션 적용
+- **Timezone-aware DateTime**: Django timezone 사용
+
+<h3>코드 구조</h3>
+- **백엔드**: Django REST Framework + ViewSet 패턴
+- **프론트엔드**: React + TypeScript + Vite
+- **API 통신**: Axios + JWT 인증
+- **실시간 통신**: WebSocket (Daphne)
+
+<h3>권한 체크</h3>
+- 백엔드: ViewSet의 `perform_create/update/destroy`에서 검증
+- 프론트엔드: 메뉴 표시 및 버튼 활성화 제어 
+

@@ -1,17 +1,96 @@
-import {useState} from 'react';
+import { useState, useEffect } from 'react';
 import PatientListTable from './PatientListTable';
+import PatientCreateModal from './PatientCreateModal';
+import PatientEditModal from './PatientEditModal';
+import PatientDeleteModal from './PatientDeleteModal';
 import Pagination from '@/layout/Pagination';
 import { useAuth } from '../auth/AuthProvider';
+import { getPatients } from '@/services/patient.api';
+import type { Patient, PatientSearchParams, Gender, PatientStatus } from '@/types/patient';
 
 export default function PatientListPage() {
-  const { user } = useAuth();
-  const role = user?.role.code;
+  const { role } = useAuth();
   const isSystemManager = role === 'SYSTEMMANAGER';
-  const [page, setPage] = useState(1); // 페이징 처리
+
+  const [page, setPage] = useState(1);
+  const [pageSize] = useState(20);
+  const [patients, setPatients] = useState<Patient[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [loading, setLoading] = useState(false);
+
+  // Filter states
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<PatientStatus | ''>('');
+  const [genderFilter, setGenderFilter] = useState<Gender | ''>('');
+
+  // Modal states
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
 
   if (!role) {
     return <div>접근 권한 정보 없음</div>;
   }
+
+  // Fetch patients
+  const fetchPatients = async () => {
+    setLoading(true);
+    try {
+      const params: PatientSearchParams = {
+        page,
+        page_size: pageSize,
+      };
+
+      if (searchQuery) params.q = searchQuery;
+      if (statusFilter) params.status = statusFilter as PatientStatus;
+      if (genderFilter) params.gender = genderFilter as Gender;
+
+      const response = await getPatients(params);
+      setPatients(response.results);
+      setTotalCount(response.count);
+    } catch (error) {
+      console.error('Failed to fetch patients:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchPatients();
+  }, [page, searchQuery, statusFilter, genderFilter]);
+
+  const totalPages = Math.ceil(totalCount / pageSize);
+
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+    setPage(1); // Reset to first page on search
+  };
+
+  const handleStatusChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setStatusFilter(e.target.value as PatientStatus | '');
+    setPage(1);
+  };
+
+  const handleGenderChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setGenderFilter(e.target.value as Gender | '');
+    setPage(1);
+  };
+
+  // Modal handlers
+  const handleEdit = (patient: Patient) => {
+    setSelectedPatient(patient);
+    setIsEditModalOpen(true);
+  };
+
+  const handleDelete = (patient: Patient) => {
+    setSelectedPatient(patient);
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleModalSuccess = () => {
+    fetchPatients();
+  };
 
   return (
     <div className="page patient-list">
@@ -20,58 +99,93 @@ export default function PatientListPage() {
         <section  className="filter-bar">
           <div className="filter-left">
             <strong className="patient-count">
-              총 <span>totalCount</span>명의 환자가 있습니다.&nbsp;&nbsp;
+              총 <span>{totalCount}</span>명의 환자가 있습니다.&nbsp;&nbsp;
             </strong>
-            <input placeholder="환자명 / 환자 ID" />
+            <input
+              placeholder="환자명 / 환자번호 / 전화번호"
+              value={searchQuery}
+              onChange={handleSearch}
+            />
           </div>
           <div className="filter-right">
-            <select>
-              <option>전체 상태</option>
-              <option>진료중</option>
-              <option>완료</option>
+            <select value={statusFilter} onChange={handleStatusChange}>
+              <option value="">전체 상태</option>
+              <option value="active">활성</option>
+              <option value="inactive">비활성</option>
+              <option value="deceased">사망</option>
             </select>
 
-            <select>
-              <option>진료 유형</option>
-              <option>외래</option>
-              <option>병동</option>
-            </select>
-
-            <select>
-              <option>성별</option>
-              <option>남성</option>
-              <option>여성</option>
+            <select value={genderFilter} onChange={handleGenderChange}>
+              <option value="">전체 성별</option>
+              <option value="M">남성</option>
+              <option value="F">여성</option>
+              <option value="O">기타</option>
             </select>
           </div>
         </section >
       )}
 
-      <div className="header-right">
-        {(role === 'DOCTOR' || role === 'NURSE' || isSystemManager) && (
-          <button className="btn primary">
-            <i className="fa-solid fa-user-plus"></i>
-            &nbsp;
-            <span>환자 등록</span>
+      {/* 환자 등록 버튼 */}
+      {(role === 'DOCTOR' || role === 'NURSE' || isSystemManager) && (
+        <div className="header-right">
+          <button className="btn primary" onClick={() => setIsCreateModalOpen(true)}>
+            환자 등록
           </button>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* 환자 리스트 테이블 */}
       <section className="content">
-        <PatientListTable role={role} />
+        {loading ? (
+          <div>로딩 중...</div>
+        ) : (
+          <PatientListTable
+            role={role}
+            patients={patients}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+          />
+        )}
       </section>
 
       {/* 페이징 */}
       <section className="pagination-bar">
         <Pagination
-          // currentPage={page}
-          // 👉 임시 값 (API 붙이면 교체)
           currentPage={page}
-          totalPages={20} 
+          totalPages={totalPages}
           onChange={setPage}
-          pageSize={5}
+          pageSize={pageSize}
         />
       </section>
+
+      {/* 환자 등록 모달 */}
+      <PatientCreateModal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        onSuccess={handleModalSuccess}
+      />
+
+      {/* 환자 수정 모달 */}
+      <PatientEditModal
+        isOpen={isEditModalOpen}
+        patient={selectedPatient}
+        onClose={() => {
+          setIsEditModalOpen(false);
+          setSelectedPatient(null);
+        }}
+        onSuccess={handleModalSuccess}
+      />
+
+      {/* 환자 삭제 확인 모달 */}
+      <PatientDeleteModal
+        isOpen={isDeleteModalOpen}
+        patient={selectedPatient}
+        onClose={() => {
+          setIsDeleteModalOpen(false);
+          setSelectedPatient(null);
+        }}
+        onSuccess={handleModalSuccess}
+      />
 
     </div>
   );

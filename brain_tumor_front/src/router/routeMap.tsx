@@ -2,13 +2,14 @@ import type { ComponentType } from 'react';
 
 import DashboardPage from '@/pages/dashboard/DashboardPage';
 import PatientListPage from '@/pages/patient/PatientListPage';
+import PatientDetailPage from '@/pages/patient/PatientDetailPage';
+import EncounterListPage from '@/pages/encounter/EncounterListPage';
 import ImagingPage from '@/pages/imaging/ImagingPage';
 import AISummaryPage from '@/pages/ai/AISummaryPage';
 import RISWorklistPage from '@/pages/ris/RISWorklistPage';
 import OrderListPage from '@/pages/orders/OrderListPage';
 import OrderCreatePage from '@/pages/orders/OrderCreate';
 import { ComingSoonPage } from '@/pages/common/CommingSoon';
-import PatientDetailPage from '@/pages/patient/PatientDetailPage';
 import MenuPermissionPage from '@/pages/admin/MenuPermissionPage';
 import UserList from '@/pages/admin/usersManagement/UserList';
 import AuditLog from '@/pages/admin/AuditLog';
@@ -18,9 +19,11 @@ import UserDetailPage from '@/pages/admin/usersManagement/UserDetailPage';
 // DB에서 호출된 메뉴명과 react 화면 컴포넌트 연결하는 곳(DB 메뉴 ↔ 화면 계약서)
 export const routeMap: Record<string, ComponentType> = {
   DASHBOARD: DashboardPage,
-  
+
   PATIENT_LIST: PatientListPage,
   PATIENT_DETAIL: PatientDetailPage,
+
+  ENCOUNTER_LIST: EncounterListPage,
 
   IMAGE_VIEWER: ImagingPage,
   AI_SUMMARY :AISummaryPage,

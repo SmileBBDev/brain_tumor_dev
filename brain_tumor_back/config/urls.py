@@ -17,7 +17,13 @@ urlpatterns = [
 
     # 사용자 관리 API
     path("api/users/", include("apps.accounts.urls")),
-    
+
+    # 환자 관리 API
+    path("api/patients/", include("apps.patients.urls")),
+
+    # 진료 관리 API
+    path("api/encounters/", include("apps.encounters.urls")),
+
     # API 문서화 엔드포인트
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
     path(
