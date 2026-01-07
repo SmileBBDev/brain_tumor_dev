@@ -49,7 +49,7 @@ class UserListView(generics.ListCreateAPIView):
         return qs
     
     # 사용자 생성
-    def create_new_user(self):
+    def get_serializer_class(self):
         if self.request.method == "POST":
             return UserCreateUpdateSerializer
         return UserSerializer
