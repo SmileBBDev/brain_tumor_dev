@@ -26,9 +26,9 @@ urlpatterns = [
         name="swagger-ui",
     ),
 
-    path("api/emr/", include("apps.emr.urls")),
-    path("api/ris/", include("apps.ris.urls")),
-    path("api/ocs/", include("apps.ocs.urls")),
-    path("api/lis/", include("apps.lis.urls")),
-    path("api/fhir/", include("apps.fhir.urls")),
+    # path("api/emr/", include("apps.emr.urls")),
+    # path("api/ris/", include("apps.ris.urls")),
+    # path("api/ocs/", include("apps.ocs.urls")),
+    # path("api/lis/", include("apps.lis.urls")),
+    # path("api/fhir/", include("apps.fhir.urls")),
 ]
