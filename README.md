@@ -118,6 +118,15 @@ daphne -b 127.0.0.1 -p 8000 config.asgi:application
 * 실행성공 :  http://localhost:8000
 
 
+
+
+
+
+
+
+
+
+
 <h3>초기 더미데이터 생성</h3>
 
 **SQL 파일 실행**
@@ -249,20 +258,43 @@ python manage.py shell -c "from dummy_data.create_dummy_imaging import create_du
    - 입원중 환자 표시
    - 검색 가능한 환자/의사 선택
 
+4. **영상 검사 관리 (RIS)**
+   - ImagingStudy, ImagingReport 모델
+   - 검사 메타데이터 관리
+   - 판독문 작성/서명 API
+   - 판독 상태별 필터링
+   - 환자별 검사 히스토리 타임라인
+   - 더미 데이터 (검사 30건, 판독문 20건)
+
+5. **OCS (Order Communication System) 🆕**
+   - Order, OrderProgress, OrderComment 모델
+   - 5가지 오더 타입 (영상검사, 검사실, 치료, 협진, AI 분석)
+   - 부서별 워크플로우 관리 (RIS/LIS/AI/Treatment/Consultation)
+   - 오더 진행 상태 추적
+   - 부서 간 코멘트 시스템
+   - 부서별 워크리스트 API
+   - 오더 통계 API
+   - ImagingStudy와 연동
+   - 더미 데이터 (오더 30건, 진행 상태 99건, 코멘트 24건)
+
 <h3>🚧 진행중/예정 기능</h3>
 
-1. **사용자 관리**
+1. **OCS 프론트엔드 통합**
+   - 오더 목록/상세 화면 구현
+   - RIS 워크리스트 OCS API 통합
+   - 오더 생성 폼 구현
+
+2. **사용자 관리**
    - 사용자 목록 페이지네이션 추가 예정
 
-2. **대시보드**
+3. **대시보드**
    - 권한별 대시보드 접근 제어 추가 예정
    - 통계 위젯 추가 예정
 
-3. **추가 모듈** (계획중)
-   - 처방 관리 (Orders)
-   - 진단 검사 (Diagnostics)
-   - 영상 관리 (RIS)
+4. **추가 모듈** (계획중)
+   - AI 분석 관리
    - 임상병리 (LIS)
+   - 치료 계획 관리
 
 <br/>
 <br/>

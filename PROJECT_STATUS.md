@@ -1,7 +1,7 @@
 # 프로젝트 현황 (Project Status)
 
-**최종 업데이트**: 2026-01-07
-**현재 버전**: Phase 2 완료
+**최종 업데이트**: 2026-01-08
+**현재 버전**: Phase 3 OCS 재설계 진행중
 
 ---
 
@@ -13,9 +13,9 @@
 | **환자 관리** | ✅ 완료 | 100% | CRUD, 검색, 페이지네이션 |
 | **진료 관리** | ✅ 완료 | 100% | CRUD, 고급 필터링, 통계 |
 | **영상 관리 (Imaging)** | ✅ Phase 2 완료 | 100% | 오더, 판독, 워크리스트, 히스토리 |
-| **검사실 (LIS)** | 📋 계획 | 0% | Coming Soon |
-| **처방 (Orders)** | 🚧 부분 구현 | 30% | 목록 페이지만 구현 |
-| **AI 요약** | 📋 계획 | 0% | Coming Soon |
+| **OCS (오더 통합 관리)** | 🚧 재설계 중 | 10% | RIS/LIS/Treatment/Consultation 별도 테이블 |
+| **검사실 (LIS)** | 📋 계획 | 0% | OCS.LIS_REQUEST로 통합 |
+| **AI 추론** | 📋 계획 | 0% | 별도 ai_inference 앱으로 분리 예정 |
 | **관리자** | 🚧 부분 구현 | 60% | 사용자/권한/감사로그 일부 구현 |
 
 ---
@@ -231,6 +231,41 @@
 
 ## 🔧 최근 변경 사항 (Changelog)
 
+### 2026-01-08
+#### OCS 모듈 재설계
+- ✅ **OCS 아키텍처 재설계**
+  - AI 추론 기능을 별도 `ai_inference` 앱으로 분리
+  - RIS/LIS/Treatment/Consultation을 별도 테이블로 분리
+  - READY 상태를 파생 상태(조건식 기반 캐시)로 변경
+  - `ocs_id` → `request_id`, `request_id` → `request_index` 네이밍 변경
+
+- ✅ **문서 업데이트**
+  - `OCS–AI Inference Architecture Speci.md` v3.0 업데이트
+  - `app의 기획.md` OCS 섹션 재작성
+  - `PROJECT_STATUS.md` 현황 업데이트
+
+- ✅ **기존 OCS 삭제**
+  - `apps/ocs/` 디렉토리 삭제
+  - `settings.py` INSTALLED_APPS에서 제거
+  - `urls.py`에서 OCS URL 주석 처리
+  - `ImagingStudy` 모델에서 `order` FK 주석 처리
+
+#### OCS 새 구조
+```
+OCS (request_id)
+├─ ocs_status (OPEN/BLOCKED/READY/CLOSED) ← 파생 상태
+├─< RIS_REQUEST (영상검사)
+│    └─ ImagingReport (소견)
+├─< LIS_REQUEST (검사실)
+│    └─< LIS_COMMENT (소견)
+├─< TREATMENT_REQUEST (치료)
+│    └─< TREATMENT_COMMENT (소견)
+└─< CONSULTATION_REQUEST (협진)
+     └─< CONSULTATION_COMMENT (소견)
+```
+
+---
+
 ### 2026-01-07
 #### 영상 관리 모듈 (Imaging)
 - ✅ **권한 시스템 비활성화**
@@ -384,42 +419,44 @@ brain_tumor_front/
 
 ## 🚀 다음 할 일 (TODO)
 
-### 단기 (1-2주)
-1. [ ] LIS 모듈 기본 구현
-   - 검사 오더 관리
-   - 검사 결과 업로드/조회
+### 단기 (현재 진행중)
+1. [ ] **OCS 앱 재구현** (Phase 3)
+   - [ ] OCS 앱 생성 및 기본 구조
+   - [ ] 모델 정의 (OCS, RIS_REQUEST, LIS_REQUEST 등)
+   - [ ] LIS_COMMENT, TREATMENT_REQUEST/COMMENT, CONSULTATION_REQUEST/COMMENT
+   - [ ] READY 상태 계산 로직
+   - [ ] 기본 API 및 Serializers
+   - [ ] URL 라우팅 및 마이그레이션
 
-2. [ ] 처방 관리 완성
-   - 백엔드 API 구현
-   - 오더 상세/수정/취소 기능
+2. [ ] OCS 프론트엔드 연동
+   - `/ocs` 화면 구현
+   - 워크리스트 연동
 
-3. [ ] README.md 업데이트
-   - 영상 관리 모듈 내용 추가
-   - 설치 가이드 업데이트
+### 중기
+1. [ ] **ai_inference 앱 구현** (Phase 4)
+   - AI_REQUEST, AI_JOB, AI_JOB_LOG 모델
+   - Redis Queue + Worker 기본
+   - OCS와 FK 연결
 
-### 중기 (1-2개월)
-1. [ ] 영상 관리 Phase 3
+2. [ ] 영상 관리 Phase 3
    - 정적 썸네일 업로드
    - Series 모델 추가
    - 기본 이미지 뷰어
 
-2. [ ] 권한 시스템 재활성화
+3. [ ] 권한 시스템 재활성화
    - 메뉴별 권한 체크
    - 역할별 접근 제어
 
-3. [ ] 대시보드 개선
-   - 통계 위젯 추가
-   - 역할별 맞춤 대시보드
-
-### 장기 (3개월+)
+### 장기
 1. [ ] 영상 관리 Phase 4-5
    - Orthanc PACS 연동
    - DICOM 뷰어 (Cornerstone.js)
    - OHIF Viewer 통합
 
-2. [ ] AI 기능 구현
+2. [ ] AI 추론 고도화
    - 영상 분석 AI
-   - 진료 기록 요약 AI
+   - DICOM 안정화 확인
+   - 의사 검토/승인 워크플로우
 
 ---
 

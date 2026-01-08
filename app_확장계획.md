@@ -1,7 +1,8 @@
 # Brain Tumor CDSS - 의료 영상 Viewer/Reading 확장 계획
 
 **작성일**: 2026-01-07
-**현재 Phase**: Phase 2 완료 (기본 영상 검사 관리)
+**수정일**: 2026-01-08 (OCS 재설계 반영)
+**현재 Phase**: Phase 2 완료, Phase 3 OCS 재설계 진행중
 
 ---
 
@@ -487,13 +488,47 @@ AI Analysis → Segmentation Mask (NIfTI)
 
 ## 9. 다음 단계
 
-1. **Phase 2.5 구현 시작**: 환자별 영상 히스토리 조회 페이지부터
-2. **사용자 피드백 수집**: 실제 의료진의 요구사항 확인
-3. **Phase 3 결정**: 썸네일 기능 필요 여부 검토
-4. **Phase 4 준비**: Orthanc PACS 서버 구축 계획 수립
+1. **Phase 3 OCS 재설계 완료**: 새로운 OCS 구조 구현
+   - OCS, RIS_REQUEST, LIS_REQUEST, TREATMENT_REQUEST, CONSULTATION_REQUEST 모델
+   - 각 요청별 COMMENT 테이블
+   - READY 상태 파생 로직
+2. **Phase 4 ai_inference 앱**: AI 추론 기능 별도 앱으로 구현
+3. **Phase 2.5 구현**: 환자별 영상 히스토리 조회 페이지
+4. **Orthanc PACS 준비**: Phase 4-5를 위한 서버 구축 계획
 
 ---
 
-**작성자**: Claude Sonnet 4.5
-**문서 버전**: 1.0
-**마지막 업데이트**: 2026-01-07
+## 10. OCS 연동 계획 (Phase 3)
+
+### 10.1 OCS와 Imaging 연동
+**RIS_REQUEST ↔ ImagingStudy 연결**:
+- RIS_REQUEST에 `imaging_study_id` FK 추가
+- ImagingReport를 RIS_REQUEST의 소견으로 활용
+- OCS에서 영상검사 오더 생성 시 ImagingStudy 자동 생성
+
+### 10.2 워크플로우 연동
+```
+OCS 생성 → RIS_REQUEST 생성 → ImagingStudy 생성
+    ↓
+RIS_REQUEST 상태 변경 ← ImagingStudy 상태 변경
+    ↓
+ImagingReport 작성 시 RIS_REQUEST COMPLETED
+    ↓
+모든 필수 요청 완료 시 OCS READY
+```
+
+### 10.3 저장소 분리
+| 데이터 | 저장소 | OCS 연동 |
+|--------|--------|---------|
+| DICOM 영상 | Orthanc | RIS_REQUEST.dicom_study_uid |
+| 영상검사 소견 | MySQL | imaging.ImagingReport |
+| LIS 결과 파일 | GCP Cloud Storage | LIS_REQUEST.result_file_uri |
+| LIS 소견 | MySQL | ocs.LIS_COMMENT |
+
+**상세 설계**: [OCS–AI Inference Architecture Speci.md](../OCS–AI Inference Architecture Speci.md) 참조
+
+---
+
+**작성자**: Claude
+**문서 버전**: 1.1
+**마지막 업데이트**: 2026-01-08

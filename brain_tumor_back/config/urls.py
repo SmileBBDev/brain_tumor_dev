@@ -27,6 +27,9 @@ urlpatterns = [
     # 영상 관리 API
     path("api/imaging/", include("apps.imaging.urls")),
 
+    # OCS (Order Communication System) API
+    path("api/ocs/", include("apps.ocs.urls")),
+
     # API 문서화 엔드포인트
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
     path(
@@ -37,7 +40,6 @@ urlpatterns = [
 
     # path("api/emr/", include("apps.emr.urls")),
     # path("api/ris/", include("apps.ris.urls")),
-    # path("api/ocs/", include("apps.ocs.urls")),
     # path("api/lis/", include("apps.lis.urls")),
     # path("api/fhir/", include("apps.fhir.urls")),
 ]

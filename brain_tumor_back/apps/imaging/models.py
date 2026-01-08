@@ -24,6 +24,16 @@ class ImagingStudy(models.Model):
         ('cancelled', '취소'),
     ]
 
+    # OCS 연동 - 재설계 후 추가 예정
+    # order = models.ForeignKey(
+    #     'ocs.OCSRequest',
+    #     on_delete=models.PROTECT,
+    #     null=True,
+    #     blank=True,
+    #     related_name='imaging_study',
+    #     verbose_name='OCS 요청'
+    # )
+
     # 기본 정보
     patient = models.ForeignKey(
         Patient,

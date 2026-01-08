@@ -63,8 +63,9 @@ def create_dummy_imaging_studies(num_studies=30, num_reports=20):
     # 영상 검사 생성
     studies = []
     for i in range(num_studies):
-        patient = random.choice(patients)
-        encounter = random.choice([e for e in encounters if e.patient == patient])
+        # encounter를 먼저 선택하고 그에 맞는 patient 가져오기
+        encounter = random.choice(encounters)
+        patient = encounter.patient
 
         # 날짜 생성 (최근 3개월 내)
         days_ago = random.randint(0, 90)
@@ -93,14 +94,14 @@ def create_dummy_imaging_studies(num_studies=30, num_reports=20):
             radiologist=random.choice(radiologists) if status in ['completed', 'reported'] else None,
             study_uid=f"1.2.840.{random.randint(100000, 999999)}.{random.randint(1000, 9999)}",
             clinical_info=f"Clinical indication: {random.choice(['headache', 'dizziness', 'seizure', 'follow-up', 'screening'])}",
-            special_instruction=random.choice([None, "Contrast enhanced", "Without contrast", "Urgent"])
+            special_instruction=random.choice(["", "Contrast enhanced", "Without contrast", "Urgent"])
         )
         studies.append(study)
 
         if i % 10 == 0:
             print(f"Created {i+1}/{num_studies} studies...")
 
-    print(f"✓ Created {len(studies)} imaging studies")
+    print(f"[OK] Created {len(studies)} imaging studies")
 
     # 판독문 생성 (완료된 검사에 대해서만)
     completed_studies = [s for s in studies if s.status in ['completed', 'reported']]
@@ -189,7 +190,7 @@ def create_dummy_imaging_studies(num_studies=30, num_reports=20):
         if i % 5 == 0:
             print(f"Created {i+1}/{num_reports} reports...")
 
-    print(f"✓ Created {len(reports)} imaging reports")
+    print(f"[OK] Created {len(reports)} imaging reports")
 
     # 통계 출력
     print("\n=== Summary ===")
@@ -206,7 +207,7 @@ def create_dummy_imaging_studies(num_studies=30, num_reports=20):
         count = ImagingStudy.objects.filter(status=status).count()
         print(f"  - {status}: {count}")
 
-    print("\n✅ Dummy data creation completed!")
+    print("\n[DONE] Dummy data creation completed!")
 
 
 if __name__ == "__main__":
