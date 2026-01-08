@@ -4,7 +4,6 @@ import DashboardPage from '@/pages/dashboard/DashboardPage';
 import PatientListPage from '@/pages/patient/PatientListPage';
 import PatientDetailPage from '@/pages/patient/PatientDetailPage';
 import EncounterListPage from '@/pages/encounter/EncounterListPage';
-import ImagingPage from '@/pages/imaging/ImagingPage';
 import ImagingListPage from '@/pages/imaging/ImagingListPage';
 import ImagingReportPage from '@/pages/imaging/ImagingReportPage';
 import ImagingWorklistPage from '@/pages/imaging/ImagingWorklistPage';
@@ -32,10 +31,12 @@ export const routeMap: Record<string, ComponentType> = {
 
   ENCOUNTER_LIST: EncounterListPage,
 
-  IMAGE_VIEWER: ImagingPage,
+  IMAGING: ImagingListPage,
+  IMAGE_VIEWER: ImagingListPage,
   IMAGING_STUDY_LIST: ImagingListPage,
   IMAGING_REPORT: ImagingReportPage,
   IMAGING_WORKLIST: ImagingWorklistPage,
+  OHIF_VIEWER: () => <ComingSoonPage title="OHIF Viewer" />,
   AI_SUMMARY :AISummaryPage,
   ORDER_LIST: OrderListPage,
   ORDER_CREATE: OrderCreatePage,

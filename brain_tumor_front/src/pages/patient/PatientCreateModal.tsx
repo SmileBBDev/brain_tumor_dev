@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { createPatient } from '@/services/patient.api';
 import type { PatientCreateData, Gender, BloodType } from '@/types/patient';
+import PhoneInput from '@/pages/common/PhoneInput';
 import './PatientCreateModal.css';
 
 type Props = {
@@ -210,16 +211,11 @@ export default function PatientCreateModal({ isOpen, onClose, onSuccess }: Props
 
             <div className="form-group">
               <label>주민등록번호 <span className="required">*</span></label>
-              <input
-                type="text"
-                name="ssn"
+              <PhoneInput
                 value={formData.ssn}
-                onChange={handleChange}
-                required
-                placeholder="13자리 숫자 (예: 9001011234567)"
-                maxLength={13}
+                onChange={(v) => setFormData(prev => ({ ...prev, ssn: v }))}
+                segments={[6, 7]}
               />
-              <small>13자리 숫자만 입력하세요 (하이픈 없이)</small>
             </div>
           </div>
 
@@ -228,13 +224,10 @@ export default function PatientCreateModal({ isOpen, onClose, onSuccess }: Props
 
             <div className="form-group">
               <label>전화번호 <span className="required">*</span></label>
-              <input
-                type="tel"
-                name="phone"
+              <PhoneInput
                 value={formData.phone}
-                onChange={handleChange}
-                required
-                placeholder="010-1234-5678"
+                onChange={(v) => setFormData(prev => ({ ...prev, phone: v }))}
+                segments={[3, 4, 4]}
               />
             </div>
 
