@@ -23,15 +23,12 @@ export default function Sidebar() {
             <SidebarItem
               key={menu.id}
               menu={menu}
-              isOpen={openGroup === menu.id}
-              onToggle={()=> handleToggle(menu.id)}
+              isOpen={openGroup === menu.code}
+              onToggle={()=> handleToggle(menu.code)}
             />
           ))}
         </ul>
       </nav>
-      {/* {menus.map(menu => (
-        <MenuItem key={menu.id} menu={menu} />
-      ))} */}
     </aside>
   );
 }
@@ -54,42 +51,3 @@ function MenuItem({ menu }: { menu: any }) {
     </NavLink>
   );
 }
-
-// import { useState } from 'react';
-// import { NavLink } from 'react-router-dom';
-// import type { MenuNode } from '@/types/menu';
-// import SidebarItem from '@/layout/SidebarItem';
-// import { useAuth } from '@/pages/auth/AuthProvider';
-
-// import '@/assets/style/sidebarStyle.css'
-
-// export default function Sidebar() {
-//   const { menus, isAuthReady } = useAuth();
-//   // 현재 열려있는 그룹 id 상태 관리
-//   const [openGroup, setOpenGroup] = useState<string  | null>(null);
-
-//   const handleToggle = (menuId : string ) => {
-//     setOpenGroup(prev => (prev === menuId ? null : menuId));
-//   };
-
-//   if (!isAuthReady) return null;
-
-//   return (
-//     <aside className="sidebar">
-//       <nav className="sidebar-nav">
-//         <ul className="menu-list">
-//           {menus.map(menu => (
-//             <SidebarItem
-//               key={menu.id}
-//               menu={menu}
-//               // role={role!}
-//               // canAccess={canAccess}
-//               isOpen = {openGroup === menu.id}
-//               onToggle={()=> handleToggle(menu.id)}
-//             />
-//           ))}
-//         </ul>
-//       </nav>
-//     </aside>
-//   );
-// }

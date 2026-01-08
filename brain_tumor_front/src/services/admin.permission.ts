@@ -18,17 +18,17 @@ export async function fetchMenuTree(): Promise<MenuNode[]> {
 /** 특정 Role의 메뉴 권한 조회 */
 export async function fetchRoleMenus(
   roleCode: string
-): Promise<string[]> {
+): Promise<number[]> {
   const res = await api.get(`/admin/roles/${roleCode}/menus/`);
-  return res.data.menu_ids;
+  return res.data;
 }
 
 /** Role 메뉴 권한 저장 */
 export async function saveRoleMenus(
   roleCode: string,
-  menuIds: string[]
+  menuIds: number[]
 ): Promise<void> {
   await api.put(`/admin/roles/${roleCode}/menus/`, {
-    menu_ids: menuIds,
+    menuIds,
   });
 }

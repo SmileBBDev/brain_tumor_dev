@@ -62,7 +62,11 @@ export default function LoginPage(){
             });
 
             //  홈으로 이동
-            navigate('/dashboard', {replace : true});
+            // navigate('/dashboard', {replace : true});
+            await refreshAuth(); // menus, permissions 세팅
+
+            navigate('/', { replace: true }); 
+
         }catch(error : any){
             const code = error?.response?.data?.code;
             const message = error?.response?.data?.message;

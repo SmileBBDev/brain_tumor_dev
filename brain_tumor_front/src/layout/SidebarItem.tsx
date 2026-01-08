@@ -18,7 +18,7 @@ export default function SidebarItem({
   const label =
     menu.labels?.[roleKey] ||
     menu.labels?.['DEFAULT'] ||
-    menu.id;
+    menu.code;
   const isGroup = !menu.path && menu.children && menu.children.length > 0;
 
   return (
@@ -63,7 +63,6 @@ export default function SidebarItem({
         /* Leaf Menu */
         <NavLink
           to={menu.path!}
-          end
           className={({ isActive }) =>
             `menu-link ${isActive ? 'active' : ''}`
           }

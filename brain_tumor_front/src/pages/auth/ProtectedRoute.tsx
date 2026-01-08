@@ -3,20 +3,18 @@ import { useAuth } from '@/pages/auth/AuthProvider';
 
 // 권한 가이드
 interface Props{
-    menuId : string; // MenuNode.id
     children : React.ReactNode;
 }
 
-export default function ProtectedRoute({ menuId, children }: Props){
-    const { isAuthReady, hasPermission, menus } = useAuth();
-
+export default function ProtectedRoute({ children }: Props){
+    const { isAuthReady, isAuthenticated } = useAuth();
+    
     // Auth 초기화 대기
-    if (!isAuthReady || menus.length === 0) return null;
+    if (!isAuthReady) return null;
     
-    
-    // 권한 없음
-    if (!hasPermission(menuId)) {
-        return <Navigate to="/403" replace />;
+    // 인증 정보 없음
+    if (!isAuthenticated) {
+        return <Navigate to="/login" replace />;
     }
 
     return <>{children}</>;

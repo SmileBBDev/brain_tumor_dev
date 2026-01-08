@@ -1,11 +1,10 @@
-import { Navigate } from 'react-router-dom';
+import { Navigate, Outlet } from 'react-router-dom';
 import { useState } from 'react';
 import AppHeader from './AppHeader';
 import { useAuth } from '@/pages/auth/AuthProvider';
 import FullScreenLoader from '@/pages/common/FullScreenLoader';
 
 import Sidebar from '@/layout/Sidebar';
-import AppRoutes from '@/router/AppRoutes';
 import RequirePasswordChange from '@/pages/auth/RequirePasswordChange';
 
 function AppLayout() {
@@ -29,7 +28,8 @@ function AppLayout() {
         <div className='app-body'>      
           {isSidebarOpen && <Sidebar/> }
           <main className='app-content'>
-            <AppRoutes />
+             {/* Outlet으로 자식 라우트(AppRoutes) 연결 */}
+            <Outlet  />
           </main>
         </div>
 
