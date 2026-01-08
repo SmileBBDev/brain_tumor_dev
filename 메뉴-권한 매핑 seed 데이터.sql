@@ -316,4 +316,61 @@ GROUP BY r.code;
 -- WHERE code = 'ADMIN_SYSTEM_MONITOR';
 
 
+INSERT INTO brain_tumor.menus_menulabel (`role`,`text`,menu_id) VALUES
+	 ('DEFAULT','대시보드',3),
+	 ('DOCTOR','의사 대시보드',3),
+	 ('NURSE','간호 대시보드',3),
+	 ('DEFAULT','환자',7),
+	 ('DEFAULT','환자 목록',20),
+	 ('DEFAULT','환자 상세',21),
+	 ('DEFAULT','검사 오더',6),
+	 ('DOCTOR','검사 오더',6),
+	 ('NURSE','검사 현황',6),
+	 ('DEFAULT','오더 목록',19);
+INSERT INTO brain_tumor.menus_menulabel (`role`,`text`,menu_id) VALUES
+	 ('DEFAULT','오더 생성',18),
+	 ('DEFAULT','영상',4),
+	 ('DEFAULT','영상 조회',14),
+	 ('DEFAULT','판독 Worklist',15),
+	 ('DEFAULT','AI 분석 요약',2),
+	 ('DEFAULT','검사',5),
+	 ('DEFAULT','검사 결과 조회',17),
+	 ('DEFAULT','검사 결과 업로드',16),
+	 ('DEFAULT','관리자',1),
+	 ('DEFAULT','사용자 관리',12);
+INSERT INTO brain_tumor.menus_menulabel (`role`,`text`,menu_id) VALUES
+	 ('DEFAULT','역할 권한 관리',10),
+	 ('DEFAULT','메뉴 권한 관리',9),
+	 ('DEFAULT','접근 감사 로그',8),
+	 ('DEFAULT','시스템 모니터링',11),
+	 ('DEFAULT','사용자 관리 상세조회',13),
+	 ('DEFAULT','오더 생성',18),
+	 ('DEFAULT','영상',4),
+	 ('DEFAULT','영상 조회',14),
+	 ('DEFAULT','판독 Worklist',15),
+	 ('DEFAULT','AI 분석 요약',2);
+INSERT INTO brain_tumor.menus_menulabel (`role`,`text`,menu_id) VALUES
+	 ('DEFAULT','검사',5),
+	 ('DEFAULT','검사 결과 조회',17),
+	 ('DEFAULT','검사 결과 업로드',16),
+	 ('DEFAULT','관리자',1),
+	 ('DEFAULT','사용자 관리',12),
+	 ('DEFAULT','역할 권한 관리',10),
+	 ('DEFAULT','메뉴 권한 관리',9),
+	 ('DEFAULT','접근 감사 로그',8),
+	 ('DEFAULT','시스템 모니터링',11),
+	 ('DEFAULT','사용자 관리 상세조회',13);
+INSERT INTO brain_tumor.menus_menulabel (`role`,`text`,menu_id) VALUES
+	 ('DEFAULT','사용자 관리 상세조회',13),
+	 ('DEFAULT','대시보드',3),
+	 ('DOCTOR','의사 대시보드',3),
+	 ('NURSE','간호 대시보드',3),
+	 ('DEFAULT','환자',7),
+	 ('DEFAULT','환자 목록',20),
+	 ('DEFAULT','환자 상세',21),
+	 ('DEFAULT','검사 오더',6),
+	 ('DOCTOR','검사 오더',6),
+	 ('NURSE','검사 현황',6);
+INSERT INTO brain_tumor.menus_menulabel (`role`,`text`,menu_id) VALUES
+	 ('DEFAULT','오더 목록',19);
 
