@@ -1,7 +1,7 @@
 # 프로젝트 현황 (Project Status)
 
 **최종 업데이트**: 2026-01-08
-**현재 버전**: Phase 3 OCS 재설계 진행중
+**현재 버전**: Phase 3 OCS 통합 진행중
 
 ---
 
@@ -12,9 +12,9 @@
 | **인증/권한 시스템** | ✅ 완료 | 100% | JWT, Role 기반, WebSocket 실시간 업데이트 |
 | **환자 관리** | ✅ 완료 | 100% | CRUD, 검색, 페이지네이션 |
 | **진료 관리** | ✅ 완료 | 100% | CRUD, 고급 필터링, 통계 |
-| **영상 관리 (Imaging)** | ✅ Phase 2 완료 | 100% | 오더, 판독, 워크리스트, 히스토리 |
-| **OCS (오더 통합 관리)** | 🚧 재설계 중 | 10% | RIS/LIS/Treatment/Consultation 별도 테이블 |
-| **검사실 (LIS)** | 📋 계획 | 0% | OCS.LIS_REQUEST로 통합 |
+| **OCS (오더 통합 관리)** | 🚧 진행중 | 70% | 단일 테이블 설계 완료, 에러 수정 필요 |
+| **영상 관리 (Imaging)** | 🚧 OCS 통합 진행중 | 80% | OCS 통합 구조 완료, OCS 에러 해결 후 테스트 필요 |
+| **검사실 (LIS)** | 📋 계획 | 0% | OCS job_role='LIS'로 관리 예정 |
 | **AI 추론** | 📋 계획 | 0% | 별도 ai_inference 앱으로 분리 예정 |
 | **관리자** | 🚧 부분 구현 | 60% | 사용자/권한/감사로그 일부 구현 |
 
@@ -104,29 +104,86 @@
 
 ---
 
-### 4. 영상 관리 (Imaging) ✅ Phase 2 완료
-**완료일**: 2026-01-07
-**담당**: Phase 2 구현
+### 4. OCS (오더 통합 관리) 🚧 진행중
+**예상 완료일**: 2026-01-09
+**담당**: Phase 3 구현
 
-#### Phase 2 주요 기능
-- ✅ 영상 검사 오더 관리 (ImagingStudy)
-  - 검사 CRUD
-  - 검사 상태 관리 (ordered → scheduled → in-progress → completed → reported)
-  - 모달리티 지원 (CT, MRI, PET, X-Ray)
-- ✅ 판독문 관리 (ImagingReport)
-  - 판독문 작성/수정/삭제
-  - 판독문 서명
-  - 종양 정보 기록 (위치, 크기)
-- ✅ RIS 워크리스트
-- ✅ 환자별 영상 히스토리 타임라인
-- ✅ 판독 상태별 필터링
-- ✅ 판독 전용 페이지 (ImagingReportPage)
+#### 핵심 설계 특징
+- ✅ **단일 테이블 설계**: OCS, OCSHistory 두 테이블로 모든 오더 통합 관리
+- ✅ **JSON 기반 확장성**: `doctor_request`, `worker_result`, `attachments` JSON 필드
+- ✅ **job_role 구분**: RIS, LIS, TREATMENT, CONSULT 등 역할별 분리
+- ✅ **상태 워크플로우**: ORDERED → ACCEPTED → IN_PROGRESS → RESULT_READY → CONFIRMED
+
+#### 데이터 구조
+```
+OCS (단일 테이블)
+├─ ocs_id (사용자 친화적 ID: ocs_0001)
+├─ ocs_status (ORDERED/ACCEPTED/IN_PROGRESS/RESULT_READY/CONFIRMED/CANCELLED)
+├─ job_role (RIS/LIS/TREATMENT/CONSULT)
+├─ job_type (MRI/CT/BLOOD/SURGERY 등)
+├─ doctor_request (JSON) - 의사 요청 정보
+├─ worker_result (JSON) - 작업자 결과 정보
+└─ attachments (JSON) - 첨부파일 정보
+
+OCSHistory (변경 이력)
+├─ action (CREATED/ACCEPTED/STARTED/RESULT_SAVED/CONFIRMED 등)
+├─ from_status, to_status
+├─ from_worker, to_worker
+└─ snapshot_json (변경 시점 데이터)
+```
+
+#### job_role별 worker_result 템플릿
+- **RIS**: findings, impression, tumor(detected/location/size), dicom, work_notes
+- **LIS**: test_results, summary, interpretation
+- **TREATMENT**: procedure, duration_minutes, anesthesia, outcome, complications
 
 #### API 엔드포인트
-**ImagingStudy**:
+- `GET /api/ocs/` - OCS 목록
+- `GET /api/ocs/{id}/` - OCS 상세
+- `POST /api/ocs/` - OCS 생성
+- `PATCH /api/ocs/{id}/` - OCS 수정
+- `POST /api/ocs/{id}/accept/` - 오더 접수
+- `POST /api/ocs/{id}/start/` - 작업 시작
+- `POST /api/ocs/{id}/submit/` - 결과 제출
+- `POST /api/ocs/{id}/confirm/` - 의사 확정
+- `POST /api/ocs/{id}/cancel/` - 취소
+- `GET /api/ocs/worklist/{job_role}/` - 부서별 워크리스트
+
+---
+
+### 5. 영상 관리 (Imaging) 🚧 OCS 통합 진행중
+**예상 완료일**: 2026-01-09 (OCS 완료 후)
+**담당**: Phase 3 OCS 통합
+
+#### ⚠️ 중요 변경사항 (2026-01-08)
+- **ImagingStudy**: DICOM 메타데이터만 유지, 오더 정보는 OCS에서 관리
+- **ImagingReport 삭제**: OCS.worker_result JSON으로 통합
+- **API 하위 호환성 유지**: 기존 `/api/imaging/` 엔드포인트 그대로 사용
+
+#### 현재 구조
+```
+ImagingStudy (DICOM 메타데이터)
+├─ ocs (FK) - OCS 오더와 1:1 연결
+├─ modality, body_part
+├─ study_uid, accession_number
+├─ series_count, instance_count
+└─ scheduled_at, performed_at
+
+판독 정보 (OCS.worker_result JSON)
+├─ findings (판독 소견)
+├─ impression (판독 결론)
+├─ tumor.detected (종양 발견 여부)
+├─ tumor.location (종양 위치)
+├─ tumor.size (종양 크기)
+├─ _confirmed (서명 완료 여부)
+└─ work_notes (작업 노트 배열)
+```
+
+#### API 엔드포인트 (하위 호환)
+**ImagingStudy** (내부적으로 OCS 사용):
 - `GET /api/imaging/studies/` - 목록
 - `GET /api/imaging/studies/{id}/` - 상세
-- `POST /api/imaging/studies/` - 생성
+- `POST /api/imaging/studies/` - 생성 (OCS job_role='RIS' 생성)
 - `PATCH /api/imaging/studies/{id}/` - 수정
 - `DELETE /api/imaging/studies/{id}/` - 삭제
 - `POST /api/imaging/studies/{id}/complete/` - 검사 완료
@@ -134,7 +191,7 @@
 - `GET /api/imaging/studies/worklist/` - RIS 워크리스트
 - `GET /api/imaging/studies/patient-history/` - 환자 히스토리
 
-**ImagingReport**:
+**ImagingReport** (내부적으로 OCS.worker_result 사용):
 - `GET /api/imaging/reports/` - 목록
 - `GET /api/imaging/reports/{id}/` - 상세
 - `POST /api/imaging/reports/` - 생성
@@ -151,13 +208,10 @@
 
 #### 더미 데이터
 - 스크립트 위치: `dummy_data/create_dummy_imaging.py`
-- 30개의 영상 검사
-- 20개의 판독문
-- 📖 자세한 사용법: [dummy_data/README.md](brain_tumor_back/dummy_data/README.md)
+- ⚠️ OCS 통합 후 업데이트 필요
 
 #### 향후 계획
-- **Phase 3**: 정적 썸네일, Series 모델, 기본 이미지 뷰어
-- **Phase 4**: Orthanc PACS, Cornerstone.js DICOM 뷰어
+- **Phase 4**: Orthanc PACS 연동, DICOM 뷰어 (Cornerstone.js)
 - **Phase 5+**: OHIF Viewer, AI Overlay, 3D
 
 상세: [apps/imaging/README.md](brain_tumor_back/apps/imaging/README.md), [app_확장계획.md](app_확장계획.md)
@@ -166,23 +220,7 @@
 
 ## 🚧 부분 구현된 모듈
 
-### 1. 처방 관리 (Orders)
-**진행률**: 30%
-
-#### 완료된 기능
-- ✅ 오더 목록 페이지 (OrderListPage)
-- ✅ 오더 생성 페이지 (OrderCreatePage)
-- ✅ 메뉴 등록
-
-#### 미완성/필요한 기능
-- ❌ 백엔드 API 구현
-- ❌ 오더 상세 조회
-- ❌ 오더 수정/취소
-- ❌ 오더 상태 관리
-
----
-
-### 2. 관리자 (Admin)
+### 1. 관리자 (Admin)
 **진행률**: 60%
 
 #### 완료된 기능
@@ -206,10 +244,9 @@
 **우선순위**: 중
 
 #### 계획된 기능
-- 검사 오더 관리
-- 검사 결과 업로드
+- OCS job_role='LIS'로 통합 관리
+- 검사 결과 업로드 (worker_result JSON)
 - 검사 결과 조회
-- 검사 결과 이력
 
 #### 메뉴 구조 (이미 등록됨)
 - LAB (검사)
@@ -218,51 +255,42 @@
 
 ---
 
-### 2. AI 요약 (AI Summary)
+### 2. AI 추론 (ai_inference)
 **상태**: 미구현
-**우선순위**: 낮
+**우선순위**: 중
 
 #### 계획된 기능
-- 환자 정보 AI 요약
-- 진료 기록 AI 분석
-- 영상 판독 AI 보조
+- 별도 ai_inference 앱으로 분리
+- AI_REQUEST, AI_JOB, AI_JOB_LOG 모델
+- OCS와 FK 연결 가능
+- Redis Queue + Worker 기본 구현
 
 ---
 
 ## 🔧 최근 변경 사항 (Changelog)
 
 ### 2026-01-08
-#### OCS 모듈 재설계
-- ✅ **OCS 아키텍처 재설계**
-  - AI 추론 기능을 별도 `ai_inference` 앱으로 분리
-  - RIS/LIS/Treatment/Consultation을 별도 테이블로 분리
-  - READY 상태를 파생 상태(조건식 기반 캐시)로 변경
-  - `ocs_id` → `request_id`, `request_id` → `request_index` 네이밍 변경
+#### OCS-Imaging 통합 완료
+- ✅ **OCS 모델 구현**
+  - OCS 단일 테이블 (job_role: RIS/LIS/TREATMENT/CONSULT)
+  - OCSHistory 변경 이력 테이블
+  - JSON 기반 확장 구조 (doctor_request, worker_result, attachments)
+  - job_role별 worker_result 템플릿 (RIS 종양 정보 포함)
 
-- ✅ **문서 업데이트**
-  - `OCS–AI Inference Architecture Speci.md` v3.0 업데이트
-  - `app의 기획.md` OCS 섹션 재작성
-  - `PROJECT_STATUS.md` 현황 업데이트
+- ✅ **Imaging-OCS 통합**
+  - ImagingStudy → OCS 1:1 FK 연결
+  - ImagingReport 모델 삭제 → OCS.worker_result JSON으로 통합
+  - 마이그레이션 작성 (0004_ocs_integration.py)
+  - Serializers/Views 재작성 (하위 호환성 유지)
 
-- ✅ **기존 OCS 삭제**
-  - `apps/ocs/` 디렉토리 삭제
-  - `settings.py` INSTALLED_APPS에서 제거
-  - `urls.py`에서 OCS URL 주석 처리
-  - `ImagingStudy` 모델에서 `order` FK 주석 처리
+- ✅ **프론트엔드 업데이트**
+  - imaging.ts 타입 업데이트 (work_notes 배열, ocs_id 추가)
+  - ImagingEditModal work_notes 배열 지원
+  - PatientImagingHistoryPage encounter 접근 방식 수정
 
-#### OCS 새 구조
-```
-OCS (request_id)
-├─ ocs_status (OPEN/BLOCKED/READY/CLOSED) ← 파생 상태
-├─< RIS_REQUEST (영상검사)
-│    └─ ImagingReport (소견)
-├─< LIS_REQUEST (검사실)
-│    └─< LIS_COMMENT (소견)
-├─< TREATMENT_REQUEST (치료)
-│    └─< TREATMENT_COMMENT (소견)
-└─< CONSULTATION_REQUEST (협진)
-     └─< CONSULTATION_COMMENT (소견)
-```
+- ✅ **Admin 업데이트**
+  - ImagingStudyAdmin OCS 연동으로 수정
+  - ImagingReportAdmin 삭제
 
 ---
 
@@ -286,24 +314,8 @@ OCS (request_id)
   - 경로 정확히 일치할 때만 active 상태 적용
   - 부모 경로 포함 시 활성화되는 문제 해결
 
-- ✅ **불필요한 파일 정리**
-  - 메뉴 등록 스크립트 삭제
-  - SQL 파일 삭제
-  - 테스트 스크립트 삭제
-
 - ✅ **더미 데이터 스크립트 통합 관리**
   - 모든 더미 데이터 스크립트를 `dummy_data/` 폴더로 통합
-  - 파일 이동:
-    - `apps/patients/create_dummy_patients.py` → `dummy_data/`
-    - `apps/encounters/create_dummy_encounters.py` → `dummy_data/`
-    - `apps/imaging/create_dummy_imaging.py` → `dummy_data/`
-  - `dummy_data/README.md` 생성: 통합 사용법 문서
-  - management/commands 폴더의 중복 스크립트 삭제
-
-- ✅ **README 업데이트**
-  - `apps/imaging/README.md`: 더미 데이터 경로 수정
-  - `README.md`: 더미 데이터 섹션 통합 안내
-  - `PROJECT_STATUS.md`: 더미 데이터 경로 업데이트
 
 ---
 
@@ -324,7 +336,8 @@ brain_tumor_back/
 │   ├── common/                       # 공통 유틸
 │   ├── patients/                     # 환자 관리 ✅
 │   ├── encounters/                   # 진료 관리 ✅
-│   └── imaging/                      # 영상 관리 ✅
+│   ├── ocs/                          # OCS 오더 통합 관리 ✅
+│   └── imaging/                      # 영상 관리 (OCS 통합) ✅
 ├── dummy_data/                       # 더미 데이터 생성 스크립트
 │   ├── create_dummy_patients.py      # 환자 데이터
 │   ├── create_dummy_encounters.py    # 진료 데이터
@@ -343,7 +356,6 @@ brain_tumor_front/
 │   │   ├── patient/                  # 환자 관리 ✅
 │   │   ├── encounter/                # 진료 관리 ✅
 │   │   ├── imaging/                  # 영상 관리 ✅
-│   │   ├── orders/                   # 처방 (부분)
 │   │   ├── ris/                      # RIS (부분)
 │   │   ├── admin/                    # 관리자 (부분)
 │   │   └── common/                   # 공통 컴포넌트
@@ -384,7 +396,7 @@ brain_tumor_front/
 ## 📝 코딩 컨벤션
 
 ### 백엔드
-- **모델**: PascalCase (예: `ImagingStudy`)
+- **모델**: PascalCase (예: `ImagingStudy`, `OCS`)
 - **Serializer**: PascalCase + Serializer (예: `ImagingStudySerializer`)
 - **ViewSet**: PascalCase + ViewSet (예: `ImagingStudyViewSet`)
 - **API URL**: kebab-case (예: `/api/imaging/studies/`)
@@ -406,42 +418,43 @@ brain_tumor_front/
    - 모든 사용자가 모든 메뉴 접근 가능
    - 필요시 권한 체크 재활성화 필요
 
+2. **마이그레이션 미적용**
+   - OCS 통합 마이그레이션 (`0004_ocs_integration.py`) 실행 필요
+   - `python manage.py migrate` 실행 필요
+
 ### 해결된 이슈
 1. ✅ **영상 목록 404 에러** (2026-01-07 해결)
-   - INSTALLED_APPS에 imaging 추가
-   - URL 라우팅 등록
-
 2. ✅ **사이드바 메뉴 활성화 중복** (2026-01-07 해결)
-   - NavLink에 `end` prop 추가
-   - 정확한 경로 매칭
+3. ✅ **ImagingReport import 에러** (2026-01-08 해결)
 
 ---
 
 ## 🚀 다음 할 일 (TODO)
 
-### 단기 (현재 진행중)
-1. [ ] **OCS 앱 재구현** (Phase 3)
-   - [ ] OCS 앱 생성 및 기본 구조
-   - [ ] 모델 정의 (OCS, RIS_REQUEST, LIS_REQUEST 등)
-   - [ ] LIS_COMMENT, TREATMENT_REQUEST/COMMENT, CONSULTATION_REQUEST/COMMENT
-   - [ ] READY 상태 계산 로직
-   - [ ] 기본 API 및 Serializers
-   - [ ] URL 라우팅 및 마이그레이션
+### 단기 (2026-01-09 - 즉시 필요)
+1. [ ] **OCS 에러 수정 (최우선)**
+   - [ ] OCS 모델/Serializer/View 에러 디버깅
+   - [ ] OCS API 엔드포인트 테스트
+   - [ ] OCS 마이그레이션 적용 및 확인
 
-2. [ ] OCS 프론트엔드 연동
-   - `/ocs` 화면 구현
-   - 워크리스트 연동
+2. [ ] **Imaging-OCS 통합 테스트**
+   - [ ] ImagingStudy-OCS FK 연결 테스트
+   - [ ] ImagingReport → OCS.worker_result 매핑 테스트
+   - [ ] 프론트엔드 연동 테스트
+
+3. [ ] **마이그레이션 적용**
+   - [ ] `python manage.py migrate` 실행
+   - [ ] 데이터 마이그레이션 확인
 
 ### 중기
-1. [ ] **ai_inference 앱 구현** (Phase 4)
+1. [ ] **LIS 기능 추가**
+   - OCS job_role='LIS' 활용
+   - LIS 워크리스트 UI
+
+2. [ ] **ai_inference 앱 구현** (Phase 4)
    - AI_REQUEST, AI_JOB, AI_JOB_LOG 모델
    - Redis Queue + Worker 기본
    - OCS와 FK 연결
-
-2. [ ] 영상 관리 Phase 3
-   - 정적 썸네일 업로드
-   - Series 모델 추가
-   - 기본 이미지 뷰어
 
 3. [ ] 권한 시스템 재활성화
    - 메뉴별 권한 체크
@@ -455,7 +468,6 @@ brain_tumor_front/
 
 2. [ ] AI 추론 고도화
    - 영상 분석 AI
-   - DICOM 안정화 확인
    - 의사 검토/승인 워크플로우
 
 ---
@@ -467,4 +479,4 @@ brain_tumor_front/
 ---
 
 **작성자**: Claude
-**최종 업데이트**: 2026-01-07
+**최종 업데이트**: 2026-01-08

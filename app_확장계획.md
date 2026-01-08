@@ -1,8 +1,8 @@
 # Brain Tumor CDSS - 의료 영상 Viewer/Reading 확장 계획
 
 **작성일**: 2026-01-07
-**수정일**: 2026-01-08 (OCS 재설계 반영)
-**현재 Phase**: Phase 2 완료, Phase 3 OCS 재설계 진행중
+**수정일**: 2026-01-08 (OCS 통합 진행중)
+**현재 Phase**: Phase 2 완료, Phase 3 OCS 통합 진행중 (에러 수정 필요)
 
 ---
 
@@ -488,44 +488,59 @@ AI Analysis → Segmentation Mask (NIfTI)
 
 ## 9. 다음 단계
 
-1. **Phase 3 OCS 재설계 완료**: 새로운 OCS 구조 구현
-   - OCS, RIS_REQUEST, LIS_REQUEST, TREATMENT_REQUEST, CONSULTATION_REQUEST 모델
-   - 각 요청별 COMMENT 테이블
-   - READY 상태 파생 로직
+### 9.1 즉시 (2026-01-09)
+1. **OCS 에러 수정 (최우선)**
+   - OCS 모델/Serializer/View 에러 디버깅
+   - OCS API 엔드포인트 테스트
+   - 마이그레이션 적용 및 데이터 확인
+
+2. **Imaging-OCS 통합 테스트**
+   - ImagingStudy-OCS FK 연결 테스트
+   - OCS.worker_result JSON 매핑 확인
+
+### 9.2 단기
+1. **Phase 3 OCS 통합 완료**: 단일 테이블 JSON 구조 완성
+   - OCS, OCSHistory 테이블 (구현됨, 에러 수정 필요)
+   - job_role별 worker_result 템플릿 (RIS/LIS/TREATMENT/CONSULT)
 2. **Phase 4 ai_inference 앱**: AI 추론 기능 별도 앱으로 구현
 3. **Phase 2.5 구현**: 환자별 영상 히스토리 조회 페이지
 4. **Orthanc PACS 준비**: Phase 4-5를 위한 서버 구축 계획
 
 ---
 
-## 10. OCS 연동 계획 (Phase 3)
+## 10. OCS 연동 계획 (Phase 3) - 구현 완료 (에러 수정 필요)
 
-### 10.1 OCS와 Imaging 연동
-**RIS_REQUEST ↔ ImagingStudy 연결**:
-- RIS_REQUEST에 `imaging_study_id` FK 추가
-- ImagingReport를 RIS_REQUEST의 소견으로 활용
-- OCS에서 영상검사 오더 생성 시 ImagingStudy 자동 생성
+### 10.1 실제 구현된 구조 (단일 테이블 JSON 방식)
+**OCS 단일 테이블 + ImagingStudy FK 연결**:
+- OCS 테이블에 job_role 필드로 RIS/LIS/TREATMENT/CONSULT 구분
+- ImagingStudy에 `ocs` FK 추가 (1:1 연결)
+- ImagingReport 모델 삭제 → OCS.worker_result JSON으로 통합
 
-### 10.2 워크플로우 연동
+### 10.2 현재 워크플로우 (구현됨)
 ```
-OCS 생성 → RIS_REQUEST 생성 → ImagingStudy 생성
+OCS 생성 (job_role='RIS') → ImagingStudy 생성 (ocs FK 연결)
     ↓
-RIS_REQUEST 상태 변경 ← ImagingStudy 상태 변경
+OCS 상태 변경 (ORDERED → ACCEPTED → IN_PROGRESS → RESULT_READY → CONFIRMED)
     ↓
-ImagingReport 작성 시 RIS_REQUEST COMPLETED
+판독 정보 저장 (OCS.worker_result JSON에 findings, impression, tumor 정보)
     ↓
-모든 필수 요청 완료 시 OCS READY
+판독 서명 시 OCS.worker_result._confirmed = true
 ```
 
-### 10.3 저장소 분리
-| 데이터 | 저장소 | OCS 연동 |
+### 10.3 데이터 저장 구조 (구현됨)
+| 데이터 | 저장소 | 필드/테이블 |
 |--------|--------|---------|
-| DICOM 영상 | Orthanc | RIS_REQUEST.dicom_study_uid |
-| 영상검사 소견 | MySQL | imaging.ImagingReport |
-| LIS 결과 파일 | GCP Cloud Storage | LIS_REQUEST.result_file_uri |
-| LIS 소견 | MySQL | ocs.LIS_COMMENT |
+| DICOM 메타데이터 | MySQL | imaging.ImagingStudy |
+| 영상검사 오더 | MySQL | ocs.OCS (job_role='RIS') |
+| 판독 소견 | MySQL | OCS.worker_result (JSON) |
+| 종양 정보 | MySQL | OCS.worker_result.tumor (JSON) |
+| 작업 노트 | MySQL | OCS.worker_result.work_notes (JSON array) |
 
-**상세 설계**: [OCS–AI Inference Architecture Speci.md](../OCS–AI Inference Architecture Speci.md) 참조
+### 10.4 ⚠️ 현재 이슈
+- OCS 모델/API에 에러 존재 - 2026-01-09 수정 필요
+- 마이그레이션 미적용 상태
+
+**상세 설계**: [OCS–AI Inference Architecture Speci.md](../OCS–AI Inference Architecture Speci.md) 참조 (v3.0 다중 테이블 설계 - 실제 구현과 다름)
 
 ---
 

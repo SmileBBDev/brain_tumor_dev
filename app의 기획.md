@@ -94,49 +94,59 @@ Encounter:
 ### 2.3 영상 검사 관리 (Imaging Study Management)
 **목적**: 뇌종양 진단을 위한 영상 검사 오더 및 결과 관리
 
-**⚠️ 중요**: Phase 2에서 기본 RIS 기능을 먼저 구현하고, Phase 3에서 **OCS(섹션 2.7)와 통합**됩니다.
+**✅ 완료 (2026-01-08)**: OCS와 완전 통합됨
 
 **주요 기능**:
-- 영상 검사 오더 생성 (CT, MRI, PET 등)
-- 검사 상태 추적 (예약/검사중/완료/판독중/판독완료)
-- 검사 이미지 메타데이터 저장 (실제 DICOM은 추후 Orthanc 연동)
-- 판독 소견 작성 및 서명
-- 검사 결과 조회
-- RIS 워크리스트 제공 (Phase 3 이후 OCS 워크리스트로 통합)
+- 영상 검사 오더 생성 (CT, MRI, PET 등) → OCS job_role='RIS'로 생성
+- 검사 상태 추적 (OCS 상태 워크플로우 사용)
+- 검사 이미지 메타데이터 저장 (DICOM은 추후 Orthanc 연동)
+- 판독 소견 작성 및 서명 → OCS.worker_result JSON 사용
+- RIS 워크리스트 제공 (OCS API 사용)
 
-**데이터 모델**:
+**데이터 모델 (OCS 통합 후)**:
 ```python
+# ImagingStudy - DICOM 메타데이터만 관리
 ImagingStudy:
   - id (PK)
-  - encounter (FK to Encounter)
-  - patient (FK to Patient)
-  - order (FK to Order, nullable)  # OCS 통합
+  - ocs (FK to OCS, OneToOne)  # 오더 정보는 OCS에서 관리
   - modality (검사 종류: CT/MRI/PET/X-RAY)
   - body_part (촬영 부위: brain)
-  - status (상태: ordered/scheduled/in-progress/completed/reported)
-  - ordered_by (FK to User, 오더 의사)
-  - ordered_at (오더 일시)
-  - scheduled_at (예약 일시)
-  - performed_at (검사 일시)
-  - radiologist (FK to User, 판독의)
   - study_uid (Study Instance UID, Orthanc 연동용)
+  - accession_number (Accession Number)
   - series_count (시리즈 수)
   - instance_count (이미지 수)
+  - scheduled_at (예약 일시)
+  - performed_at (검사 일시)
   - created_at, updated_at
 
-ImagingReport:
-  - id (PK)
-  - imaging_study (FK to ImagingStudy)
-  - radiologist (FK to User)
-  - findings (판독 소견, Text)
-  - impression (판독 결론, Text)
-  - tumor_detected (종양 발견 여부: Boolean)
-  - tumor_location (종양 위치, JSON)
-  - tumor_size (종양 크기, JSON: width/height/depth)
-  - status (상태: draft/signed/amended)
-  - signed_at (서명 일시)
-  - created_at, updated_at
+# ImagingReport는 삭제됨 → OCS.worker_result JSON으로 통합
+# OCS.worker_result (job_role='RIS') 템플릿:
+{
+  "_template": "RIS",
+  "_version": "1.0",
+  "_confirmed": false,  # 서명 완료 여부
+  "dicom": {
+    "study_uid": "",
+    "series": [],
+    "accession_number": "",
+    "series_count": 0,
+    "instance_count": 0
+  },
+  "findings": "",       # 판독 소견
+  "impression": "",     # 판독 결론
+  "recommendation": "", # 권고사항
+  "tumor": {
+    "detected": false,
+    "location": {"lobe": "", "hemisphere": ""},
+    "size": {"max_diameter_cm": null, "volume_cc": null}
+  },
+  "work_notes": []      # [{timestamp, author, content}, ...]
+}
 ```
+
+**API 엔드포인트** (하위 호환성 유지):
+- 기존 `/api/imaging/studies/`, `/api/imaging/reports/` 엔드포인트 유지
+- 내부적으로 OCS 모델 사용
 
 ---
 
@@ -259,107 +269,98 @@ FollowUp:
 ### 2.7 오더 통합 관리 (OCS - Order Communication System)
 **목적**: 모든 부서의 오더를 통합 관리하고 진행 상태 및 의견 공유
 
-**⚠️ 설계 변경 (2026-01-08)**:
-- AI 추론은 별도 `ai_inference` 앱으로 분리
-- RIS/LIS/Treatment/Consultation은 별도 테이블로 분리
+**✅ 완료 (2026-01-08)**: 단일 테이블 설계로 구현됨
+
+**핵심 설계 원칙**:
+- **단일 테이블 설계**: OCS, OCSHistory 두 테이블로 모든 오더 통합 관리
+- **JSON 기반 확장성**: `doctor_request`, `worker_result`, `attachments` JSON 필드
+- **job_role 구분**: RIS, LIS, TREATMENT, CONSULT 등 역할별 분리
+- AI 추론은 별도 `ai_inference` 앱으로 분리 예정
 
 **주요 기능**:
 - 오더 통합 조회 (영상검사, 검사실, 치료, 협진)
 - 부서별 오더 워크리스트 자동 생성
 - 오더별 진행 상태 실시간 추적 (워크플로우 단계별)
-- 부서 간 의견 교환 (코멘트 시스템)
-- READY 상태 자동 계산 (파생 상태)
+- job_role별 worker_result 템플릿으로 유연한 데이터 관리
 - 긴급 오더 우선순위 관리
+- OCSHistory로 전체 변경 이력 추적
 
-**데이터 모델**:
+**데이터 모델** (현재 구현):
 ```python
-# OCS (오더 기준점)
+# OCS (단일 테이블 - 모든 오더 통합)
 OCS:
-  - request_id (PK)
+  - id (PK)
+  - ocs_id (사용자 친화적 ID: ocs_0001)
+  - ocs_status (ORDERED/ACCEPTED/IN_PROGRESS/RESULT_READY/CONFIRMED/CANCELLED)
   - patient (FK to Patient)
+  - doctor (FK to User, 처방 의사)
+  - worker (FK to User, 작업자)
   - encounter (FK to Encounter)
-  - doctor (FK to User)
-  - ocs_status (OPEN/BLOCKED/READY/CLOSED) ← 파생 상태
-  - ready_derived_at (READY 계산 시점)
-  - priority (routine/urgent/stat)
-  - clinical_info (임상 정보)
-  - created_at, updated_at, closed_at
+  - job_role (RIS/LIS/TREATMENT/CONSULT)
+  - job_type (MRI/CT/BLOOD/SURGERY 등)
+  - doctor_request (JSON) - 의사 요청 정보
+  - worker_result (JSON) - 작업자 결과 정보 (job_role별 템플릿)
+  - attachments (JSON) - 첨부파일 정보
+  - ocs_result (Boolean) - 결과 정상/비정상
+  - priority (urgent/normal/scheduled)
+  - cancel_reason (취소 사유)
+  - created_at, accepted_at, in_progress_at, result_ready_at, confirmed_at, cancelled_at
 
-# RIS_REQUEST (영상검사 요청 - 별도 테이블)
-RIS_REQUEST:
+# OCSHistory (변경 이력)
+OCSHistory:
   - id (PK)
-  - request_id (FK to OCS)
-  - request_index (동일 OCS 내 순번)
-  - modality (CT/MRI/PET/X-RAY)
-  - body_part, is_required
-  - request_status (PENDING/ACCEPTED/IN_PROGRESS/COMPLETED/FAILED/CANCELLED)
-  - dicom_study_uid, dicom_series_uid
-  - imaging_study_id (FK to ImagingStudy) → 소견은 ImagingReport 사용
-
-# LIS_REQUEST (검사실 요청 - 별도 테이블)
-LIS_REQUEST:
-  - id (PK)
-  - request_id (FK to OCS)
-  - request_index
-  - result_type (blood/genetic/urine/csf/biopsy)
-  - test_code, test_name, is_required
-  - request_status
-  - result_file_uri (GCP Cloud Storage: gs://bucket/path.csv)
-
-# LIS_COMMENT (검사실 소견)
-LIS_COMMENT:
-  - id (PK)
-  - lis_request_id (FK to LIS_REQUEST)
-  - doctor_id, comment_text, is_final
-  - created_at, updated_at
-
-# TREATMENT_REQUEST (치료 요청 - 별도 테이블)
-TREATMENT_REQUEST:
-  - id (PK)
-  - request_id (FK to OCS)
-  - request_index
-  - treatment_type (surgery/radiation/chemotherapy/observation)
-  - treatment_name, is_required
-  - request_status (PENDING/SCHEDULED/IN_PROGRESS/COMPLETED/CANCELLED)
-  - scheduled_at, started_at, completed_at
-
-# TREATMENT_COMMENT (치료 소견)
-TREATMENT_COMMENT:
-  - id (PK)
-  - treatment_request_id (FK to TREATMENT_REQUEST)
-  - doctor_id, comment_text, is_final
-
-# CONSULTATION_REQUEST (협진 요청 - 별도 테이블)
-CONSULTATION_REQUEST:
-  - id (PK)
-  - request_id (FK to OCS)
-  - request_index
-  - consult_department (neurosurgery/neurology/radiology/pathology/oncology)
-  - consult_reason, is_required
-  - request_status, consulting_doctor_id
-
-# CONSULTATION_COMMENT (협진 소견)
-CONSULTATION_COMMENT:
-  - id (PK)
-  - consultation_request_id (FK to CONSULTATION_REQUEST)
-  - doctor_id, comment_text, is_final
+  - ocs (FK to OCS)
+  - actor (FK to User)
+  - action (CREATED/ACCEPTED/STARTED/RESULT_SAVED/CONFIRMED 등)
+  - from_status, to_status
+  - from_worker, to_worker
+  - reason (취소/변경 사유)
+  - snapshot_json (변경 시점 데이터)
+  - ip_address (접속 IP)
+  - created_at
 ```
 
-**워크플로우 예시**:
-- **RIS**: PENDING → ACCEPTED → IN_PROGRESS → COMPLETED (소견: ImagingReport)
-- **LIS**: PENDING → ACCEPTED → IN_PROGRESS → COMPLETED (소견: LIS_COMMENT)
-- **Treatment**: PENDING → SCHEDULED → IN_PROGRESS → COMPLETED
-- **Consultation**: PENDING → ACCEPTED → IN_PROGRESS → COMPLETED
+**job_role별 worker_result 템플릿**:
+```python
+# RIS (영상검사)
+{
+  "_template": "RIS",
+  "findings": "", "impression": "", "recommendation": "",
+  "tumor": {"detected": false, "location": {}, "size": {}},
+  "dicom": {"study_uid": "", "series_count": 0},
+  "work_notes": []
+}
 
-**READY 상태 계산**:
-- 모든 `is_required=TRUE` 요청이 COMPLETED면 → READY
-- 필수 요청 중 FAILED/CANCELLED 존재하면 → BLOCKED
-- 그 외 → OPEN
+# LIS (검사실)
+{
+  "_template": "LIS",
+  "test_results": [], "summary": "", "interpretation": ""
+}
+
+# TREATMENT (치료)
+{
+  "_template": "TREATMENT",
+  "procedure": "", "duration_minutes": null,
+  "anesthesia": "", "outcome": "", "complications": null
+}
+```
+
+**워크플로우**:
+ORDERED → ACCEPTED → IN_PROGRESS → RESULT_READY → CONFIRMED/CANCELLED
+
+**API 엔드포인트**:
+- `GET/POST /api/ocs/` - OCS 목록/생성
+- `GET/PATCH /api/ocs/{id}/` - OCS 상세/수정
+- `POST /api/ocs/{id}/accept/` - 오더 접수
+- `POST /api/ocs/{id}/start/` - 작업 시작
+- `POST /api/ocs/{id}/submit/` - 결과 제출
+- `POST /api/ocs/{id}/confirm/` - 의사 확정
+- `GET /api/ocs/worklist/{job_role}/` - 부서별 워크리스트
 
 **저장소 분리**:
-- DICOM 영상: Orthanc (RIS_REQUEST.dicom_study_uid로 연결)
-- LIS 결과 파일: GCP Cloud Storage (result_file_uri)
-- 소견/메타데이터: MySQL
+- DICOM 영상: Orthanc (worker_result.dicom.study_uid로 연결)
+- LIS 결과 파일: GCP Cloud Storage (추후 구현)
+- 소견/메타데이터: MySQL (worker_result JSON)
 
 **상세 설계**: [OCS–AI Inference Architecture Speci.md](../OCS–AI Inference Architecture Speci.md) 참조
 
