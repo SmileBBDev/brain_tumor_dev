@@ -374,3 +374,36 @@ INSERT INTO brain_tumor.menus_menulabel (`role`,`text`,menu_id) VALUES
 INSERT INTO brain_tumor.menus_menulabel (`role`,`text`,menu_id) VALUES
 	 ('DEFAULT','오더 목록',19);
 
+
+
+-- PATIENT 하위 "진료" 메뉴 추가
+INSERT INTO menus_menu
+(id, code, path, icon, group_label, breadcrumb_only, `order`, is_active, parent_id)
+VALUES
+(22, 'PATIENT_CARE', '/patients/care', NULL, NULL, 0, 2, 1, 7);
+
+
+-- 환자 진료 권한
+INSERT INTO accounts_permission (code, name, description)
+VALUES
+('PATIENT_CARE', '환자 진료', '환자 진료 화면 접근');
+
+-- MENU ↔ PERMISSION 매핑
+INSERT IGNORE INTO menus_menupermission (menu_id, permission_id)
+SELECT m.id, p.id
+FROM menus_menu m
+JOIN accounts_permission p ON m.code = p.code
+WHERE m.code = 'PATIENT_CARE';
+
+
+-- ROLE ↔ PERMISSION 매핑
+INSERT IGNORE INTO accounts_role_permissions (role_id, permission_id)
+SELECT r.id, p.id
+FROM accounts_role r
+JOIN accounts_permission p
+WHERE p.code = 'PATIENT_CARE'
+  AND r.code IN ('ADMIN', 'DOCTOR', 'NURSE');
+
+INSERT INTO brain_tumor.menus_menulabel (`role`,`text`,menu_id) VALUES
+	 ('PATIENT_CARE','환자 진료',22);
+

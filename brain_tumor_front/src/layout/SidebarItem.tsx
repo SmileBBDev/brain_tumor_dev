@@ -63,6 +63,7 @@ export default function SidebarItem({
         /* Leaf Menu */
         <NavLink
           to={menu.path!}
+          end
           className={({ isActive }) =>
             `menu-link ${isActive ? 'active' : ''}`
           }

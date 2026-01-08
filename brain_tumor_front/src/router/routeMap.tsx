@@ -27,6 +27,7 @@ export const routeMap: Record<string, ComponentType> = {
 
   PATIENT_LIST: PatientListPage,
   PATIENT_DETAIL: PatientDetailPage,
+  PATIENT_CARE : () => <ComingSoonPage title="환자 진료" />,
 
   ENCOUNTER_LIST: EncounterListPage,
 
