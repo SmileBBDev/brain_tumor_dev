@@ -1,12 +1,13 @@
 from django.db import models
-from django.utils import timezone
-from apps.patients.models import Patient
-from apps.encounters.models import Encounter
-from apps.accounts.models import User
 
 
 class ImagingStudy(models.Model):
-    """영상 검사 오더 및 메타데이터"""
+    """
+    영상 검사 DICOM 메타데이터
+
+    오더 관리는 OCS(apps.ocs.models.OCS)에서 담당.
+    이 모델은 DICOM 영상 데이터 연동을 위한 메타데이터만 관리.
+    """
 
     MODALITY_CHOICES = [
         ('CT', 'CT (Computed Tomography)'),
@@ -15,40 +16,20 @@ class ImagingStudy(models.Model):
         ('X-RAY', 'X-Ray'),
     ]
 
-    STATUS_CHOICES = [
-        ('ordered', '오더 생성'),
-        ('scheduled', '검사 예약'),
-        ('in-progress', '검사 수행 중'),
-        ('completed', '검사 완료'),
-        ('reported', '판독 완료'),
-        ('cancelled', '취소'),
-    ]
-
-    # OCS 연동 - 재설계 후 추가 예정
-    # order = models.ForeignKey(
-    #     'ocs.OCSRequest',
-    #     on_delete=models.PROTECT,
-    #     null=True,
-    #     blank=True,
-    #     related_name='imaging_study',
-    #     verbose_name='OCS 요청'
-    # )
-
-    # 기본 정보
-    patient = models.ForeignKey(
-        Patient,
-        on_delete=models.PROTECT,
-        related_name='imaging_studies',
-        verbose_name='환자'
-    )
-    encounter = models.ForeignKey(
-        Encounter,
-        on_delete=models.PROTECT,
-        related_name='imaging_studies',
-        verbose_name='진료'
+    # ==========================================================================
+    # OCS 연동 (오더 정보는 OCS에서 관리)
+    # ==========================================================================
+    ocs = models.OneToOneField(
+        'ocs.OCS',
+        on_delete=models.CASCADE,
+        related_name='imaging_study',
+        verbose_name='OCS 오더',
+        help_text='연결된 OCS 오더 (job_role=RIS)'
     )
 
-    # 검사 정보
+    # ==========================================================================
+    # 검사 종류 (OCS.job_type과 동기화)
+    # ==========================================================================
     modality = models.CharField(
         max_length=20,
         choices=MODALITY_CHOICES,
@@ -59,26 +40,35 @@ class ImagingStudy(models.Model):
         default='brain',
         verbose_name='촬영 부위'
     )
-    status = models.CharField(
-        max_length=20,
-        choices=STATUS_CHOICES,
-        default='ordered',
-        verbose_name='검사 상태'
+
+    # ==========================================================================
+    # DICOM 메타데이터 (Orthanc 연동용)
+    # ==========================================================================
+    study_uid = models.CharField(
+        max_length=200,
+        null=True,
+        blank=True,
+        unique=True,
+        verbose_name='Study Instance UID'
+    )
+    accession_number = models.CharField(
+        max_length=50,
+        null=True,
+        blank=True,
+        verbose_name='Accession Number'
+    )
+    series_count = models.IntegerField(
+        default=0,
+        verbose_name='시리즈 수'
+    )
+    instance_count = models.IntegerField(
+        default=0,
+        verbose_name='이미지 수'
     )
 
-    # 오더 정보
-    ordered_by = models.ForeignKey(
-        User,
-        on_delete=models.PROTECT,
-        related_name='ordered_imaging_studies',
-        verbose_name='오더 의사'
-    )
-    ordered_at = models.DateTimeField(
-        default=timezone.now,
-        verbose_name='오더 일시'
-    )
-
-    # 검사 일정
+    # ==========================================================================
+    # 검사 일정 (RIS 작업자가 관리)
+    # ==========================================================================
     scheduled_at = models.DateTimeField(
         null=True,
         blank=True,
@@ -90,50 +80,13 @@ class ImagingStudy(models.Model):
         verbose_name='검사 수행 일시'
     )
 
-    # 판독 정보
-    radiologist = models.ForeignKey(
-        User,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name='read_imaging_studies',
-        verbose_name='판독의'
-    )
-
-    # DICOM 메타데이터 (추후 Orthanc 연동용)
-    study_uid = models.CharField(
-        max_length=200,
-        null=True,
-        blank=True,
-        unique=True,
-        verbose_name='Study Instance UID'
-    )
-    series_count = models.IntegerField(
-        default=0,
-        verbose_name='시리즈 수'
-    )
-    instance_count = models.IntegerField(
-        default=0,
-        verbose_name='이미지 수'
-    )
-
-    # 기타
-    clinical_info = models.TextField(
-        blank=True,
-        verbose_name='임상 정보'
-    )
-    special_instruction = models.TextField(
-        blank=True,
-        verbose_name='특별 지시사항'
-    )
-
-    # Soft Delete
+    # ==========================================================================
+    # Soft Delete & 타임스탬프
+    # ==========================================================================
     is_deleted = models.BooleanField(
         default=False,
         verbose_name='삭제 여부'
     )
-
-    # 타임스탬프
     created_at = models.DateTimeField(
         auto_now_add=True,
         verbose_name='생성 일시'
@@ -145,18 +98,61 @@ class ImagingStudy(models.Model):
 
     class Meta:
         db_table = 'imaging_studies'
-        ordering = ['-ordered_at']
+        ordering = ['-created_at']
         indexes = [
-            models.Index(fields=['patient', 'ordered_at']),
-            models.Index(fields=['encounter']),
-            models.Index(fields=['status']),
+            models.Index(fields=['ocs']),
+            models.Index(fields=['study_uid']),
             models.Index(fields=['modality']),
         ]
-        verbose_name = '영상 검사'
-        verbose_name_plural = '영상 검사 목록'
+        verbose_name = '영상 검사 (DICOM)'
+        verbose_name_plural = '영상 검사 목록 (DICOM)'
 
     def __str__(self):
-        return f"{self.get_modality_display()} - {self.patient.name} ({self.ordered_at.strftime('%Y-%m-%d')})"
+        patient_name = self.ocs.patient.name if self.ocs else 'Unknown'
+        return f"{self.get_modality_display()} - {patient_name}"
+
+    # ==========================================================================
+    # Properties (OCS에서 데이터 가져오기)
+    # ==========================================================================
+    @property
+    def patient(self):
+        """환자 정보 (OCS에서 가져옴)"""
+        return self.ocs.patient if self.ocs else None
+
+    @property
+    def encounter(self):
+        """진료 정보 (OCS에서 가져옴)"""
+        return self.ocs.encounter if self.ocs else None
+
+    @property
+    def ordered_by(self):
+        """오더 의사 (OCS.doctor)"""
+        return self.ocs.doctor if self.ocs else None
+
+    @property
+    def ordered_at(self):
+        """오더 일시 (OCS.created_at)"""
+        return self.ocs.created_at if self.ocs else None
+
+    @property
+    def radiologist(self):
+        """판독의 (OCS.worker)"""
+        return self.ocs.worker if self.ocs else None
+
+    @property
+    def status(self):
+        """검사 상태 (OCS.ocs_status 매핑)"""
+        if not self.ocs:
+            return 'ordered'
+        status_map = {
+            'ORDERED': 'ordered',
+            'ACCEPTED': 'scheduled',
+            'IN_PROGRESS': 'in-progress',
+            'RESULT_READY': 'completed',
+            'CONFIRMED': 'reported',
+            'CANCELLED': 'cancelled',
+        }
+        return status_map.get(self.ocs.ocs_status, 'ordered')
 
     @property
     def is_completed(self):
@@ -165,90 +161,40 @@ class ImagingStudy(models.Model):
 
     @property
     def has_report(self):
-        """판독문 존재 여부"""
-        return hasattr(self, 'report')
-
-
-class ImagingReport(models.Model):
-    """영상 검사 판독문"""
-
-    STATUS_CHOICES = [
-        ('draft', '작성 중'),
-        ('signed', '서명 완료'),
-        ('amended', '수정됨'),
-    ]
-
-    # 기본 정보
-    imaging_study = models.OneToOneField(
-        ImagingStudy,
-        on_delete=models.CASCADE,
-        related_name='report',
-        verbose_name='영상 검사'
-    )
-    radiologist = models.ForeignKey(
-        User,
-        on_delete=models.PROTECT,
-        related_name='imaging_reports',
-        verbose_name='판독의'
-    )
-
-    # 판독 내용
-    findings = models.TextField(
-        verbose_name='판독 소견'
-    )
-    impression = models.TextField(
-        verbose_name='판독 결론'
-    )
-
-    # 종양 정보
-    tumor_detected = models.BooleanField(
-        default=False,
-        verbose_name='종양 발견 여부'
-    )
-    tumor_location = models.JSONField(
-        null=True,
-        blank=True,
-        verbose_name='종양 위치'
-    )
-    tumor_size = models.JSONField(
-        null=True,
-        blank=True,
-        verbose_name='종양 크기'
-    )
-
-    # 상태
-    status = models.CharField(
-        max_length=20,
-        choices=STATUS_CHOICES,
-        default='draft',
-        verbose_name='판독문 상태'
-    )
-    signed_at = models.DateTimeField(
-        null=True,
-        blank=True,
-        verbose_name='서명 일시'
-    )
-
-    # 타임스탬프
-    created_at = models.DateTimeField(
-        auto_now_add=True,
-        verbose_name='생성 일시'
-    )
-    updated_at = models.DateTimeField(
-        auto_now=True,
-        verbose_name='수정 일시'
-    )
-
-    class Meta:
-        db_table = 'imaging_reports'
-        ordering = ['-created_at']
-        verbose_name = '영상 판독문'
-        verbose_name_plural = '영상 판독문 목록'
-
-    def __str__(self):
-        return f"판독문 - {self.imaging_study}"
+        """판독문 존재 여부 (OCS.worker_result._confirmed)"""
+        if self.ocs and self.ocs.worker_result:
+            return self.ocs.worker_result.get('_confirmed', False)
+        return False
 
     @property
-    def is_signed(self):
-        """서명 완료 여부"""
-        return self.status == 'signed' and self.signed_at is not None
+    def clinical_info(self):
+        """임상 정보 (OCS.doctor_request에서 가져옴)"""
+        if self.ocs and self.ocs.doctor_request:
+            return self.ocs.doctor_request.get('clinical_info', '')
+        return ''
+
+    @property
+    def special_instruction(self):
+        """특별 지시사항 (OCS.doctor_request에서 가져옴)"""
+        if self.ocs and self.ocs.doctor_request:
+            return self.ocs.doctor_request.get('special_instruction', '')
+        return ''
+
+    @property
+    def work_notes(self):
+        """작업 노트 (OCS.worker_result에서 가져옴)"""
+        if self.ocs and self.ocs.worker_result:
+            return self.ocs.worker_result.get('work_notes', [])
+        return []
+
+
+# =============================================================================
+# ImagingReport 모델은 OCS.worker_result JSON으로 통합되었습니다.
+# 판독 정보는 OCS.worker_result에서 관리됩니다:
+#   - findings: 판독 소견
+#   - impression: 판독 결론
+#   - tumor.detected: 종양 발견 여부
+#   - tumor.location: 종양 위치 (lobe, hemisphere)
+#   - tumor.size: 종양 크기 (max_diameter_cm, volume_cc)
+#   - _confirmed: 제출 완료 여부
+# =============================================================================

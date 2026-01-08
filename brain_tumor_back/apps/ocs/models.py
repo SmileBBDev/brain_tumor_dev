@@ -298,11 +298,25 @@ class OCS(models.Model):
                 "dicom": {
                     "study_uid": "",
                     "series": [],
-                    "accession_number": ""
+                    "accession_number": "",
+                    "series_count": 0,
+                    "instance_count": 0
                 },
                 "impression": "",
                 "findings": "",
                 "recommendation": "",
+                "tumor": {
+                    "detected": False,
+                    "location": {
+                        "lobe": "",
+                        "hemisphere": ""
+                    },
+                    "size": {
+                        "max_diameter_cm": None,
+                        "volume_cc": None
+                    }
+                },
+                "work_notes": [],  # [{timestamp, author, content}, ...]
                 "_custom": {}
             },
             "LIS": {

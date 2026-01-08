@@ -3,7 +3,7 @@ import { createImagingStudy } from '@/services/imaging.api';
 import { getPatients } from '@/services/patient.api';
 import { getEncounters } from '@/services/encounter.api';
 import { api } from '@/services/api';
-import type { ImagingStudyCreateData, ImagingModality } from '@/types/imaging';
+import type { ImagingStudyCreateData } from '@/types/imaging';
 import type { Patient } from '@/types/patient';
 import type { Encounter } from '@/types/encounter';
 import '@/pages/patient/PatientCreateModal.css';
@@ -130,10 +130,7 @@ export default function ImagingCreateModal({ isOpen, onClose, onSuccess }: Props
       setError('환자를 선택해주세요.');
       return;
     }
-    if (!formData.encounter) {
-      setError('진료를 선택해주세요.');
-      return;
-    }
+    // encounter는 외부 환자의 경우 선택하지 않아도 됨
     if (!formData.modality) {
       setError('검사 종류를 선택해주세요.');
       return;
@@ -141,7 +138,12 @@ export default function ImagingCreateModal({ isOpen, onClose, onSuccess }: Props
 
     setLoading(true);
     try {
-      await createImagingStudy(formData);
+      // encounter가 0이면 null로 변환하여 전송
+      const submitData = {
+        ...formData,
+        encounter: formData.encounter || null,
+      };
+      await createImagingStudy(submitData);
       alert('영상 검사 오더가 생성되었습니다.');
       onSuccess();
     } catch (err: any) {
@@ -242,18 +244,17 @@ export default function ImagingCreateModal({ isOpen, onClose, onSuccess }: Props
 
               <div className="form-row">
                 <div className="form-group">
-                  <label htmlFor="encounter">진료 선택 *</label>
+                  <label htmlFor="encounter">진료 선택 (외부환자는 생략 가능)</label>
                   <select
                     id="encounter"
                     name="encounter"
-                    value={formData.encounter}
+                    value={formData.encounter || 0}
                     onChange={handleChange}
-                    required
                     disabled={!formData.patient}
                     size={3}
                     className="searchable-select"
                   >
-                    <option value={0}>진료를 선택하세요</option>
+                    <option value={0}>진료 없음 (외부 환자)</option>
                     {filteredEncounters.map((e) => (
                       <option key={e.id} value={e.id}>
                         {e.encounter_type_display} - {new Date(e.admission_date).toLocaleDateString('ko-KR')} - {e.chief_complaint}
@@ -262,7 +263,7 @@ export default function ImagingCreateModal({ isOpen, onClose, onSuccess }: Props
                   </select>
                   {formData.patient && filteredEncounters.length === 0 && (
                     <small style={{ color: '#ff9800' }}>
-                      선택한 환자에게 진행 중인 진료가 없습니다.
+                      선택한 환자에게 진행 중인 진료가 없습니다. 외부 환자로 오더를 생성합니다.
                     </small>
                   )}
                 </div>

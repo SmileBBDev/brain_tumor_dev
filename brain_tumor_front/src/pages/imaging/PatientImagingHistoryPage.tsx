@@ -182,10 +182,12 @@ export default function PatientImagingHistoryPage() {
                       <span className="label">촬영 부위:</span>
                       <span className="value">{study.body_part}</span>
                     </div>
-                    <div className="info-row">
-                      <span className="label">진료:</span>
-                      <span className="value">#{study.encounter.id} - {study.encounter.department}</span>
-                    </div>
+                    {study.encounter && (
+                      <div className="info-row">
+                        <span className="label">진료:</span>
+                        <span className="value">#{study.encounter}</span>
+                      </div>
+                    )}
                     {study.clinical_info && (
                       <div className="info-row">
                         <span className="label">임상 정보:</span>

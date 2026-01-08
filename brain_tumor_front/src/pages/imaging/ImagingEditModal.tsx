@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { updateImagingStudy } from '@/services/imaging.api';
-import type { ImagingStudy, ImagingStudyUpdateData, ImagingModality, ImagingStatus } from '@/types/imaging';
+import { updateImagingStudy, createImagingReport } from '@/services/imaging.api';
+import type { ImagingStudy, ImagingStudyUpdateData, WorkNote } from '@/types/imaging';
 import '@/pages/patient/PatientCreateModal.css';
 
 type Props = {
@@ -8,6 +8,25 @@ type Props = {
   onClose: () => void;
   onSuccess: () => void;
   study: ImagingStudy;
+};
+
+// datetime-local input용 포맷 변환 (타임존 제거)
+// "2026-01-12T19:30:00+09:00" -> "2026-01-12T19:30"
+const toDatetimeLocalFormat = (isoString: string | null): string => {
+  if (!isoString) return '';
+  // 타임존 부분 제거하고 초단위까지 자르기
+  return isoString.slice(0, 16);
+};
+
+// work_notes 배열을 표시용 문자열로 변환
+const formatWorkNotes = (workNotes: WorkNote[] | undefined): string => {
+  if (!workNotes || workNotes.length === 0) return '';
+  return workNotes
+    .map(note => {
+      const timestamp = new Date(note.timestamp).toLocaleString('ko-KR');
+      return `[${timestamp}] ${note.author}\n${note.content}`;
+    })
+    .join('\n\n');
 };
 
 export default function ImagingEditModal({ isOpen, onClose, onSuccess, study }: Props) {
@@ -18,11 +37,13 @@ export default function ImagingEditModal({ isOpen, onClose, onSuccess, study }: 
     modality: study.modality,
     body_part: study.body_part,
     status: study.status,
-    scheduled_at: study.scheduled_at || '',
-    performed_at: study.performed_at || '',
-    clinical_info: study.clinical_info,
-    special_instruction: study.special_instruction,
+    scheduled_at: toDatetimeLocalFormat(study.scheduled_at),
+    performed_at: toDatetimeLocalFormat(study.performed_at),
+    work_note: '',  // 새 입력용 (빈 문자열로 시작)
   });
+
+  // 기존 작업 기록 (읽기 전용) - work_notes 배열에서 변환
+  const existingWorkNote = formatWorkNotes(study.work_notes);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,12 +51,50 @@ export default function ImagingEditModal({ isOpen, onClose, onSuccess, study }: 
     setLoading(true);
 
     try {
-      await updateImagingStudy(study.id, formData);
+      // 빈 문자열을 null로 변환 (datetime 필드)
+      // work_note는 백엔드에서 work_notes 배열에 자동 추가됨
+      const submitData = {
+        ...formData,
+        scheduled_at: formData.scheduled_at || null,
+        performed_at: formData.performed_at || null,
+        // 빈 문자열은 보내지 않음 (새 기록이 있을 때만 전송)
+        work_note: formData.work_note?.trim() || undefined,
+      };
+
+      // 상태를 '판독 완료'로 변경하고 판독문이 없으면 자동 생성
+      if (formData.status === 'reported' && !study.has_report) {
+        // 기본 판독문 생성
+        await createImagingReport({
+          imaging_study: study.id,
+          findings: '(자동 생성됨)',
+          impression: '(자동 생성됨)',
+        });
+      }
+
+      await updateImagingStudy(study.id, submitData);
       alert('영상 검사 정보가 수정되었습니다.');
       onSuccess();
     } catch (err: any) {
       console.error('영상 검사 수정 실패:', err);
-      setError(err.response?.data?.detail || err.response?.data?.error || '수정에 실패했습니다.');
+      console.error('Response data:', err.response?.data);
+      // 서버 에러 메시지 상세 표시
+      const errorData = err.response?.data;
+      let errorMsg = '수정에 실패했습니다.';
+      if (errorData) {
+        if (typeof errorData === 'string') {
+          errorMsg = errorData;
+        } else if (errorData.detail) {
+          errorMsg = errorData.detail;
+        } else if (errorData.error) {
+          errorMsg = errorData.error;
+        } else {
+          // 필드별 에러 메시지 표시
+          errorMsg = Object.entries(errorData)
+            .map(([key, val]) => `${key}: ${Array.isArray(val) ? val.join(', ') : val}`)
+            .join('\n');
+        }
+      }
+      setError(errorMsg);
     } finally {
       setLoading(false);
     }
@@ -147,29 +206,83 @@ export default function ImagingEditModal({ isOpen, onClose, onSuccess, study }: 
               </div>
             </div>
 
-            <div className="form-row">
-              <div className="form-group">
-                <label htmlFor="clinical_info">임상 정보</label>
-                <textarea
-                  id="clinical_info"
-                  name="clinical_info"
-                  value={formData.clinical_info}
-                  onChange={handleChange}
-                  rows={3}
-                />
+            {/* 의사 작성 정보 (읽기 전용) */}
+            <div style={{
+              padding: '1rem',
+              backgroundColor: '#f8f9fa',
+              borderRadius: '8px',
+              marginTop: '1rem'
+            }}>
+              <h4 style={{ marginBottom: '0.75rem', fontSize: '0.9rem', color: '#666' }}>
+                의사 오더 정보 (읽기 전용)
+              </h4>
+              <div className="form-row">
+                <div className="form-group">
+                  <label>임상 정보</label>
+                  <textarea
+                    value={study.clinical_info || '(없음)'}
+                    disabled
+                    rows={2}
+                    style={{ backgroundColor: '#e9ecef', color: '#495057' }}
+                  />
+                </div>
+              </div>
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label>특별 지시사항</label>
+                  <textarea
+                    value={study.special_instruction || '(없음)'}
+                    disabled
+                    rows={2}
+                    style={{ backgroundColor: '#e9ecef', color: '#495057' }}
+                  />
+                </div>
               </div>
             </div>
 
-            <div className="form-row">
-              <div className="form-group">
-                <label htmlFor="special_instruction">특별 지시사항</label>
-                <textarea
-                  id="special_instruction"
-                  name="special_instruction"
-                  value={formData.special_instruction}
-                  onChange={handleChange}
-                  rows={2}
-                />
+            {/* 작업중 특이사항 */}
+            <div style={{ marginTop: '1rem' }}>
+              <h4 style={{ marginBottom: '0.75rem', fontSize: '0.9rem', color: '#333' }}>
+                작업중 특이사항
+              </h4>
+
+              {/* 기존 작업 기록 (읽기 전용) */}
+              {existingWorkNote && (
+                <div className="form-row">
+                  <div className="form-group">
+                    <label style={{ color: '#666', fontSize: '0.85rem' }}>이전 기록</label>
+                    <textarea
+                      value={existingWorkNote}
+                      disabled
+                      rows={Math.min(existingWorkNote.split('\n').length + 1, 8)}
+                      style={{
+                        backgroundColor: '#f5f5f5',
+                        color: '#495057',
+                        fontFamily: 'monospace',
+                        fontSize: '0.85rem',
+                        whiteSpace: 'pre-wrap',
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* 새 작업 기록 입력 */}
+              <div className="form-row">
+                <div className="form-group">
+                  <label htmlFor="work_note" style={{ color: '#333', fontSize: '0.85rem' }}>
+                    {existingWorkNote ? '새 기록 추가' : '기록 입력'}
+                  </label>
+                  <textarea
+                    id="work_note"
+                    name="work_note"
+                    value={formData.work_note}
+                    onChange={handleChange}
+                    rows={3}
+                    placeholder="검사 수행 중 특이사항을 입력하세요... (저장 시 타임스탬프가 자동 추가됩니다)"
+                  />
+                </div>
               </div>
             </div>
           </div>

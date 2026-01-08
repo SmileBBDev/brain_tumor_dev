@@ -1,4 +1,4 @@
-// Imaging types
+// Imaging types - OCS 통합 버전
 
 export type ImagingModality = 'CT' | 'MRI' | 'PET' | 'X-RAY';
 
@@ -12,20 +12,25 @@ export interface TumorLocation {
 }
 
 export interface TumorSize {
-  max_diameter_cm: number;
-  volume_cc: number;
+  max_diameter_cm: number | null;
+  volume_cc: number | null;
+}
+
+// 작업 노트 (OCS work_notes 배열 아이템)
+export interface WorkNote {
+  timestamp: string;
+  author: string;
+  content: string;
 }
 
 export interface ImagingStudy {
   id: number;
+  ocs_id?: string;  // OCS 통합으로 추가
   patient: number;
   patient_name: string;
   patient_number: string;
-  encounter: {
-    id: number;
-    encounter_type?: string;
-    department?: string;
-  };
+  encounter: number | null;  // OCS에서는 encounter_id로 반환
+  encounter_id?: number | null;
   modality: ImagingModality;
   modality_display: string;
   body_part: string;
@@ -43,19 +48,20 @@ export interface ImagingStudy {
   instance_count: number;
   clinical_info: string;
   special_instruction: string;
+  work_notes?: WorkNote[];  // OCS 통합으로 변경 (work_note → work_notes 배열)
   is_completed: boolean;
   has_report: boolean;
   report?: ImagingReport;
-  is_deleted: boolean;
+  is_deleted?: boolean;
   created_at: string;
-  updated_at: string;
+  updated_at?: string;
 }
 
 export interface ImagingReport {
   id: number;
-  imaging_study: number;
-  radiologist: number;
-  radiologist_name: string;
+  imaging_study?: number;  // OCS 통합에서는 OCS ID와 동일
+  radiologist: number | null;
+  radiologist_name: string | null;
   findings: string;
   impression: string;
   tumor_detected: boolean;
@@ -100,7 +106,7 @@ export interface ImagingStudySearchParams {
 
 export interface ImagingStudyCreateData {
   patient: number;
-  encounter: number;
+  encounter: number | null;  // 외부 환자의 경우 null 허용
   modality: ImagingModality;
   body_part?: string;
   scheduled_at?: string;
@@ -115,8 +121,7 @@ export interface ImagingStudyUpdateData {
   scheduled_at?: string;
   performed_at?: string;
   radiologist?: number | null;
-  clinical_info?: string;
-  special_instruction?: string;
+  work_note?: string;  // 새 작업 노트 (work_notes 배열에 추가됨)
   study_uid?: string;
   series_count?: number;
   instance_count?: number;

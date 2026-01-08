@@ -1,3 +1,10 @@
+"""
+Imaging Views - OCS 통합 버전
+
+영상 검사 데이터는 OCS(job_role='RIS')를 통해 관리됩니다.
+기존 Imaging API 엔드포인트를 유지하면서 내부적으로 OCS를 사용합니다.
+"""
+
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -5,13 +12,14 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.pagination import PageNumberPagination
 from django.db.models import Q
 from django.utils import timezone
-from .models import ImagingStudy, ImagingReport
+from apps.ocs.models import OCS
 from .serializers import (
     ImagingStudyListSerializer,
     ImagingStudyDetailSerializer,
     ImagingStudyCreateSerializer,
     ImagingStudyUpdateSerializer,
-    ImagingReportSerializer,
+    ImagingReportCreateSerializer,
+    ImagingReportUpdateSerializer,
     ImagingSearchSerializer,
 )
 
@@ -25,34 +33,20 @@ class ImagingStudyPagination(PageNumberPagination):
 
 class ImagingStudyViewSet(viewsets.ModelViewSet):
     """
-    영상 검사 CRUD API
+    영상 검사 CRUD API (OCS 기반)
 
-    권한 체크는 프론트엔드 라우터에서 관리
+    내부적으로 OCS(job_role='RIS')를 사용합니다.
+    기존 Imaging API 형식을 유지합니다.
     """
-    queryset = ImagingStudy.objects.filter(is_deleted=False)
     permission_classes = [IsAuthenticated]
     pagination_class = ImagingStudyPagination
 
-    def get_serializer_class(self):
-        """액션별 Serializer 선택"""
-        if self.action == 'list':
-            return ImagingStudyListSerializer
-        elif self.action == 'create':
-            return ImagingStudyCreateSerializer
-        elif self.action in ['update', 'partial_update']:
-            return ImagingStudyUpdateSerializer
-        else:
-            return ImagingStudyDetailSerializer
-
     def get_queryset(self):
-        """검색 및 필터링"""
-        queryset = super().get_queryset()
-        queryset = queryset.select_related(
-            'patient',
-            'encounter',
-            'ordered_by',
-            'radiologist'
-        )
+        """RIS 오더만 조회"""
+        queryset = OCS.objects.filter(
+            job_role='RIS',
+            is_deleted=False
+        ).select_related('patient', 'doctor', 'worker', 'encounter')
 
         # 검색 파라미터
         q = self.request.query_params.get('q', '')
@@ -62,23 +56,36 @@ class ImagingStudyViewSet(viewsets.ModelViewSet):
                 Q(patient__patient_number__icontains=q)
             )
 
-        # 필터링
+        # modality 필터 (job_type)
         modality = self.request.query_params.get('modality')
         if modality:
-            queryset = queryset.filter(modality=modality)
+            queryset = queryset.filter(job_type=modality)
 
+        # status 필터 (OCS status로 변환)
         status_param = self.request.query_params.get('status')
         if status_param:
-            queryset = queryset.filter(status=status_param)
+            status_map = {
+                'ordered': 'ORDERED',
+                'scheduled': 'ACCEPTED',
+                'in-progress': 'IN_PROGRESS',
+                'completed': 'RESULT_READY',
+                'reported': 'CONFIRMED',
+                'cancelled': 'CANCELLED',
+            }
+            ocs_status = status_map.get(status_param)
+            if ocs_status:
+                queryset = queryset.filter(ocs_status=ocs_status)
 
+        # 의사/판독의 필터
         ordered_by = self.request.query_params.get('ordered_by')
         if ordered_by:
-            queryset = queryset.filter(ordered_by_id=ordered_by)
+            queryset = queryset.filter(doctor_id=ordered_by)
 
         radiologist = self.request.query_params.get('radiologist')
         if radiologist:
-            queryset = queryset.filter(radiologist_id=radiologist)
+            queryset = queryset.filter(worker_id=radiologist)
 
+        # 환자/진료 필터
         patient = self.request.query_params.get('patient')
         if patient:
             queryset = queryset.filter(patient_id=patient)
@@ -91,31 +98,31 @@ class ImagingStudyViewSet(viewsets.ModelViewSet):
         has_report = self.request.query_params.get('has_report')
         if has_report is not None:
             if has_report.lower() == 'true':
-                queryset = queryset.exclude(report__isnull=True)
+                # worker_result에 findings나 impression이 있는 경우
+                queryset = queryset.exclude(worker_result={})
             elif has_report.lower() == 'false':
-                queryset = queryset.filter(report__isnull=True)
-
-        report_status = self.request.query_params.get('report_status')
-        if report_status:
-            queryset = queryset.filter(report__status=report_status)
+                queryset = queryset.filter(worker_result={})
 
         # 날짜 범위 필터
         start_date = self.request.query_params.get('start_date')
         end_date = self.request.query_params.get('end_date')
         if start_date:
-            queryset = queryset.filter(ordered_at__date__gte=start_date)
+            queryset = queryset.filter(created_at__date__gte=start_date)
         if end_date:
-            queryset = queryset.filter(ordered_at__date__lte=end_date)
+            queryset = queryset.filter(created_at__date__lte=end_date)
 
-        return queryset
+        return queryset.order_by('-created_at')
 
-    def perform_create(self, serializer):
-        """검사 오더 생성"""
-        serializer.save(ordered_by=self.request.user)
-
-    def perform_update(self, serializer):
-        """검사 정보 수정"""
-        serializer.save()
+    def get_serializer_class(self):
+        """액션별 Serializer 선택"""
+        if self.action == 'list':
+            return ImagingStudyListSerializer
+        elif self.action == 'create':
+            return ImagingStudyCreateSerializer
+        elif self.action in ['update', 'partial_update']:
+            return ImagingStudyUpdateSerializer
+        else:
+            return ImagingStudyDetailSerializer
 
     def perform_destroy(self, instance):
         """검사 삭제 (Soft Delete)"""
@@ -125,58 +132,60 @@ class ImagingStudyViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'])
     def complete(self, request, pk=None):
         """검사 완료 처리"""
-        study = self.get_object()
+        ocs = self.get_object()
 
-        if study.status == 'completed':
+        if ocs.ocs_status == 'RESULT_READY':
             return Response(
                 {'detail': '이미 완료된 검사입니다.'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        study.status = 'completed'
-        study.performed_at = timezone.now()
-        study.save()
+        ocs.ocs_status = 'RESULT_READY'
+        ocs.result_ready_at = timezone.now()
+        if not ocs.in_progress_at:
+            ocs.in_progress_at = timezone.now()
+        ocs.save()
 
-        serializer = self.get_serializer(study)
+        serializer = ImagingStudyDetailSerializer(ocs)
         return Response(serializer.data)
 
     @action(detail=True, methods=['post'])
     def cancel(self, request, pk=None):
         """검사 취소"""
-        study = self.get_object()
+        ocs = self.get_object()
 
-        if study.status == 'reported':
+        if ocs.ocs_status == 'CONFIRMED':
             return Response(
-                {'detail': '판독이 완료된 검사는 취소할 수 없습니다.'},
+                {'detail': '확정된 검사는 취소할 수 없습니다.'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        study.status = 'cancelled'
-        study.save()
+        ocs.ocs_status = 'CANCELLED'
+        ocs.cancelled_at = timezone.now()
+        ocs.save()
 
-        serializer = self.get_serializer(study)
+        serializer = ImagingStudyDetailSerializer(ocs)
         return Response(serializer.data)
 
     @action(detail=False, methods=['get'])
     def worklist(self, request):
         """부서별 워크리스트 (RIS 워크리스트)"""
-        # 진행 중인 검사만 조회 (ordered, scheduled, in-progress)
+        # 진행 중인 검사만 조회
         queryset = self.get_queryset().filter(
-            status__in=['ordered', 'scheduled', 'in-progress']
+            ocs_status__in=['ORDERED', 'ACCEPTED', 'IN_PROGRESS']
         )
 
-        # 페이지네이션 적용
         page = self.paginate_queryset(queryset)
         if page is not None:
-            serializer = self.get_serializer(page, many=True)
+            serializer = ImagingStudyListSerializer(page, many=True)
             return self.get_paginated_response(serializer.data)
 
-        serializer = self.get_serializer(queryset, many=True)
+        serializer = ImagingStudyListSerializer(queryset, many=True)
         return Response(serializer.data)
 
     @action(detail=False, methods=['get'], url_path='patient-history')
     def patient_history(self, request):
-        """환자별 영상 히스토리 조회 (타임라인)"""
+        """환자별 영상 히스토리 조회"""
         patient_id = request.query_params.get('patient_id')
         if not patient_id:
             return Response(
@@ -184,98 +193,176 @@ class ImagingStudyViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # 환자의 모든 영상 검사 조회 (날짜 역순)
         queryset = self.get_queryset().filter(
             patient_id=patient_id
-        ).order_by('-ordered_at')
+        ).order_by('-created_at')
 
-        # 페이지네이션 적용
         page = self.paginate_queryset(queryset)
         if page is not None:
-            serializer = self.get_serializer(page, many=True)
+            serializer = ImagingStudyListSerializer(page, many=True)
             return self.get_paginated_response(serializer.data)
 
-        serializer = self.get_serializer(queryset, many=True)
+        serializer = ImagingStudyListSerializer(queryset, many=True)
         return Response(serializer.data)
 
 
-class ImagingReportViewSet(viewsets.ModelViewSet):
+class ImagingReportViewSet(viewsets.ViewSet):
     """
-    영상 판독문 CRUD API
+    영상 판독문 CRUD API (OCS 기반)
 
-    권한 체크는 프론트엔드 라우터에서 관리
+    판독문은 OCS.worker_result JSON에 저장됩니다.
     """
-    queryset = ImagingReport.objects.all()
-    serializer_class = ImagingReportSerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        """검색 및 필터링"""
-        queryset = super().get_queryset()
-        queryset = queryset.select_related(
-            'imaging_study',
-            'imaging_study__patient',
-            'radiologist'
-        )
+        """판독문이 있는 RIS 오더만 조회"""
+        return OCS.objects.filter(
+            job_role='RIS',
+            is_deleted=False
+        ).exclude(
+            worker_result={}
+        ).select_related('patient', 'doctor', 'worker')
 
-        # 특정 검사의 판독문 조회
-        imaging_study = self.request.query_params.get('imaging_study')
+    def list(self, request):
+        """판독문 목록"""
+        queryset = self.get_queryset()
+
+        # 특정 검사의 판독문
+        imaging_study = request.query_params.get('imaging_study')
         if imaging_study:
-            queryset = queryset.filter(imaging_study_id=imaging_study)
+            queryset = queryset.filter(id=imaging_study)
 
-        # 특정 판독의의 판독문 목록
-        radiologist = self.request.query_params.get('radiologist')
+        # 특정 판독의의 판독문
+        radiologist = request.query_params.get('radiologist')
         if radiologist:
-            queryset = queryset.filter(radiologist_id=radiologist)
+            queryset = queryset.filter(worker_id=radiologist)
 
-        return queryset
+        serializer = ImagingStudyDetailSerializer(queryset, many=True)
+        # report 필드만 추출
+        reports = [item['report'] for item in serializer.data if item.get('report')]
+        return Response(reports)
 
-    def perform_create(self, serializer):
+    def create(self, request):
         """판독문 생성"""
-        serializer.save(radiologist=self.request.user)
+        serializer = ImagingReportCreateSerializer(
+            data=request.data,
+            context={'request': request}
+        )
+        serializer.is_valid(raise_exception=True)
+        ocs = serializer.save()
 
-        # 검사 상태를 'reported'로 변경
-        imaging_study = serializer.instance.imaging_study
-        imaging_study.status = 'reported'
-        imaging_study.radiologist = self.request.user
-        imaging_study.save()
+        detail_serializer = ImagingStudyDetailSerializer(ocs)
+        return Response(detail_serializer.data['report'], status=status.HTTP_201_CREATED)
 
-    def perform_update(self, serializer):
+    def retrieve(self, request, pk=None):
+        """판독문 조회"""
+        try:
+            ocs = OCS.objects.get(id=pk, job_role='RIS')
+        except OCS.DoesNotExist:
+            return Response(
+                {'detail': '판독문을 찾을 수 없습니다.'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        serializer = ImagingStudyDetailSerializer(ocs)
+        report = serializer.data.get('report')
+        if not report:
+            return Response(
+                {'detail': '판독문이 없습니다.'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        return Response(report)
+
+    def update(self, request, pk=None):
         """판독문 수정"""
-        report = self.get_object()
+        try:
+            ocs = OCS.objects.get(id=pk, job_role='RIS')
+        except OCS.DoesNotExist:
+            return Response(
+                {'detail': '판독문을 찾을 수 없습니다.'},
+                status=status.HTTP_404_NOT_FOUND
+            )
 
         # 서명된 판독문은 수정 불가
-        if report.is_signed:
+        if ocs.worker_result and ocs.worker_result.get('_confirmed'):
             return Response(
                 {'detail': '서명된 판독문은 수정할 수 없습니다.'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
+        serializer = ImagingReportUpdateSerializer(
+            ocs,
+            data=request.data,
+            partial=True,
+            context={'request': request}
+        )
+        serializer.is_valid(raise_exception=True)
         serializer.save()
 
-    def perform_destroy(self, instance):
-        """판독문 삭제"""
-        # 검사 상태를 'completed'로 변경
-        imaging_study = instance.imaging_study
-        imaging_study.status = 'completed'
-        imaging_study.save()
+        detail_serializer = ImagingStudyDetailSerializer(ocs)
+        return Response(detail_serializer.data['report'])
 
-        instance.delete()
+    def partial_update(self, request, pk=None):
+        """판독문 부분 수정"""
+        return self.update(request, pk)
+
+    def destroy(self, request, pk=None):
+        """판독문 삭제"""
+        try:
+            ocs = OCS.objects.get(id=pk, job_role='RIS')
+        except OCS.DoesNotExist:
+            return Response(
+                {'detail': '판독문을 찾을 수 없습니다.'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        # 판독 정보 초기화
+        if ocs.worker_result:
+            ocs.worker_result['findings'] = ''
+            ocs.worker_result['impression'] = ''
+            ocs.worker_result['tumor'] = {'detected': False, 'location': {}, 'size': {}}
+            ocs.worker_result['_confirmed'] = False
+            ocs.save()
+
+        # 상태 변경
+        if ocs.ocs_status == 'CONFIRMED':
+            ocs.ocs_status = 'RESULT_READY'
+            ocs.confirmed_at = None
+            ocs.save()
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(detail=True, methods=['post'])
     def sign(self, request, pk=None):
-        """판독문 서명"""
-        report = self.get_object()
+        """판독문 서명 (제출)"""
+        try:
+            ocs = OCS.objects.get(id=pk, job_role='RIS')
+        except OCS.DoesNotExist:
+            return Response(
+                {'detail': '판독문을 찾을 수 없습니다.'},
+                status=status.HTTP_404_NOT_FOUND
+            )
 
-        if report.is_signed:
+        if not ocs.worker_result:
+            return Response(
+                {'detail': '판독문이 없습니다.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if ocs.worker_result.get('_confirmed'):
             return Response(
                 {'detail': '이미 서명된 판독문입니다.'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        report.status = 'signed'
-        report.signed_at = timezone.now()
-        report.save()
+        # 서명 처리
+        ocs.worker_result['_confirmed'] = True
+        ocs.ocs_status = 'CONFIRMED'
+        ocs.confirmed_at = timezone.now()
+        if not ocs.result_ready_at:
+            ocs.result_ready_at = timezone.now()
+        ocs.save()
 
-        serializer = self.get_serializer(report)
-        return Response(serializer.data)
+        detail_serializer = ImagingStudyDetailSerializer(ocs)
+        return Response(detail_serializer.data['report'])

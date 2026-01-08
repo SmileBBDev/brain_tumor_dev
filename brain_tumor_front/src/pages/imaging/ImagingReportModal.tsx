@@ -108,24 +108,42 @@ export default function ImagingReportModal({ isOpen, onClose, onSuccess, study }
       onSuccess();
     } catch (err: any) {
       console.error('Failed to save report:', err);
-      setError(err.response?.data?.detail || err.response?.data?.error || '판독문 저장에 실패했습니다.');
+      console.error('Response data:', err.response?.data);
+      // 서버 에러 메시지 상세 표시
+      const errorData = err.response?.data;
+      let errorMsg = '판독문 저장에 실패했습니다.';
+      if (errorData) {
+        if (typeof errorData === 'string') {
+          errorMsg = errorData;
+        } else if (errorData.detail) {
+          errorMsg = errorData.detail;
+        } else if (errorData.error) {
+          errorMsg = errorData.error;
+        } else {
+          // 필드별 에러 메시지 표시
+          errorMsg = Object.entries(errorData)
+            .map(([key, val]) => `${key}: ${Array.isArray(val) ? val.join(', ') : val}`)
+            .join('\n');
+        }
+      }
+      setError(errorMsg);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSign = async () => {
+  const handleSubmit2 = async () => {
     if (!existingReport) return;
-    if (!confirm('판독문에 서명하시겠습니까? 서명 후에는 수정이 제한됩니다.')) return;
+    if (!confirm('판독문을 제출하시겠습니까?\n\n⚠️ 제출 후에는 수정이 불가능합니다.')) return;
 
     setLoading(true);
     try {
       await signImagingReport(existingReport.id);
-      alert('판독문에 서명되었습니다.');
+      alert('판독문이 제출되었습니다.');
       onSuccess();
     } catch (err: any) {
-      console.error('Failed to sign report:', err);
-      alert(err.response?.data?.detail || err.response?.data?.error || '서명에 실패했습니다.');
+      console.error('Failed to submit report:', err);
+      alert(err.response?.data?.detail || err.response?.data?.error || '제출에 실패했습니다.');
     } finally {
       setLoading(false);
     }
@@ -340,7 +358,7 @@ export default function ImagingReportModal({ isOpen, onClose, onSuccess, study }
                   className="btn"
                   onClick={() => setIsEditMode(true)}
                 >
-                  수정
+                  판독문 수정
                 </button>
               )}
             </div>
@@ -350,19 +368,30 @@ export default function ImagingReportModal({ isOpen, onClose, onSuccess, study }
               </button>
               {isEditMode && canEditReport && (
                 <button type="submit" className="btn primary" disabled={loading}>
-                  {loading ? '저장 중...' : existingReport ? '저장' : '판독문 작성'}
+                  {loading ? '저장 중...' : '저장'}
                 </button>
               )}
               {existingReport && !isSigned && canEdit && !isEditMode && (
                 <button
                   type="button"
                   className="btn"
-                  onClick={handleSign}
+                  onClick={handleSubmit2}
                   disabled={loading}
-                  style={{ backgroundColor: '#4caf50', color: 'white' }}
+                  style={{ backgroundColor: '#ff9800', color: 'white' }}
                 >
-                  서명
+                  제출
                 </button>
+              )}
+              {isSigned && (
+                <span style={{
+                  padding: '0.5rem 1rem',
+                  backgroundColor: '#e8f5e9',
+                  color: '#2e7d32',
+                  borderRadius: '4px',
+                  fontSize: '0.875rem'
+                }}>
+                  제출 완료 (수정 불가)
+                </span>
               )}
             </div>
           </div>
