@@ -2,11 +2,13 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.exceptions import PermissionDenied
 from django.db import transaction
 from django.utils import timezone
 from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiParameter
 
 from .models import OCS, OCSHistory
+from .permissions import OCSPermission
 from .serializers import (
     OCSListSerializer,
     OCSDetailSerializer,
@@ -54,7 +56,7 @@ class OCSViewSet(viewsets.ModelViewSet):
 
     의사와 작업자 간 오더 관리를 위한 API.
     """
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, OCSPermission]
 
     def get_queryset(self):
         """필터링된 OCS 목록 반환"""

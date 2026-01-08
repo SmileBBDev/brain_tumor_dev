@@ -11,8 +11,16 @@ from apps.encounters.models import Encounter
 from apps.patients.models import Patient
 from apps.accounts.models import User
 
-def create_dummy_encounters(count=20):
+def create_dummy_encounters(count=20, force=False):
     """더미 진료 데이터 생성"""
+
+    # 기존 데이터 확인 - 이미 충분한 데이터가 있으면 중복 생성 방지
+    existing_count = Encounter.objects.count()
+    if existing_count >= count and not force:
+        print(f"[스킵] 이미 {existing_count}건의 진료 데이터가 존재합니다. (요청: {count}건)")
+        print("중복 방지를 위해 추가 생성을 건너뜁니다.")
+        print("강제로 추가하려면: create_dummy_encounters(count, force=True)")
+        return
 
     # Get active patients and doctors
     patients = list(Patient.objects.filter(is_deleted=False, status='active'))
@@ -143,3 +151,6 @@ def create_dummy_encounters(count=20):
 
 if __name__ == '__main__':
     create_dummy_encounters(20)
+
+# exec()로 실행될 때도 자동 실행
+create_dummy_encounters(20)

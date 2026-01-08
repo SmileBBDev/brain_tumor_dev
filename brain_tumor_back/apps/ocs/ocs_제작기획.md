@@ -516,7 +516,7 @@ urgent_callback = models.CharField(max_length=20, blank=True)  # 긴급 연락�
 - [x] OCS ViewSet 작성 ✅
 - [x] URL 라우팅 설정 ✅
 - [x] Admin 설정 ✅
-- [ ] 마이그레이션 생성 및 적용
+- [x] 마이그레이션 생성 및 적용 ✅
 
 ### 8.2 선택적 구현
 - [x] 통계용 Property ✅ (turnaround_time, work_time)
@@ -599,3 +599,6 @@ def accept(self, request, pk=None):
 | 2026-01-08 | 1.1 | OCSHistory 필수로 변경, 고려사항 추가 |
 | 2026-01-08 | 1.2 | cancel_reason 필드만 유지, 취소 이력은 OCSHistory에서 관리 |
 | 2026-01-08 | 1.3 | 구현 완료 (models, serializers, views, urls, admin) |
+| 2026-01-08 | 1.4 | 마이그레이션 적용 완료 |
+| 2026-01-08 | 1.5 | Frontend 연동 (types, services, pages, routeMap) |
+| 2026-01-08 | 1.6 | 권한 체크 강화 (permissions.py), 테스트 코드 작성 |

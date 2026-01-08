@@ -18,20 +18,27 @@ from apps.encounters.models import Encounter
 User = get_user_model()
 
 
-def create_dummy_imaging_studies(num_studies=30, num_reports=20):
+def create_dummy_imaging_studies(num_studies=30, num_reports=20, force=False):
     """
     더미 영상 검사 및 판독문 데이터 생성
 
     Args:
         num_studies (int): 생성할 영상 검사 수
         num_reports (int): 생성할 판독문 수 (검사 수보다 작아야 함)
+        force (bool): True이면 기존 데이터가 있어도 강제 생성
     """
     print(f"Creating {num_studies} imaging studies with {num_reports} reports...")
 
-    # 기존 데이터 확인
+    # 기존 데이터 확인 - 이미 충분한 데이터가 있으면 중복 생성 방지
     existing_studies = ImagingStudy.objects.count()
     existing_reports = ImagingReport.objects.count()
     print(f"Existing studies: {existing_studies}, reports: {existing_reports}")
+
+    if existing_studies >= num_studies and not force:
+        print(f"\n[스킵] 이미 {existing_studies}건의 영상 검사가 존재합니다. (요청: {num_studies}건)")
+        print("중복 방지를 위해 추가 생성을 건너뜁니다.")
+        print("강제로 추가하려면: create_dummy_imaging_studies(num_studies, num_reports, force=True)")
+        return
 
     # 필요한 데이터 가져오기
     patients = list(Patient.objects.all())

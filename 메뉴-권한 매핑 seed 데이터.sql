@@ -14,11 +14,11 @@
 
 -- 논리 ERD
 -- ┌───────────────┐
--- │   accounts_role│
+-- │  accounts_role│
 -- │───────────────│
--- │ id             │
--- │ code           │
--- │ name           │
+-- │ id            │
+-- │ code          │
+-- │ name          │
 -- └───────┬───────┘
 --         │
 --         │ 1:N
@@ -402,8 +402,70 @@ SELECT r.id, p.id
 FROM accounts_role r
 JOIN accounts_permission p
 WHERE p.code = 'PATIENT_CARE'
-  AND r.code IN ('ADMIN', 'DOCTOR', 'NURSE');
+  AND r.code IN ('SYSTEMMANAGER', 'ADMIN', 'DOCTOR', 'NURSE');
 
 INSERT INTO brain_tumor.menus_menulabel (`role`,`text`,menu_id) VALUES
-	 ('PATIENT_CARE','환자 진료',22);
+	 ('DEFAULT','환자 진료',22);
+
+
+-- =============================================================================
+-- OCS (Order Communication System) 역할별 메뉴 추가
+-- =============================================================================
+-- OCS_ORDER: 의사용 검사 오더 생성/관리
+-- OCS_RIS: RIS 작업자용 영상 워크리스트
+-- OCS_LIS: LIS 작업자용 검사 워크리스트
+-- =============================================================================
+
+-- 1. 메뉴 추가 (ORDER 그룹 하위, parent_id=6)
+INSERT INTO menus_menu
+(id, code, path, icon, group_label, breadcrumb_only, `order`, is_active, parent_id)
+VALUES
+(23, 'OCS_ORDER', '/ocs/order', 'file-medical', NULL, 0, 3, 1, 6),
+(24, 'OCS_RIS', '/ocs/ris', 'x-ray', NULL, 0, 4, 1, 6),
+(25, 'OCS_LIS', '/ocs/lis', 'flask', NULL, 0, 5, 1, 6);
+
+-- 2. 권한 추가
+INSERT INTO accounts_permission (code, name, description)
+VALUES
+('OCS_ORDER', '검사 오더', '의사용 검사 오더 생성/관리'),
+('OCS_RIS', '영상 워크리스트', 'RIS 작업자용 영상 오더 처리'),
+('OCS_LIS', '검사 워크리스트', 'LIS 작업자용 검사 오더 처리');
+
+-- 3. MENU ↔ PERMISSION 매핑
+INSERT IGNORE INTO menus_menupermission (menu_id, permission_id)
+SELECT m.id, p.id
+FROM menus_menu m
+JOIN accounts_permission p ON m.code = p.code
+WHERE m.code IN ('OCS_ORDER', 'OCS_RIS', 'OCS_LIS');
+
+-- 4. ROLE ↔ PERMISSION 매핑
+-- OCS_ORDER: 의사용
+INSERT IGNORE INTO accounts_role_permissions (role_id, permission_id)
+SELECT r.id, p.id
+FROM accounts_role r
+JOIN accounts_permission p
+WHERE p.code = 'OCS_ORDER'
+  AND r.code IN ('SYSTEMMANAGER', 'ADMIN', 'DOCTOR');
+
+-- OCS_RIS: 영상의학과용
+INSERT IGNORE INTO accounts_role_permissions (role_id, permission_id)
+SELECT r.id, p.id
+FROM accounts_role r
+JOIN accounts_permission p
+WHERE p.code = 'OCS_RIS'
+  AND r.code IN ('SYSTEMMANAGER', 'ADMIN', 'RIS');
+
+-- OCS_LIS: 검사실용
+INSERT IGNORE INTO accounts_role_permissions (role_id, permission_id)
+SELECT r.id, p.id
+FROM accounts_role r
+JOIN accounts_permission p
+WHERE p.code = 'OCS_LIS'
+  AND r.code IN ('SYSTEMMANAGER', 'ADMIN', 'LIS');
+
+-- 5. 메뉴 라벨 추가
+INSERT INTO brain_tumor.menus_menulabel (`role`,`text`,menu_id) VALUES
+	('DEFAULT', '검사 오더', 23),
+	('DEFAULT', '영상 워크리스트', 24),
+	('DEFAULT', '검사 워크리스트', 25);
 
