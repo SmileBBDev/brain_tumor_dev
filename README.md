@@ -118,6 +118,15 @@ daphne -b 127.0.0.1 -p 8000 config.asgi:application
 * 실행성공 :  http://localhost:8000
 
 
+
+
+
+
+
+
+
+
+
 <h3>초기 더미데이터 생성</h3>
 
 **SQL 파일 실행**
