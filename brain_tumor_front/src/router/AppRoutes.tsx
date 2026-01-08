@@ -4,6 +4,7 @@ import ProtectedRoute from '@/pages/auth/ProtectedRoute';
 import { routeMap } from './routeMap';
 import type { MenuNode } from '@/types/menu';
 import FullScreenLoader from '@/pages/common/FullScreenLoader';
+import PatientDetailPage from '@/pages/patient/PatientDetailPage';
 
 // 접근 가능한 메뉴만 flatten
 function flattenAccessibleMenus(
@@ -88,6 +89,18 @@ export default function AppRoutes() {
           />
         );
       })}
+
+      {/* 동적 라우트 - 상세 페이지 등 */}
+      {permissions.includes('PATIENT_LIST') && (
+        <Route
+          path="/patients/:patientId"
+          element={
+            <ProtectedRoute>
+              <PatientDetailPage />
+            </ProtectedRoute>
+          }
+        />
+      )}
 
       <Route path="*" element={<Navigate to="/403" replace />} />
     </Routes>
