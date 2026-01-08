@@ -18,7 +18,7 @@ import UserList from '@/pages/admin/usersManagement/UserList';
 import AuditLog from '@/pages/admin/AuditLog';
 import SystemMonitorPage from '@/pages/admin/SystemMonitorPage';
 import UserDetailPage from '@/pages/admin/usersManagement/UserDetailPage';
-
+import RoleControlPage from '@/pages/admin/roleManagement/RoleControlPage';
 
 
 // DB에서 호출된 메뉴명과 react 화면 컴포넌트 연결하는 곳(DB 메뉴 ↔ 화면 계약서)
@@ -43,7 +43,7 @@ export const routeMap: Record<string, ComponentType> = {
   LAB_RESULT_UPLOAD: () => <ComingSoonPage title="검사 결과 업로드" />,
 
   ADMIN_USER: UserList,
-  ADMIN_ROLE: () => <ComingSoonPage title="역할 관리" />,
+  ADMIN_ROLE: RoleControlPage,
   ADMIN_MENU_PERMISSION: MenuPermissionPage,
   ADMIN_AUDIT_LOG: AuditLog,
   ADMIN_SYSTEM_MONITOR: SystemMonitorPage,

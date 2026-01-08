@@ -3,40 +3,85 @@ import { useAuth } from '@/pages/auth/AuthProvider';
 import ProtectedRoute from '@/pages/auth/ProtectedRoute';
 import { routeMap } from './routeMap';
 import type { MenuNode } from '@/types/menu';
+import FullScreenLoader from '@/pages/common/FullScreenLoader';
 
-function flattenMenus(menus: MenuNode[]): MenuNode[] {
-  return menus.flatMap(menu => [
-    menu,
-    ...(menu.children?.length ? flattenMenus(menu.children) : []),
-  ]);
+// 접근 가능한 메뉴만 flatten
+function flattenAccessibleMenus(
+  menus: MenuNode[],
+  permissions: string[]
+): MenuNode[] {
+  return menus.flatMap(menu => {
+    const hasPermission = permissions.includes(menu.code);
+
+    const children = menu.children
+      ? flattenAccessibleMenus(menu.children, permissions)
+      : [];
+
+    // path가 있고 접근 가능하면 포함
+    if (menu.path && hasPermission && !menu.breadcrumbOnly) {
+      return [menu, ...children];
+    }
+
+    // path가 없거나 접근 불가 → children만 포함
+    return children;
+  });
+}
+
+// 첫 접근 가능한 path 찾기
+function findFirstAccessiblePath(
+  menus: MenuNode[],
+  permissions: string[]
+): string | null {
+  for (const menu of menus) {
+    // path가 있고 접근 가능하면 바로 반환
+    if (
+      menu.path &&
+      !menu.breadcrumbOnly &&
+      permissions.includes(menu.code)
+    ) {
+      return menu.path;
+    }
+
+    // path가 없거나 접근 불가 → children 탐색
+    if (menu.children?.length) {
+      const childPath = findFirstAccessiblePath(menu.children, permissions);
+      if (childPath) return childPath;
+    }
+  }
+  return null;
 }
 
 export default function AppRoutes() {
-  const { menus, isAuthReady } = useAuth();
+  const { menus, permissions, isAuthReady } = useAuth();
 
-  if (!isAuthReady) return null;
+  // 준비 전엔 로딩
+  if (!isAuthReady || menus.length === 0 || permissions.length === 0) {
+    return <FullScreenLoader />;
+  }
 
-  const flatMenus = flattenMenus(menus);
+  const homePath = findFirstAccessiblePath(menus, permissions);
+  if (!homePath) {
+    return <FullScreenLoader />;
+  }
+
+  const accessibleMenus = flattenAccessibleMenus(menus, permissions);
 
   return (
+    
     <Routes>
-      
-      {flatMenus.map(menu => {
-        if (!menu.path) return null;
+      {/* 홈 */}
+      <Route index element={<Navigate to={homePath} replace />} />
 
-        const Component = routeMap[menu.id];
-
-        if (!Component) {
-          console.warn(`routeMap에 없는 메뉴: ${menu.id}`);
-          return null;
-        }
+      {accessibleMenus.map(menu => {
+        const Component = routeMap[menu.code];
+        if (!Component) return null;
 
         return (
           <Route
-            key={menu.id}
-            path={menu.path}
+            key={menu.code}
+            path={menu.path!}
             element={
-              <ProtectedRoute menuId={menu.id}>
+              <ProtectedRoute>
                 <Component />
               </ProtectedRoute>
             }
@@ -44,10 +89,6 @@ export default function AppRoutes() {
         );
       })}
 
-      {/* 기본 홈 경로 */}
-      <Route path="/" element={<Navigate to="/dashboard" replace />} />
-
-      {/* 없는 경로 */}
       <Route path="*" element={<Navigate to="/403" replace />} />
     </Routes>
   );

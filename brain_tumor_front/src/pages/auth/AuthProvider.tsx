@@ -9,6 +9,7 @@ interface AuthContextValue {
   user : User | null;
   role: string | null;
   menus: MenuNode[];
+  permissions: string[];
 
   sessionRemain: number;
   isAuthReady: boolean;
@@ -30,6 +31,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isAuthReady, setIsAuthReady] = useState(false);
   const [sessionRemain, setSessionRemain] = useState(30 * 60);
 
+  const [permissions, setPermissions] = useState<string[]>([]);
+
+
    // WebSocket을 저장할 ref
   const wsRef = useRef<WebSocket | null>(null);
 
@@ -42,6 +46,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     setUser(meInfo);
     setRole(meInfo.role.code);
+    setPermissions(meInfo.permissions ?? []);
     
     // 비밀번호 변경 필요하면 메뉴/소켓/권한 로딩 중단
     if (meInfo.must_change_password) {
@@ -182,12 +187,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
 
-  const hasPermission = (menuId: string) => {
-    const walk = (tree: MenuNode[]): boolean =>
-      tree.some(m => m.id === menuId || (m.children && walk(m.children)));
-
-    return walk(menus);
+  // 권한 체크 로직
+  const hasPermission = (menuCode: string) => {
+    return permissions.includes(menuCode);
   };
+
+  // const hasPermission = (menuCode: string) => {
+  //   const walk = (tree: MenuNode[]): boolean =>
+  //     tree.some(
+  //       m => m.code === menuCode || (m.children && walk(m.children))
+  //     );
+
+  //   return walk(menus);
+  // };
+
+  // const hasPermission = (menuId: string) => {
+  //   const walk = (tree: MenuNode[]): boolean =>
+  //     tree.some(m => 
+  //       m.code === menuId || 
+  //       (m.children && walk(m.children)));
+
+  //   return walk(menus);
+  // };
 
   return (
     <AuthContext.Provider
@@ -195,8 +216,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         user, role, sessionRemain, 
         logout, isAuthReady, 
         menus,
-        isAuthenticated,refreshAuth,
-        hasPermission,
+        isAuthenticated,refreshAuth, 
+        hasPermission, permissions
       }}
     >
       {children}

@@ -2,11 +2,12 @@ from apps.menus.models import Menu, MenuLabel, MenuPermission
 from apps.accounts.models import Permission, RolePermission
 
 # Check PATIENT_LIST menu structure
-menu = Menu.objects.filter(menu_id='PATIENT_LIST').first()
+menu = Menu.objects.filter(code='PATIENT_LIST').first()
 
 if menu:
     print('=== PATIENT_LIST Menu ===')
-    print(f'menu_id: {menu.menu_id}')
+    print(f'id: {menu.id}')
+    print(f'code: {menu.code}')
     print(f'path: {menu.path}')
     print(f'icon: {menu.icon}')
     print(f'group_label: {menu.group_label}')

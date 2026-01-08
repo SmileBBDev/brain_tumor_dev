@@ -1,4 +1,5 @@
 from rest_framework.views import APIView
+from rest_framework.viewsets import ModelViewSet
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import AllowAny
@@ -7,12 +8,14 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.views import TokenObtainPairView
 
 from django.utils import timezone
+from apps.accounts.models.role import Role
+from apps.accounts.models.role_permission import RolePermission
 from apps.accounts.models.user import User
 from apps.common.utils import get_client_ip
 from apps.audit.services import create_audit_log # # Audit Log 기록 유틸
 from apps.accounts.services.permission_service import get_user_permission # 사용자 권한 조회 로직
 
-from .serializers import LoginSerializer, MeSerializer, CustomTokenObtainPairSerializer
+from .serializers import LoginSerializer, MeSerializer, CustomTokenObtainPairSerializer, RoleSerializer
 
 # JWT 토큰 발급 View
 class LoginView(APIView):
@@ -116,3 +119,17 @@ class ChangePasswordView(APIView):
         user.save()
 
         return Response({"message": "비밀번호 변경 완료"})
+
+# 역할(Role) CRUD API
+# | 기능    | HTTP               |
+# | -----  | ------------------ |
+# | 역할 목록 | GET /roles         |
+# | 역할 생성 | POST /roles        |
+# | 역할 수정 | PUT /roles/{id}    |
+# | 역할 삭제 | DELETE /roles/{id} |
+
+class RoleViewSet(ModelViewSet): # - ModelViewSet을 상속하면 기본적으로 CRUD 엔드포인트가 자동으로 제공
+    queryset = Role.objects.all()
+    serializer_class = RoleSerializer
+    
+    

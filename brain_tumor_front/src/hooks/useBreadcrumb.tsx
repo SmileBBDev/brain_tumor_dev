@@ -41,11 +41,11 @@ function findBreadcrumbPath(
 
     const roleKey = role ?? 'DEFAULT';
     const current: BreadcrumbItem = {
-      id: menu.id,
+      id: menu.code,
       label:
         menu.labels?.[roleKey] ??
         menu.labels?.['DEFAULT'] ??
-        menu.id,
+        menu.code,
       path: menu.breadcrumbOnly ? undefined : menu.path,
     };
 

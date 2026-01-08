@@ -1,9 +1,10 @@
 // types/menu.ts
 export interface MenuNode {
-  id: string;
-  icon? : string;
+  id: number;                        // PK는 숫자형
+  code: string;                      // 'DASHBOARD', 'ADMIN' 등
+  icon?: string;
   labels: Record<string, string>;
-  breadcrumbOnly : boolean;
+  breadcrumbOnly: boolean;
   path?: string;
   component?: string;
   children?: MenuNode[];

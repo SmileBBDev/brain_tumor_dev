@@ -15,8 +15,8 @@ export default function MenuPermissionPage() {
     const [menuTree, setMenuTree] = useState<MenuNode[]>([]);
     const [selectedRole, setSelectedRole] = useState<Role | null>(null);
 
-    const [checkedMenuIds, setCheckedMenuIds] = useState<string[]>([]);
-    const [originMenuIds, setOriginMenuIds] = useState<string[]>([]);
+    const [checkedMenuIds, setCheckedMenuIds] = useState<number[]>([]);
+    const [originMenuIds, setOriginMenuIds] = useState<number[]>([]);
 
     /** 초기 로딩 */
     useEffect(() => {
@@ -50,7 +50,7 @@ export default function MenuPermissionPage() {
     node.id;
 
     // 부모, 자식 메뉴 연결 함수
-    const collectMenuIds = (node: MenuNode): string[] => {
+    const collectMenuIds = (node: MenuNode): number[] => {
         const ids = [node.id];
         if (node.children) {
             node.children.forEach(c => {

@@ -8,11 +8,21 @@ from django.utils import timezone
 from django.db.models import F
 
 from apps.audit.services import create_audit_log
+from apps.menus.models import MenuPermission
 
 class RoleSerializer(serializers.ModelSerializer):
     class Meta:
         model = Role
-        fields = ["id", "code", "name", "description", "created_at"]
+        fields = [
+            "id", 
+            "code", 
+            "name", 
+            "description",
+            "is_active",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = ["code", "created_at", "updated_at"]
 
 # 로그인 실패 최대 허용 횟수
 MAX_LOGIN_FAIL = 5
@@ -93,10 +103,11 @@ class LoginSerializer(serializers.Serializer):
     
 
 # 현재 사용자 정보(내 정보 조회) 데이터
-class MeSerializer(serializers.ModelSerializer) :
-    role = RoleSerializer(read_only=True)  # Role 전체 객체 직렬화
+class MeSerializer(serializers.ModelSerializer):
+    permissions = serializers.SerializerMethodField()
+    role = RoleSerializer(read_only=True)
 
-    class Meta :
+    class Meta:
         model = User
         fields = (
             "id",
@@ -106,8 +117,65 @@ class MeSerializer(serializers.ModelSerializer) :
             "is_active",
             "is_staff",
             "role",
+            "permissions",
             "must_change_password",
         )
+
+    def get_permissions(self, obj):
+        """
+        프론트 hasPermission(menuCode) 에서 사용
+        → Menu.code 리스트 반환
+        """
+        if not obj.role:
+            return []
+
+        role_permissions = obj.role.permissions.all()
+
+        return list(
+            MenuPermission.objects
+            .filter(
+                # permission__in=role_permissions
+                permission__in=role_permissions,
+                menu__is_active=True,
+                menu__breadcrumb_only=False,   # ⭐ 중요
+                menu__path__isnull=False       # ⭐ 실제 페이지 메뉴만
+            )
+            .values_list("menu__code", flat=True)
+            .distinct()
+        )
+# class MeSerializer(serializers.ModelSerializer) :
+#     permissions = serializers.SerializerMethodField()
+#     role = RoleSerializer(read_only=True)  # Role 전체 객체 직렬화
+
+#     class Meta :
+#         model = User
+#         fields = (
+#             "id",
+#             "login_id",
+#             "name",
+#             "email",
+#             "is_active",
+#             "is_staff",
+#             "role",
+#             'permissions',
+#             "must_change_password",
+#         )
+#     def get_permissions(self, obj):
+#         """
+#         프론트 hasPermission(menuCode)에서 쓰는 값
+#         => menu.code 리스트로 내려줘야 함
+#         """
+#         if not obj.role:
+#             return []
+        
+#         permissions = obj.role.permissions.all()
+
+#         # menu_permission → menu → code 만 내려줌
+#         return list(
+#             MenuPermission.objects
+#             .filter(is_active=True)
+#             .values_list("menu__code", flat=True)
+#     )
 
 # 로그인 성공 시 last_login 갱신을 위한 커스텀 시리얼라이저
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):

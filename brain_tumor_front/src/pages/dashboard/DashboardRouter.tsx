@@ -1,4 +1,3 @@
-import type { Role } from '@/types/role';
 
 import DoctorDashboard from '@/pages/dashboard/doctor/DoctorDashboard';
 import NurseDashboard from '@/pages/dashboard/nurse/NurseDashboard';
@@ -9,10 +8,10 @@ import SystemManagerDashboard from './systemManager/SystemManagerDashboard';
 
 
 interface Props {
-  role: Role;
+  role: string;
 }
 
-export default function DashboardRouter({ role }: Props) {
+export default function DashboardRouter( { role }: Props ) {
   switch (role) {
     case 'DOCTOR':
       return <DoctorDashboard />;
