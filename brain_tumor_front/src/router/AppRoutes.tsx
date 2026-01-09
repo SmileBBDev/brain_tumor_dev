@@ -4,23 +4,26 @@ import ProtectedRoute from '@/pages/auth/ProtectedRoute';
 import { routeMap } from './routeMap';
 import type { MenuNode } from '@/types/menu';
 import FullScreenLoader from '@/pages/common/FullScreenLoader';
-import PatientDetailPage from '@/pages/patient/PatientDetailPage';
 
-// 접근 가능한 메뉴만 flatten
+// 접근 가능한 메뉴만 flatten (라우트 등록용 - breadcrumbOnly 포함)
 function flattenAccessibleMenus(
   menus: MenuNode[],
-  permissions: string[]
+  permissions: string[],
+  includeHidden: boolean = false
 ): MenuNode[] {
   return menus.flatMap(menu => {
     const hasPermission = permissions.includes(menu.code);
 
     const children = menu.children
-      ? flattenAccessibleMenus(menu.children, permissions)
+      ? flattenAccessibleMenus(menu.children, permissions, includeHidden)
       : [];
 
     // path가 있고 접근 가능하면 포함
-    if (menu.path && hasPermission && !menu.breadcrumbOnly) {
-      return [menu, ...children];
+    // includeHidden=true면 breadcrumbOnly도 포함 (라우트 등록용)
+    if (menu.path && hasPermission) {
+      if (!menu.breadcrumbOnly || includeHidden) {
+        return [menu, ...children];
+      }
     }
 
     // path가 없거나 접근 불가 → children만 포함
@@ -65,10 +68,10 @@ export default function AppRoutes() {
     return <FullScreenLoader />;
   }
 
-  const accessibleMenus = flattenAccessibleMenus(menus, permissions);
+  // 라우트 등록용: breadcrumbOnly 메뉴도 포함
+  const accessibleMenus = flattenAccessibleMenus(menus, permissions, true);
 
   return (
-    
     <Routes>
       {/* 홈 */}
       <Route index element={<Navigate to={homePath} replace />} />
@@ -89,18 +92,6 @@ export default function AppRoutes() {
           />
         );
       })}
-
-      {/* 동적 라우트 - 상세 페이지 등 */}
-      {permissions.includes('PATIENT_LIST') && (
-        <Route
-          path="/patients/:patientId"
-          element={
-            <ProtectedRoute>
-              <PatientDetailPage />
-            </ProtectedRoute>
-          }
-        />
-      )}
 
       <Route path="*" element={<Navigate to="/403" replace />} />
     </Routes>

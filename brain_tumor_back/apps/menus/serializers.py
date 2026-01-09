@@ -29,6 +29,7 @@ class MenuSerializer(serializers.ModelSerializer):
         model = Menu
         fields = [
             "id",
+            "code",
             "path",
             "icon",
             "group_label",

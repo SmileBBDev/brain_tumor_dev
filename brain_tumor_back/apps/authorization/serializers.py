@@ -125,6 +125,8 @@ class MeSerializer(serializers.ModelSerializer):
         """
         프론트 hasPermission(menuCode) 에서 사용
         → Menu.code 리스트 반환
+
+        breadcrumb_only=True 메뉴도 포함해야 상세 페이지(/ocs/ris/:ocsId 등) 접근 가능
         """
         if not obj.role:
             return []
@@ -134,11 +136,9 @@ class MeSerializer(serializers.ModelSerializer):
         return list(
             MenuPermission.objects
             .filter(
-                # permission__in=role_permissions
                 permission__in=role_permissions,
                 menu__is_active=True,
-                menu__breadcrumb_only=False,   # ⭐ 중요
-                menu__path__isnull=False       # ⭐ 실제 페이지 메뉴만
+                menu__path__isnull=False       # 실제 페이지 메뉴만 (path가 있는 메뉴)
             )
             .values_list("menu__code", flat=True)
             .distinct()

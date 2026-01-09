@@ -1,0 +1,429 @@
+/* RISStudyDetailPage.css */
+
+.ris-study-detail {
+  padding: 20px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.ris-study-detail.loading,
+.ris-study-detail.error {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+  color: #666;
+}
+
+/* 헤더 */
+.detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.header-left h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: #333;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.btn-back {
+  padding: 8px 16px;
+  background: #f5f5f5;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.btn-back:hover {
+  background: #e8e8e8;
+}
+
+.info-text {
+  color: #666;
+  font-size: 14px;
+}
+
+/* 상태 배지 */
+.status-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.status-ordered { background: #fff3cd; color: #856404; }
+.status-accepted { background: #cce5ff; color: #004085; }
+.status-in_progress { background: #d4edda; color: #155724; }
+.status-result_ready { background: #e2e3e5; color: #383d41; }
+.status-confirmed { background: #d1ecf1; color: #0c5460; }
+.status-cancelled { background: #f8d7da; color: #721c24; }
+
+/* 우선순위 배지 */
+.priority-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.priority-urgent { background: #f8d7da; color: #721c24; }
+.priority-normal { background: #d4edda; color: #155724; }
+.priority-scheduled { background: #cce5ff; color: #004085; }
+
+/* 환자 정보 바 */
+.patient-info-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  padding: 16px 20px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.patient-info-bar .info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.patient-info-bar .info-item label {
+  font-size: 0.75rem;
+  color: #666;
+  text-transform: uppercase;
+}
+
+.patient-info-bar .info-item span {
+  font-size: 0.95rem;
+  color: #333;
+  font-weight: 500;
+}
+
+/* 탭 네비게이션 */
+.tab-nav {
+  display: flex;
+  gap: 0;
+  border-bottom: 2px solid #e0e0e0;
+  margin-bottom: 20px;
+}
+
+.tab-btn {
+  padding: 12px 24px;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  color: #666;
+  transition: all 0.2s;
+}
+
+.tab-btn:hover {
+  color: #1976d2;
+}
+
+.tab-btn.active {
+  color: #1976d2;
+  border-bottom-color: #1976d2;
+  font-weight: 600;
+}
+
+/* 탭 콘텐츠 */
+.tab-content {
+  min-height: 400px;
+}
+
+.tab-panel {
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* 정보 패널 */
+.info-panel .panel-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.panel-section {
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 20px;
+}
+
+.panel-section h3 {
+  margin: 0 0 16px 0;
+  font-size: 1.1rem;
+  color: #333;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #eee;
+}
+
+.info-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.info-row {
+  display: flex;
+  gap: 16px;
+}
+
+.info-row label {
+  min-width: 100px;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.info-row span {
+  color: #333;
+  font-size: 0.9rem;
+}
+
+.series-row {
+  flex-direction: column;
+}
+
+.series-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.series-item {
+  display: flex;
+  gap: 12px;
+  padding: 8px 12px;
+  background: #f5f5f5;
+  border-radius: 4px;
+  font-size: 0.85rem;
+}
+
+.series-item .modality {
+  font-weight: 600;
+  color: #1976d2;
+}
+
+.series-item .desc {
+  color: #333;
+  flex: 1;
+}
+
+.series-item .count {
+  color: #666;
+}
+
+/* 리포트 패널 */
+.report-panel {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 24px;
+}
+
+.report-form {
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 24px;
+}
+
+.report-form .form-group {
+  margin-bottom: 20px;
+}
+
+.report-form label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: #333;
+}
+
+.report-form textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 0.95rem;
+  font-family: inherit;
+  resize: vertical;
+  transition: border-color 0.2s;
+}
+
+.report-form textarea:focus {
+  outline: none;
+  border-color: #1976d2;
+}
+
+.report-form textarea:disabled {
+  background: #f5f5f5;
+  color: #666;
+  cursor: not-allowed;
+}
+
+.form-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid #eee;
+}
+
+.finalized-info {
+  margin-top: 20px;
+  padding: 16px;
+  background: #e8f5e9;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.finalized-info p {
+  margin: 4px 0;
+  color: #2e7d32;
+  font-size: 0.9rem;
+}
+
+.ai-preview {
+  position: sticky;
+  top: 20px;
+}
+
+/* 이력 패널 */
+.history-panel h3 {
+  margin: 0 0 16px 0;
+  font-size: 1.1rem;
+  color: #333;
+}
+
+.history-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.history-table th,
+.history-table td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.history-table th {
+  background: #f5f5f5;
+  font-weight: 600;
+  color: #333;
+}
+
+.history-table tbody tr:hover {
+  background: #f8f9fa;
+}
+
+.no-data {
+  text-align: center;
+  color: #666;
+  padding: 40px;
+}
+
+/* 버튼 스타일 */
+.btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: #1976d2;
+  color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: #1565c0;
+}
+
+.btn-secondary {
+  background: #f5f5f5;
+  color: #333;
+  border: 1px solid #ddd;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: #e8e8e8;
+}
+
+.btn-success {
+  background: #4caf50;
+  color: white;
+}
+
+.btn-success:hover:not(:disabled) {
+  background: #43a047;
+}
+
+/* 반응형 */
+@media (max-width: 1024px) {
+  .info-panel .panel-row {
+    grid-template-columns: 1fr;
+  }
+
+  .report-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .ai-preview {
+    position: static;
+  }
+}
+
+@media (max-width: 768px) {
+  .detail-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .patient-info-bar {
+    gap: 16px;
+  }
+
+  .patient-info-bar .info-item {
+    min-width: 45%;
+  }
+}
