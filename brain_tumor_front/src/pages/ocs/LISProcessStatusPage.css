@@ -1,0 +1,312 @@
+/* LIS 검사 결과 처리 상태 페이지 스타일 */
+
+.lis-process-status-page {
+  padding: 20px;
+}
+
+.lis-process-status-page .page-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.lis-process-status-page .page-header h2 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 600;
+  color: #1a1a2e;
+}
+
+.lis-process-status-page .page-header .subtitle {
+  color: #6c757d;
+  font-size: 14px;
+}
+
+.lis-process-status-page .page-header .refresh-btn {
+  margin-left: auto;
+  padding: 8px 16px;
+  background: #3498db;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.lis-process-status-page .page-header .refresh-btn:hover:not(:disabled) {
+  background: #2980b9;
+}
+
+.lis-process-status-page .page-header .refresh-btn:disabled {
+  background: #95a5a6;
+  cursor: not-allowed;
+}
+
+/* 요약 카드 */
+.lis-process-status-page .summary-cards {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.lis-process-status-page .summary-card {
+  background: #fff;
+  border-radius: 8px;
+  padding: 16px 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.lis-process-status-page .summary-card .card-label {
+  font-size: 13px;
+  color: #6c757d;
+}
+
+.lis-process-status-page .summary-card .card-value {
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.lis-process-status-page .summary-card.total .card-value {
+  color: #2c3e50;
+}
+
+.lis-process-status-page .summary-card.pending {
+  border-left: 4px solid #95a5a6;
+}
+
+.lis-process-status-page .summary-card.pending .card-value {
+  color: #95a5a6;
+}
+
+.lis-process-status-page .summary-card.processing {
+  border-left: 4px solid #3498db;
+}
+
+.lis-process-status-page .summary-card.processing .card-value {
+  color: #3498db;
+}
+
+.lis-process-status-page .summary-card.completed {
+  border-left: 4px solid #27ae60;
+}
+
+.lis-process-status-page .summary-card.completed .card-value {
+  color: #27ae60;
+}
+
+.lis-process-status-page .summary-card.error {
+  border-left: 4px solid #e74c3c;
+}
+
+.lis-process-status-page .summary-card.error .card-value {
+  color: #e74c3c;
+}
+
+/* 필터 섹션 */
+.lis-process-status-page .filter-section {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  margin-bottom: 20px;
+  padding: 16px;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.lis-process-status-page .filter-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.lis-process-status-page .filter-group label {
+  font-size: 14px;
+  color: #495057;
+  font-weight: 500;
+}
+
+.lis-process-status-page .filter-group select {
+  padding: 8px 12px;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  font-size: 14px;
+  background: #fff;
+  min-width: 120px;
+}
+
+/* 테이블 섹션 */
+.lis-process-status-page .table-section {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+}
+
+.lis-process-status-page .process-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.lis-process-status-page .process-table th {
+  background: #f8f9fa;
+  padding: 12px 14px;
+  text-align: left;
+  font-size: 13px;
+  font-weight: 600;
+  color: #495057;
+  border-bottom: 2px solid #dee2e6;
+}
+
+.lis-process-status-page .process-table td {
+  padding: 12px 14px;
+  font-size: 13px;
+  color: #212529;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.lis-process-status-page .process-table tr:hover {
+  background: #f8f9fa;
+}
+
+.lis-process-status-page .process-table tr.error-row {
+  background: #fff5f5;
+}
+
+.lis-process-status-page .process-table tr.error-row:hover {
+  background: #ffe8e8;
+}
+
+.lis-process-status-page .raw-id {
+  font-family: monospace;
+  font-size: 12px;
+  color: #6c757d;
+}
+
+.lis-process-status-page .filename {
+  font-weight: 500;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lis-process-status-page .datetime {
+  font-size: 12px;
+  color: #6c757d;
+  white-space: nowrap;
+}
+
+.lis-process-status-page .record-count {
+  text-align: center;
+  color: #495057;
+}
+
+/* 상태 뱃지 */
+.lis-process-status-page .status-badge {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.lis-process-status-page .status-badge.status-pending {
+  background: #e9ecef;
+  color: #6c757d;
+}
+
+.lis-process-status-page .status-badge.status-processing {
+  background: #e8f4fc;
+  color: #3498db;
+}
+
+.lis-process-status-page .status-badge.status-completed {
+  background: #d4edda;
+  color: #155724;
+}
+
+.lis-process-status-page .status-badge.status-error {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+/* 오류 메시지 */
+.lis-process-status-page .error-message {
+  max-width: 200px;
+}
+
+.lis-process-status-page .error-text {
+  display: block;
+  color: #e74c3c;
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 액션 셀 */
+.lis-process-status-page .action-cell {
+  white-space: nowrap;
+}
+
+.lis-process-status-page .reprocess-btn {
+  padding: 5px 12px;
+  background: #f39c12;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.lis-process-status-page .reprocess-btn:hover:not(:disabled) {
+  background: #e08e0b;
+}
+
+.lis-process-status-page .reprocess-btn:disabled {
+  background: #95a5a6;
+  cursor: not-allowed;
+}
+
+/* 로딩 & 빈 메시지 */
+.lis-process-status-page .loading,
+.lis-process-status-page .empty-message {
+  padding: 60px 20px;
+  text-align: center;
+  color: #6c757d;
+  font-size: 15px;
+}
+
+/* 반응형 */
+@media (max-width: 1200px) {
+  .lis-process-status-page .summary-cards {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .lis-process-status-page .summary-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .lis-process-status-page .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .lis-process-status-page .page-header .refresh-btn {
+    margin-left: 0;
+  }
+
+  .lis-process-status-page .process-table {
+    display: block;
+    overflow-x: auto;
+  }
+}

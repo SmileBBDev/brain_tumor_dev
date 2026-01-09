@@ -65,12 +65,19 @@ def load_menu_permission_seed():
     from apps.menus.models import Menu
     from apps.accounts.models import Permission, Role
 
-    # 이미 데이터가 있으면 스킵
-    if Menu.objects.count() > 0 and Permission.objects.count() > 0:
-        print(f"[SKIP] 이미 존재 (메뉴: {Menu.objects.count()}개, 권한: {Permission.objects.count()}개)")
-        return True
+    # 변경 사항 추적을 위한 딕셔너리
+    changes = {
+        'Permission': {'before': 0, 'created': 0},
+        'Menu': {'before': 0, 'created': 0},
+        'MenuPermission': {'before': 0, 'created': 0},
+        'MenuLabel': {'before': 0, 'created': 0},
+    }
 
-    print("  메뉴/권한 데이터 생성 중...")
+    changes['Permission']['before'] = Permission.objects.count()
+    changes['Menu']['before'] = Menu.objects.count()
+
+    print(f"  기존 데이터: 메뉴 {changes['Menu']['before']}개, 권한 {changes['Permission']['before']}개")
+    print("  메뉴/권한 데이터 동기화 중...")
 
     # ========== 권한 데이터 ==========
     permissions_data = [
@@ -85,8 +92,11 @@ def load_menu_permission_seed():
         ('OCS_ORDER', '검사 오더', '의사용 검사 오더 생성/관리'),
         ('OCS_RIS', '영상 워크리스트', 'RIS 작업자용 영상 오더 처리'),
         ('OCS_RIS_DETAIL', '영상 검사 상세', 'RIS 영상 검사 상세 페이지'),
+        ('RIS_DASHBOARD', '판독 현황 대시보드', 'RIS 전체 판독 현황 대시보드'),
         ('OCS_LIS', '검사 워크리스트', 'LIS 작업자용 검사 오더 처리'),
         ('OCS_LIS_DETAIL', '검사 결과 상세', 'LIS 검사 결과 상세 페이지'),
+        ('LIS_ALERT', '검사 결과 Alert', 'LIS 이상/치명적 검사 결과 알림'),
+        ('LIS_PROCESS_STATUS', '결과 처리 상태', 'LIS 업로드 데이터 처리 상태 모니터링'),
         ('NURSE_RECEPTION', '진료 접수 현황', '간호사용 진료 접수 현황 페이지'),
         ('IMAGING', '영상', '영상 메뉴'),
         ('IMAGE_VIEWER', '영상 조회', '영상 조회 화면'),
@@ -104,7 +114,6 @@ def load_menu_permission_seed():
         ('ADMIN_SYSTEM_MONITOR', '시스템 모니터링', '시스템 모니터링 화면'),
     ]
 
-    permission_count = 0
     permission_map = {}
     for code, name, description in permissions_data:
         perm, created = Permission.objects.get_or_create(
@@ -113,67 +122,81 @@ def load_menu_permission_seed():
         )
         permission_map[code] = perm
         if created:
-            permission_count += 1
+            changes['Permission']['created'] += 1
 
-    print(f"  권한 생성: {permission_count}개")
+    print(f"  권한 생성: {changes['Permission']['created']}개")
 
     # ========== 메뉴 데이터 ==========
+    # 메뉴 생성 헬퍼 함수
+    def create_menu(menu_id, **kwargs):
+        menu, created = Menu.objects.get_or_create(id=menu_id, defaults=kwargs)
+        if created:
+            changes['Menu']['created'] += 1
+        return menu, created
+
     # 최상위 메뉴
-    menu_admin, _ = Menu.objects.get_or_create(id=1, defaults={'code': 'ADMIN', 'path': None, 'icon': 'settings', 'order': 7, 'is_active': True})
-    menu_ai, _ = Menu.objects.get_or_create(id=2, defaults={'code': 'AI_SUMMARY', 'path': '/ai', 'icon': 'brain', 'order': 5, 'is_active': True})
-    menu_dashboard, _ = Menu.objects.get_or_create(id=3, defaults={'code': 'DASHBOARD', 'path': '/dashboard', 'icon': 'home', 'order': 1, 'is_active': True})
-    menu_imaging, _ = Menu.objects.get_or_create(id=4, defaults={'code': 'IMAGING', 'path': None, 'icon': None, 'group_label': '영상', 'order': 4, 'is_active': True})
-    menu_lab, _ = Menu.objects.get_or_create(id=5, defaults={'code': 'LAB', 'path': None, 'icon': None, 'group_label': '검사', 'order': 6, 'is_active': True})
-    menu_order, _ = Menu.objects.get_or_create(id=6, defaults={'code': 'ORDER', 'path': None, 'icon': None, 'group_label': '검사 오더', 'order': 3, 'is_active': True})
-    menu_patient, _ = Menu.objects.get_or_create(id=7, defaults={'code': 'PATIENT', 'path': None, 'icon': None, 'group_label': '환자', 'order': 2, 'is_active': True})
+    menu_admin, _ = create_menu(1, code='ADMIN', path=None, icon='settings', order=7, is_active=True)
+    menu_ai, _ = create_menu(2, code='AI_SUMMARY', path='/ai', icon='brain', order=5, is_active=True)
+    menu_dashboard, _ = create_menu(3, code='DASHBOARD', path='/dashboard', icon='home', order=1, is_active=True)
+    menu_imaging, _ = create_menu(4, code='IMAGING', path=None, icon=None, group_label='영상', order=4, is_active=True)
+    menu_lab, _ = create_menu(5, code='LAB', path=None, icon=None, group_label='검사', order=6, is_active=True)
+    menu_order, _ = create_menu(6, code='ORDER', path=None, icon=None, group_label='검사 오더', order=3, is_active=True)
+    menu_patient, _ = create_menu(7, code='PATIENT', path=None, icon=None, group_label='환자', order=2, is_active=True)
 
     # Admin 하위
-    Menu.objects.get_or_create(id=8, defaults={'code': 'ADMIN_AUDIT_LOG', 'path': '/admin/audit', 'order': 4, 'is_active': True, 'parent': menu_admin})
-    Menu.objects.get_or_create(id=9, defaults={'code': 'ADMIN_MENU_PERMISSION', 'path': '/admin/permissions', 'order': 3, 'is_active': True, 'parent': menu_admin})
-    Menu.objects.get_or_create(id=10, defaults={'code': 'ADMIN_ROLE', 'path': '/admin/roles', 'order': 2, 'is_active': True, 'parent': menu_admin})
-    Menu.objects.get_or_create(id=11, defaults={'code': 'ADMIN_SYSTEM_MONITOR', 'path': '/admin/monitor', 'order': 5, 'is_active': True, 'parent': menu_admin})
-    Menu.objects.get_or_create(id=12, defaults={'code': 'ADMIN_USER', 'path': '/admin/users', 'order': 1, 'is_active': True, 'parent': menu_admin})
-    menu_admin_user_detail, _ = Menu.objects.get_or_create(id=13, defaults={'code': 'ADMIN_USER_DETAIL', 'path': '/admin/users/:id', 'breadcrumb_only': True, 'order': 1, 'is_active': True, 'parent_id': 12})
+    create_menu(8, code='ADMIN_AUDIT_LOG', path='/admin/audit', order=4, is_active=True, parent=menu_admin)
+    create_menu(9, code='ADMIN_MENU_PERMISSION', path='/admin/permissions', order=3, is_active=True, parent=menu_admin)
+    create_menu(10, code='ADMIN_ROLE', path='/admin/roles', order=2, is_active=True, parent=menu_admin)
+    create_menu(11, code='ADMIN_SYSTEM_MONITOR', path='/admin/monitor', order=5, is_active=True, parent=menu_admin)
+    create_menu(12, code='ADMIN_USER', path='/admin/users', order=1, is_active=True, parent=menu_admin)
+    menu_admin_user_detail, _ = create_menu(13, code='ADMIN_USER_DETAIL', path='/admin/users/:id', breadcrumb_only=True, order=1, is_active=True, parent_id=12)
 
     # Imaging 하위
-    Menu.objects.get_or_create(id=14, defaults={'code': 'IMAGE_VIEWER', 'path': '/imaging', 'icon': 'image', 'order': 1, 'is_active': True, 'parent': menu_imaging})
-    Menu.objects.get_or_create(id=15, defaults={'code': 'RIS_WORKLIST', 'path': '/ris/worklist', 'icon': 'x-ray', 'order': 2, 'is_active': True, 'parent': menu_imaging})
+    create_menu(14, code='IMAGE_VIEWER', path='/imaging', icon='image', order=1, is_active=True, parent=menu_imaging)
+    create_menu(15, code='RIS_WORKLIST', path='/ris/worklist', icon='x-ray', order=2, is_active=True, parent=menu_imaging)
 
     # Lab 하위
-    Menu.objects.get_or_create(id=16, defaults={'code': 'LAB_RESULT_UPLOAD', 'path': '/lab/upload', 'breadcrumb_only': True, 'order': 2, 'is_active': True, 'parent': menu_lab})
-    Menu.objects.get_or_create(id=17, defaults={'code': 'LAB_RESULT_VIEW', 'path': '/lab', 'icon': 'book', 'order': 1, 'is_active': True, 'parent': menu_lab})
+    create_menu(16, code='LAB_RESULT_UPLOAD', path='/lab/upload', breadcrumb_only=True, order=2, is_active=True, parent=menu_lab)
+    create_menu(17, code='LAB_RESULT_VIEW', path='/lab', icon='book', order=1, is_active=True, parent=menu_lab)
 
     # Order 하위
-    Menu.objects.get_or_create(id=18, defaults={'code': 'ORDER_CREATE', 'path': '/orders/create', 'breadcrumb_only': True, 'order': 2, 'is_active': True, 'parent': menu_order})
-    Menu.objects.get_or_create(id=19, defaults={'code': 'ORDER_LIST', 'path': '/orders/list', 'icon': 'clipboard', 'order': 1, 'is_active': True, 'parent': menu_order})
+    create_menu(18, code='ORDER_CREATE', path='/orders/create', breadcrumb_only=True, order=2, is_active=True, parent=menu_order)
+    create_menu(19, code='ORDER_LIST', path='/orders/list', icon='clipboard', order=1, is_active=True, parent=menu_order)
 
     # Patient 하위
-    Menu.objects.get_or_create(id=20, defaults={'code': 'PATIENT_LIST', 'path': '/patients', 'order': 1, 'is_active': True, 'parent': menu_patient})
-    Menu.objects.get_or_create(id=21, defaults={'code': 'PATIENT_DETAIL', 'path': '/patients/:patientId', 'breadcrumb_only': True, 'order': 1, 'is_active': True, 'parent_id': 20})
-    Menu.objects.get_or_create(id=22, defaults={'code': 'PATIENT_CARE', 'path': '/patients/care', 'order': 2, 'is_active': True, 'parent': menu_patient})
+    create_menu(20, code='PATIENT_LIST', path='/patients', order=1, is_active=True, parent=menu_patient)
+    create_menu(21, code='PATIENT_DETAIL', path='/patients/:patientId', breadcrumb_only=True, order=1, is_active=True, parent_id=20)
+    create_menu(22, code='PATIENT_CARE', path='/patients/care', order=2, is_active=True, parent=menu_patient)
 
     # OCS 메뉴
-    menu_ocs_order, _ = Menu.objects.get_or_create(id=23, defaults={'code': 'OCS_ORDER', 'path': '/ocs/order', 'icon': 'file-medical', 'order': 3, 'is_active': True, 'parent': menu_order})
-    menu_ocs_ris, _ = Menu.objects.get_or_create(id=24, defaults={'code': 'OCS_RIS', 'path': '/ocs/ris', 'icon': 'x-ray', 'order': 4, 'is_active': True, 'parent': menu_order})
-    menu_ocs_lis, _ = Menu.objects.get_or_create(id=25, defaults={'code': 'OCS_LIS', 'path': '/ocs/lis', 'icon': 'flask', 'order': 5, 'is_active': True, 'parent': menu_order})
+    menu_ocs_order, _ = create_menu(23, code='OCS_ORDER', path='/ocs/order', icon='file-medical', order=3, is_active=True, parent=menu_order)
+    menu_ocs_ris, _ = create_menu(24, code='OCS_RIS', path='/ocs/ris', icon='x-ray', order=4, is_active=True, parent=menu_order)
+    menu_ocs_lis, _ = create_menu(25, code='OCS_LIS', path='/ocs/lis', icon='flask', order=5, is_active=True, parent=menu_order)
 
     # OCS 상세 페이지 메뉴 (breadcrumb_only)
-    Menu.objects.get_or_create(id=26, defaults={'code': 'OCS_RIS_DETAIL', 'path': '/ocs/ris/:ocsId', 'icon': 'x-ray', 'breadcrumb_only': True, 'order': 1, 'is_active': True, 'parent': menu_ocs_ris})
-    print("  [DEBUG] OCS_RIS_DETAIL 메뉴 생성/확인 완료")
-    Menu.objects.get_or_create(id=27, defaults={'code': 'OCS_LIS_DETAIL', 'path': '/ocs/lis/:ocsId', 'icon': 'flask', 'breadcrumb_only': True, 'order': 1, 'is_active': True, 'parent': menu_ocs_lis})
-    print("  [DEBUG] OCS_LIS_DETAIL 메뉴 생성/확인 완료")
+    create_menu(26, code='OCS_RIS_DETAIL', path='/ocs/ris/:ocsId', icon='x-ray', breadcrumb_only=True, order=1, is_active=True, parent=menu_ocs_ris)
+    create_menu(27, code='OCS_LIS_DETAIL', path='/ocs/lis/:ocsId', icon='flask', breadcrumb_only=True, order=1, is_active=True, parent=menu_ocs_lis)
 
     # 간호사 진료 접수 메뉴
-    Menu.objects.get_or_create(id=28, defaults={'code': 'NURSE_RECEPTION', 'path': '/nurse/reception', 'icon': 'clipboard-list', 'order': 30, 'is_active': True, 'parent': None})
-    print("  [DEBUG] NURSE_RECEPTION 메뉴 생성/확인 완료")
+    create_menu(28, code='NURSE_RECEPTION', path='/nurse/reception', icon='clipboard-list', order=30, is_active=True, parent=None)
 
-    print(f"  메뉴 생성: {Menu.objects.count()}개")
+    # LIS Alert 메뉴
+    create_menu(29, code='LIS_ALERT', path='/ocs/lis/alert', icon='bell', order=6, is_active=True, parent=menu_order)
+
+    # RIS Dashboard 메뉴
+    create_menu(30, code='RIS_DASHBOARD', path='/ocs/ris/dashboard', icon='chart-bar', order=7, is_active=True, parent=menu_order)
+
+    # LIS Process Status 메뉴
+    create_menu(31, code='LIS_PROCESS_STATUS', path='/ocs/lis/process-status', icon='tasks', order=8, is_active=True, parent=menu_order)
+
+    print(f"  메뉴 생성: {changes['Menu']['created']}개 (전체: {Menu.objects.count()}개)")
 
     # ========== 메뉴-권한 매핑 (MenuPermission) ==========
     from apps.menus.models import MenuPermission
 
+    changes['MenuPermission']['before'] = MenuPermission.objects.count()
+
     # path가 있는 모든 메뉴에 대해 동일 code의 권한 매핑 (breadcrumb_only 포함)
-    menu_perm_count = 0
     for menu in Menu.objects.filter(path__isnull=False):
         if menu.code in permission_map:
             _, created = MenuPermission.objects.get_or_create(
@@ -181,13 +204,14 @@ def load_menu_permission_seed():
                 permission=permission_map[menu.code]
             )
             if created:
-                menu_perm_count += 1
-                print(f"    [DEBUG] MenuPermission 생성: {menu.code}")
+                changes['MenuPermission']['created'] += 1
 
-    print(f"  메뉴-권한 매핑: {menu_perm_count}개")
+    print(f"  메뉴-권한 매핑: {changes['MenuPermission']['created']}개 (전체: {MenuPermission.objects.count()}개)")
 
     # ========== 메뉴 라벨 (MenuLabel) ==========
     from apps.menus.models import MenuLabel
+
+    changes['MenuLabel']['before'] = MenuLabel.objects.count()
 
     menu_labels_data = [
         # DASHBOARD
@@ -214,6 +238,15 @@ def load_menu_permission_seed():
         # 간호사
         (28, 'DEFAULT', '진료 접수 현황'),
         (28, 'NURSE', '진료 접수'),
+        # LIS Alert
+        (29, 'DEFAULT', '검사 결과 Alert'),
+        (29, 'LIS', '결과 Alert'),
+        # RIS Dashboard
+        (30, 'DEFAULT', '판독 현황 대시보드'),
+        (30, 'RIS', '판독 현황'),
+        # LIS Process Status
+        (31, 'DEFAULT', '결과 처리 상태'),
+        (31, 'LIS', '처리 상태'),
         # IMAGING
         (4, 'DEFAULT', '영상'),
         (14, 'DEFAULT', '영상 조회'),
@@ -234,7 +267,6 @@ def load_menu_permission_seed():
         (11, 'DEFAULT', '시스템 모니터링'),
     ]
 
-    label_count = 0
     for menu_id, role, text in menu_labels_data:
         try:
             menu = Menu.objects.get(id=menu_id)
@@ -244,11 +276,11 @@ def load_menu_permission_seed():
                 defaults={'text': text}
             )
             if created:
-                label_count += 1
+                changes['MenuLabel']['created'] += 1
         except Menu.DoesNotExist:
             pass
 
-    print(f"  메뉴 라벨: {label_count}개")
+    print(f"  메뉴 라벨: {changes['MenuLabel']['created']}개 (전체: {MenuLabel.objects.count()}개)")
 
     # ========== 역할별 권한 매핑 ==========
     role_permissions = {
@@ -264,10 +296,9 @@ def load_menu_permission_seed():
         ],
         'DOCTOR': ['DASHBOARD', 'PATIENT_LIST', 'PATIENT_DETAIL', 'PATIENT_CARE', 'ORDER_LIST', 'OCS_ORDER', 'IMAGE_VIEWER', 'RIS_WORKLIST', 'AI_SUMMARY'],
         'NURSE': ['DASHBOARD', 'PATIENT_LIST', 'PATIENT_DETAIL', 'PATIENT_CARE', 'ORDER_LIST', 'IMAGE_VIEWER', 'LAB_RESULT_VIEW', 'NURSE_RECEPTION'],
-        'RIS': ['DASHBOARD', 'IMAGE_VIEWER', 'RIS_WORKLIST', 'OCS_RIS', 'OCS_RIS_DETAIL'],
-        'LIS': ['DASHBOARD', 'LAB_RESULT_VIEW', 'LAB_RESULT_UPLOAD', 'OCS_LIS', 'OCS_LIS_DETAIL'],
+        'RIS': ['DASHBOARD', 'IMAGE_VIEWER', 'RIS_WORKLIST', 'OCS_RIS', 'OCS_RIS_DETAIL', 'RIS_DASHBOARD'],
+        'LIS': ['DASHBOARD', 'LAB_RESULT_VIEW', 'LAB_RESULT_UPLOAD', 'OCS_LIS', 'OCS_LIS_DETAIL', 'LIS_ALERT', 'LIS_PROCESS_STATUS'],
     }
-    print("  [DEBUG] 역할별 권한 매핑 설정 시작...")
 
     for role_code, perm_codes in role_permissions.items():
         try:
@@ -278,7 +309,16 @@ def load_menu_permission_seed():
         except Role.DoesNotExist:
             print(f"  경고: {role_code} 역할이 없습니다")
 
-    print(f"[OK] 메뉴/권한 시드 완료")
+    # ========== 변경 요약 출력 ==========
+    print("\n  [결과 요약]")
+    for table, counts in changes.items():
+        created = counts['created']
+        if created > 0:
+            print(f"  결과: {table} 테이블에 {created}개가 추가되었습니다.")
+        else:
+            print(f"  결과: {table} 테이블에 변경 없음 (기존 {counts['before']}개)")
+
+    print(f"\n[OK] 메뉴/권한 시드 완료")
     return True
 
 
