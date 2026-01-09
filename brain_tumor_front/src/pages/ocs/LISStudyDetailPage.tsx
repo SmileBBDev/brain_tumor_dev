@@ -3,11 +3,12 @@
  * - 환자 정보 및 검사 결과 상세
  * - 결과 검증 및 보고 확정
  * - 의학적 해석(Interpretation) 입력
+ * - 파일 업로드 기능
  */
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider';
-import { getOCS, startOCS, saveOCSResult, submitOCSResult } from '@/services/ocs.api';
+import { getOCS, startOCS, saveOCSResult, confirmOCS } from '@/services/ocs.api';
 import type { OCSDetail } from '@/types/ocs';
 import './LISStudyDetailPage.css';
 
@@ -21,6 +22,15 @@ interface LabResultItem {
   unit: string;
   refRange: string;
   flag: 'normal' | 'abnormal' | 'critical';
+}
+
+// 업로드 파일 타입
+interface UploadedFile {
+  name: string;
+  size: number;
+  type: string;
+  uploadedAt: string;
+  dataUrl?: string; // Base64로 저장 (실제로는 서버 업로드 필요)
 }
 
 // 날짜 포맷
@@ -63,6 +73,10 @@ export default function LISStudyDetailPage() {
   const [interpretation, setInterpretation] = useState('');
   const [notes, setNotes] = useState('');
 
+  // 파일 업로드
+  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   // 데이터 로드
   const fetchOCSDetail = useCallback(async () => {
     if (!ocsId) return;
@@ -83,6 +97,9 @@ export default function LISStudyDetailPage() {
         }
         if (result.notes) {
           setNotes(result.notes as string);
+        }
+        if (result.files) {
+          setUploadedFiles(result.files as UploadedFile[]);
         }
       }
     } catch (error) {
@@ -134,6 +151,44 @@ export default function LISStudyDetailPage() {
     setLabResults(labResults.filter((_, i) => i !== index));
   };
 
+  // 파일 업로드 핸들러
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+
+    Array.from(files).forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const newFile: UploadedFile = {
+          name: file.name,
+          size: file.size,
+          type: file.type,
+          uploadedAt: new Date().toISOString(),
+          dataUrl: reader.result as string,
+        };
+        setUploadedFiles((prev) => [...prev, newFile]);
+      };
+      reader.readAsDataURL(file);
+    });
+
+    // 입력 초기화
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  // 파일 삭제
+  const handleRemoveFile = (index: number) => {
+    setUploadedFiles(uploadedFiles.filter((_, i) => i !== index));
+  };
+
+  // 파일 크기 포맷
+  const formatFileSize = (bytes: number): string => {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+  };
+
   // 임시 저장
   const handleSave = async () => {
     if (!ocs) return;
@@ -145,6 +200,7 @@ export default function LISStudyDetailPage() {
           labResults,
           interpretation,
           notes,
+          files: uploadedFiles,
           _savedAt: new Date().toISOString(),
         },
       });
@@ -158,7 +214,7 @@ export default function LISStudyDetailPage() {
     }
   };
 
-  // 결과 제출 (검증 완료)
+  // 결과 제출 및 확정 (IN_PROGRESS → CONFIRMED)
   const handleSubmit = async () => {
     if (!ocs) return;
 
@@ -180,16 +236,18 @@ export default function LISStudyDetailPage() {
 
     setSaving(true);
     try {
-      await submitOCSResult(ocs.id, {
+      // LIS는 결과 제출 시 바로 확정 처리
+      await confirmOCS(ocs.id, {
         worker_result: {
           labResults,
           interpretation,
           notes,
+          files: uploadedFiles,
           _verifiedAt: new Date().toISOString(),
           _verifiedBy: user?.name,
         },
       });
-      alert('결과가 제출되었습니다.');
+      alert('결과가 제출되고 확정되었습니다.');
       await fetchOCSDetail();
     } catch (error) {
       console.error('Failed to submit result:', error);
@@ -366,6 +424,57 @@ export default function LISStudyDetailPage() {
         {/* 검사 결과 탭 */}
         {activeTab === 'result' && (
           <div className="result-tab">
+            {/* 파일 업로드 섹션 */}
+            <div className="file-upload-section">
+              <div className="section-header">
+                <h4>결과 파일 첨부</h4>
+                {canEdit && (
+                  <>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      multiple
+                      accept=".pdf,.jpg,.jpeg,.png,.xlsx,.xls,.csv,.doc,.docx"
+                      onChange={handleFileUpload}
+                      style={{ display: 'none' }}
+                      id="file-upload"
+                    />
+                    <label htmlFor="file-upload" className="btn btn-sm btn-secondary">
+                      파일 선택
+                    </label>
+                  </>
+                )}
+              </div>
+
+              {uploadedFiles.length > 0 ? (
+                <ul className="file-list">
+                  {uploadedFiles.map((file, index) => (
+                    <li key={index} className="file-item">
+                      <span className="file-icon">
+                        {file.type.includes('pdf') ? '📄' :
+                         file.type.includes('image') ? '🖼️' :
+                         file.type.includes('sheet') || file.type.includes('excel') ? '📊' : '📎'}
+                      </span>
+                      <span className="file-name">{file.name}</span>
+                      <span className="file-size">{formatFileSize(file.size)}</span>
+                      {canEdit && (
+                        <button
+                          className="btn btn-sm btn-danger"
+                          onClick={() => handleRemoveFile(index)}
+                        >
+                          삭제
+                        </button>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <div className="no-files">
+                  첨부된 파일이 없습니다. {canEdit && '파일을 업로드하세요.'}
+                </div>
+              )}
+            </div>
+
             <div className="result-header">
               <h4>검사 결과 입력</h4>
               {canEdit && (

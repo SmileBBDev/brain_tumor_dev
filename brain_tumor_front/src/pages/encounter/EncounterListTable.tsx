@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import type { Encounter } from '@/types/encounter';
 
 type Props = {
@@ -8,9 +9,16 @@ type Props = {
 };
 
 export default function EncounterListTable({ role, encounters, onEdit, onDelete }: Props) {
+  const navigate = useNavigate();
   const isDoctor = role === 'DOCTOR';
   const isSystemManager = role === 'SYSTEMMANAGER';
   const canEdit = isDoctor || isSystemManager;
+  const canCreateOrder = isDoctor || isSystemManager;
+
+  // 오더 생성 페이지로 이동
+  const handleCreateOrder = (encounter: Encounter) => {
+    navigate(`/orders/create?patientId=${encounter.patient}&encounterId=${encounter.id}`);
+  };
 
   // Handle undefined encounters
   if (!encounters) {
@@ -108,6 +116,15 @@ export default function EncounterListTable({ role, encounters, onEdit, onDelete 
               </td>
               <td>
                 <div className="action-buttons">
+                  {canCreateOrder && (e.status === 'in-progress' || e.status === 'scheduled') && (
+                    <button
+                      className="btn small"
+                      onClick={() => handleCreateOrder(e)}
+                      style={{ backgroundColor: '#4caf50', color: 'white' }}
+                    >
+                      오더생성
+                    </button>
+                  )}
                   {canEdit && (
                     <>
                       <button

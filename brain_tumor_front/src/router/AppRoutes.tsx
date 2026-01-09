@@ -4,6 +4,8 @@ import ProtectedRoute from '@/pages/auth/ProtectedRoute';
 import { routeMap } from './routeMap';
 import type { MenuNode } from '@/types/menu';
 import FullScreenLoader from '@/pages/common/FullScreenLoader';
+import OrderCreatePage from '@/pages/orders/OrderCreate';
+import OCSResultReportPage from '@/pages/ocs/OCSResultReportPage';
 
 // 접근 가능한 메뉴만 flatten (라우트 등록용 - breadcrumbOnly 포함)
 function flattenAccessibleMenus(
@@ -75,6 +77,26 @@ export default function AppRoutes() {
     <Routes>
       {/* 홈 */}
       <Route index element={<Navigate to={homePath} replace />} />
+
+      {/* 오더 생성 페이지 (메뉴에 없지만 직접 접근 필요) */}
+      <Route
+        path="/orders/create"
+        element={
+          <ProtectedRoute>
+            <OrderCreatePage />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* OCS 결과 보고서 페이지 */}
+      <Route
+        path="/ocs/report/:ocsId"
+        element={
+          <ProtectedRoute>
+            <OCSResultReportPage />
+          </ProtectedRoute>
+        }
+      />
 
       {accessibleMenus.map(menu => {
         const Component = routeMap[menu.code];

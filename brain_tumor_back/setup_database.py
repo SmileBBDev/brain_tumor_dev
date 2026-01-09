@@ -262,7 +262,11 @@ def setup_test_users():
     # (login_id, password, name, role_code, is_staff)
     test_users = [
         ('admin', 'admin001', '병원관리자', 'ADMIN', True),
-        ('doctor1', 'doctor001', '의사', 'DOCTOR', False),
+        ('doctor1', 'doctor001', '김철수 의사', 'DOCTOR', False),
+        ('doctor2', 'doctor002', '이영희 의사', 'DOCTOR', False),
+        ('doctor3', 'doctor003', '박민수 의사', 'DOCTOR', False),
+        ('doctor4', 'doctor004', '최지은 의사', 'DOCTOR', False),
+        ('doctor5', 'doctor005', '정현우 의사', 'DOCTOR', False),
         ('nurse1', 'nurse001', '간호사', 'NURSE', False),
         ('patient1', 'patient001', '환자', 'PATIENT', False),
         ('ris1', 'ris001', '영상과', 'RIS', False),

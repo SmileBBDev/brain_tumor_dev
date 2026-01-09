@@ -49,7 +49,6 @@ const getPriorityClass = (priority: string): string => {
   const classes: Record<string, string> = {
     urgent: 'priority-urgent',
     normal: 'priority-normal',
-    scheduled: 'priority-scheduled',
   };
   return classes[priority] || '';
 };
@@ -295,6 +294,30 @@ export default function LISWorklistPage() {
                           onClick={() => handleRowClick(ocs)}
                         >
                           결과 입력
+                        </button>
+                      )}
+                      {ocs.ocs_status === 'RESULT_READY' && (
+                        <button
+                          className="btn btn-sm btn-secondary"
+                          onClick={() => handleRowClick(ocs)}
+                        >
+                          조회
+                        </button>
+                      )}
+                      {ocs.ocs_status === 'CONFIRMED' && (
+                        <button
+                          className="btn btn-sm btn-success"
+                          onClick={() => navigate(`/ocs/report/${ocs.id}`)}
+                        >
+                          결과 보기
+                        </button>
+                      )}
+                      {ocs.ocs_status === 'CANCELLED' && (
+                        <button
+                          className="btn btn-sm btn-secondary"
+                          onClick={() => handleRowClick(ocs)}
+                        >
+                          조회
                         </button>
                       )}
                     </td>

@@ -3,8 +3,9 @@
  * - 영상 오더 접수, 작업, 결과 제출
  * - Modality 필터, 검색 기능 추가
  * - 상세 페이지로 이동
+ * - 실시간 OCS 상태 변경 알림
  */
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider';
 import Pagination from '@/layout/Pagination';
@@ -16,6 +17,8 @@ import type {
   Priority,
 } from '@/types/ocs';
 import { OCS_STATUS_LABELS, PRIORITY_LABELS } from '@/types/ocs';
+import { useOCSNotification } from '@/hooks/useOCSNotification';
+import OCSNotificationToast from '@/components/OCSNotificationToast';
 import './RISWorklistPage.css';
 
 // Modality 옵션
@@ -51,7 +54,6 @@ const getPriorityClass = (priority: string): string => {
   const classes: Record<string, string> = {
     urgent: 'priority-urgent',
     normal: 'priority-normal',
-    scheduled: 'priority-scheduled',
   };
   return classes[priority] || '';
 };
@@ -75,6 +77,21 @@ export default function RISWorklistPage() {
   const [myWorkOnly, setMyWorkOnly] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchInput, setSearchInput] = useState('');
+
+  // 목록 새로고침 함수
+  const refreshList = useCallback(() => {
+    setRefreshKey((prev) => prev + 1);
+  }, []);
+
+  // OCS 실시간 알림
+  const { notifications, removeNotification } = useOCSNotification({
+    autoRefresh: refreshList,
+  });
+
+  // 알림 클릭 시 상세 페이지로 이동
+  const handleNotificationClick = useCallback((notification: { ocsPk: number }) => {
+    navigate(`/ocs/ris/${notification.ocsPk}`);
+  }, [navigate]);
 
   // OCS 목록 조회
   useEffect(() => {
@@ -375,7 +392,23 @@ export default function RISWorklistPage() {
                           판독 계속
                         </button>
                       )}
-                      {['RESULT_READY', 'CONFIRMED'].includes(ocs.ocs_status) && (
+                      {ocs.ocs_status === 'RESULT_READY' && (
+                        <button
+                          className="btn btn-sm btn-secondary"
+                          onClick={() => handleRowClick(ocs)}
+                        >
+                          조회
+                        </button>
+                      )}
+                      {ocs.ocs_status === 'CONFIRMED' && (
+                        <button
+                          className="btn btn-sm btn-success"
+                          onClick={() => navigate(`/ocs/report/${ocs.id}`)}
+                        >
+                          결과 보기
+                        </button>
+                      )}
+                      {ocs.ocs_status === 'CANCELLED' && (
                         <button
                           className="btn btn-sm btn-secondary"
                           onClick={() => handleRowClick(ocs)}
@@ -401,6 +434,13 @@ export default function RISWorklistPage() {
           pageSize={pageSize}
         />
       </section>
+
+      {/* OCS 실시간 알림 Toast */}
+      <OCSNotificationToast
+        notifications={notifications}
+        onDismiss={removeNotification}
+        onClickNotification={handleNotificationClick}
+      />
     </div>
   );
 }

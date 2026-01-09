@@ -271,16 +271,24 @@ export default function OCSDetailModal({ isOpen, ocsId, onClose, onSuccess }: Pr
               {activeTab === 'result' && (
                 <div className="result-section">
                   <h4>의사 요청</h4>
-                  <pre className="json-viewer">
-                    {JSON.stringify(ocs.doctor_request, null, 2)}
-                  </pre>
+                  {ocs.doctor_request && Object.keys(ocs.doctor_request).length > 0 ? (
+                    <pre className="json-viewer">
+                      {JSON.stringify(ocs.doctor_request, null, 2)}
+                    </pre>
+                  ) : (
+                    <p className="no-data">아직 요청 내용이 없습니다.</p>
+                  )}
 
                   <h4>작업 결과</h4>
-                  <pre className="json-viewer">
-                    {JSON.stringify(ocs.worker_result, null, 2)}
-                  </pre>
+                  {ocs.worker_result && Object.keys(ocs.worker_result).length > 0 ? (
+                    <pre className="json-viewer">
+                      {JSON.stringify(ocs.worker_result, null, 2)}
+                    </pre>
+                  ) : (
+                    <p className="no-data">아직 결과가 없습니다.</p>
+                  )}
 
-                  {ocs.attachments.files.length > 0 && (
+                  {ocs.attachments?.files && ocs.attachments.files.length > 0 && (
                     <>
                       <h4>첨부파일</h4>
                       <ul className="attachment-list">

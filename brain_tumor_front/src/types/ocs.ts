@@ -12,7 +12,7 @@ export type OcsStatus =
   | 'CONFIRMED'
   | 'CANCELLED';
 
-export type Priority = 'urgent' | 'normal' | 'scheduled';
+export type Priority = 'urgent' | 'normal';
 
 export type JobRole = 'RIS' | 'LIS' | 'TREATMENT' | 'CONSULT';
 
@@ -28,7 +28,6 @@ export const OCS_STATUS_LABELS: Record<OcsStatus, string> = {
 export const PRIORITY_LABELS: Record<Priority, string> = {
   urgent: '긴급',
   normal: '일반',
-  scheduled: '예약',
 };
 
 export const JOB_ROLE_LABELS: Record<JobRole, string> = {
@@ -311,7 +310,8 @@ export interface OCSSubmitResultRequest {
 }
 
 export interface OCSConfirmRequest {
-  ocs_result: boolean;
+  ocs_result?: boolean;
+  worker_result?: Partial<WorkerResult> | Record<string, unknown>;
 }
 
 export interface OCSCancelRequest {

@@ -37,7 +37,6 @@ class OCS(models.Model):
     class Priority(models.TextChoices):
         URGENT = 'urgent', '긴급'
         NORMAL = 'normal', '일반'
-        SCHEDULED = 'scheduled', '예약'
 
     # =========================================================================
     # 식별자
@@ -229,6 +228,9 @@ class OCS(models.Model):
             models.Index(fields=['worker']),
             models.Index(fields=['priority']),
             models.Index(fields=['created_at']),
+            # 복합 인덱스 - job_role 필터 + created_at 정렬 최적화
+            models.Index(fields=['job_role', '-created_at'], name='ocs_jobrole_created_idx'),
+            models.Index(fields=['is_deleted', 'job_role', '-created_at'], name='ocs_deleted_jobrole_idx'),
         ]
 
     def __str__(self):

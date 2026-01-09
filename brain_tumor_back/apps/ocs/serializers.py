@@ -301,19 +301,31 @@ class OCSSubmitResultSerializer(serializers.Serializer):
 
 
 class OCSConfirmSerializer(serializers.Serializer):
-    """확정 (RESULT_READY → CONFIRMED)"""
-    ocs_result = serializers.BooleanField(required=True)
+    """확정 (RESULT_READY → CONFIRMED 또는 LIS/RIS 담당자의 경우 IN_PROGRESS → CONFIRMED)"""
+    ocs_result = serializers.BooleanField(required=False, default=True)
+    worker_result = serializers.JSONField(required=False)
 
     def validate(self, attrs):
         ocs = self.instance
         request = self.context.get('request')
 
-        if ocs.ocs_status != OCS.OcsStatus.RESULT_READY:
-            raise serializers.ValidationError(
-                f"RESULT_READY 상태에서만 확정할 수 있습니다. (현재: {ocs.get_ocs_status_display()})"
-            )
-        if ocs.doctor != request.user:
-            raise serializers.ValidationError("처방 의사만 확정할 수 있습니다.")
+        is_doctor = ocs.doctor == request.user
+        is_worker = ocs.worker == request.user
+
+        # LIS/RIS 담당자는 IN_PROGRESS에서 바로 확정 가능
+        if ocs.job_role in ['LIS', 'RIS'] and is_worker:
+            if ocs.ocs_status not in [OCS.OcsStatus.IN_PROGRESS, OCS.OcsStatus.RESULT_READY]:
+                raise serializers.ValidationError(
+                    f"IN_PROGRESS 또는 RESULT_READY 상태에서만 확정할 수 있습니다. (현재: {ocs.get_ocs_status_display()})"
+                )
+        # 의사는 RESULT_READY 상태에서만 확정 가능
+        elif is_doctor:
+            if ocs.ocs_status != OCS.OcsStatus.RESULT_READY:
+                raise serializers.ValidationError(
+                    f"RESULT_READY 상태에서만 확정할 수 있습니다. (현재: {ocs.get_ocs_status_display()})"
+                )
+        else:
+            raise serializers.ValidationError("처방 의사 또는 LIS/RIS 담당자만 확정할 수 있습니다.")
         return attrs
 
 

@@ -249,6 +249,76 @@
 }
 
 /* 결과 탭 */
+/* 파일 업로드 섹션 */
+.file-upload-section {
+  margin-bottom: 24px;
+  padding: 16px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px dashed #dee2e6;
+}
+
+.file-upload-section .section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.file-upload-section .section-header h4 {
+  margin: 0;
+  font-size: 14px;
+  color: #2c3e50;
+}
+
+.file-upload-section label.btn {
+  cursor: pointer;
+}
+
+.file-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.file-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+}
+
+.file-icon {
+  font-size: 20px;
+}
+
+.file-name {
+  flex: 1;
+  font-size: 14px;
+  color: #2c3e50;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-size {
+  font-size: 12px;
+  color: #7f8c8d;
+}
+
+.no-files {
+  text-align: center;
+  padding: 20px;
+  color: #95a5a6;
+  font-size: 14px;
+}
+
 .result-tab .result-header {
   display: flex;
   justify-content: space-between;

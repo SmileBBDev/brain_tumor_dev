@@ -72,7 +72,15 @@ class OCSViewSet(viewsets.ModelViewSet):
         """필터링된 OCS 목록 반환"""
         queryset = OCS.objects.filter(is_deleted=False).select_related(
             'patient', 'doctor', 'worker', 'encounter'
-        ).prefetch_related('history')
+        )
+
+        # 목록 조회 시 최적화: 큰 JSON 필드 제외, history prefetch 안함
+        if self.action == 'list':
+            # worker_result, attachments는 목록에서 필요 없음 - defer로 지연 로딩
+            queryset = queryset.defer('worker_result', 'attachments', 'doctor_request')
+        elif self.action == 'retrieve':
+            # 상세 조회 시에만 history prefetch
+            queryset = queryset.prefetch_related('history')
 
         # 필터 적용
         params = self.request.query_params
@@ -355,11 +363,11 @@ class OCSViewSet(viewsets.ModelViewSet):
 
         return Response(OCSDetailSerializer(ocs).data)
 
-    @extend_schema(summary="확정", description="RESULT_READY → CONFIRMED 상태로 변경합니다.")
+    @extend_schema(summary="확정", description="RESULT_READY → CONFIRMED 상태로 변경합니다. LIS의 경우 IN_PROGRESS → CONFIRMED도 가능합니다.")
     @action(detail=True, methods=['post'])
     @transaction.atomic
     def confirm(self, request, pk=None):
-        """확정 (RESULT_READY → CONFIRMED)"""
+        """확정 (RESULT_READY → CONFIRMED 또는 LIS의 경우 IN_PROGRESS → CONFIRMED)"""
         ocs = OCS.objects.select_for_update().get(pk=pk, is_deleted=False)
 
         serializer = OCSConfirmSerializer(
@@ -372,11 +380,16 @@ class OCSViewSet(viewsets.ModelViewSet):
         # 상태 변경
         from_status = ocs.ocs_status
         ocs.ocs_status = OCS.OcsStatus.CONFIRMED
-        ocs.ocs_result = request.data.get('ocs_result')
+        ocs.ocs_result = request.data.get('ocs_result', True)
         ocs.confirmed_at = timezone.now()
 
-        # worker_result에 _confirmed 플래그 설정
-        if isinstance(ocs.worker_result, dict):
+        # worker_result 업데이트 (LIS에서 결과와 함께 확정하는 경우)
+        if 'worker_result' in request.data:
+            worker_result = request.data.get('worker_result')
+            if isinstance(worker_result, dict):
+                worker_result['_confirmed'] = True
+                ocs.worker_result = worker_result
+        elif isinstance(ocs.worker_result, dict):
             ocs.worker_result['_confirmed'] = True
 
         ocs.save()

@@ -1,4 +1,4 @@
-import { useParams, useSearchParams } from 'react-router-dom';
+import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider';
 import PatientDetailTabs from './PatientDetailTabs';
 import PatientDetailContent from './PatientDetailContent';
@@ -11,6 +11,10 @@ export default function PatientDetailPage() {
   const { role } = useAuth();
   const { patientId } = useParams();
   const [params, setParams] = useSearchParams();
+  const navigate = useNavigate();
+
+  // 의사만 검사 오더 생성 가능
+  const canCreateOrder = role === 'DOCTOR' || role === 'SYSTEMMANAGER';
 
   const [patient, setPatient] = useState<Patient | null>(null);
   const [loading, setLoading] = useState(true);
@@ -82,6 +86,14 @@ export default function PatientDetailPage() {
       <section className="page-header">
         <div className="header-right">
           <button className="btn">환자 요약</button>
+          {canCreateOrder && (
+            <button
+              className="btn btn-primary"
+              onClick={() => navigate(`/orders/create?patientId=${patientId}`)}
+            >
+              검사 오더 생성
+            </button>
+          )}
         </div>
       </section>
 

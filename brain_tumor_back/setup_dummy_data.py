@@ -6,7 +6,8 @@ Brain Tumor CDSS - 더미 데이터 설정 스크립트 (2/2)
 중복 실행에도 안전합니다.
 
 사용법:
-    python setup_dummy_data.py
+    python setup_dummy_data.py          # 기존 데이터 유지, 부족분만 추가
+    python setup_dummy_data.py --reset  # 기존 데이터 삭제 후 새로 생성
 
 선행 조건:
     python setup_database.py  (마이그레이션 및 기본 데이터)
@@ -31,6 +32,7 @@ django.setup()
 
 from django.utils import timezone
 from django.db import IntegrityError, transaction
+import argparse
 
 
 def check_prerequisites():
@@ -528,7 +530,7 @@ def create_dummy_imaging_with_ocs(num_orders=30, force=False):
     modalities = ['CT', 'MRI', 'PET', 'X-RAY']
     body_parts = ['Brain', 'Head', 'Skull', 'Neck', 'Cervical Spine']
     ocs_statuses = ['ORDERED', 'ACCEPTED', 'IN_PROGRESS', 'RESULT_READY', 'CONFIRMED']
-    priorities = ['urgent', 'normal', 'scheduled']
+    priorities = ['urgent', 'normal']
     clinical_indications = ['headache', 'dizziness', 'seizure', 'follow-up', 'screening', 'brain tumor evaluation']
 
     created_count = 0
@@ -671,7 +673,7 @@ def create_dummy_lis_orders(num_orders=20, force=False):
         'Thyroid Panel', 'Coagulation', 'Urinalysis', 'Tumor Markers'
     ]
     ocs_statuses = ['ORDERED', 'ACCEPTED', 'IN_PROGRESS', 'RESULT_READY', 'CONFIRMED']
-    priorities = ['urgent', 'normal', 'scheduled']
+    priorities = ['urgent', 'normal']
 
     created_count = 0
 
@@ -793,15 +795,54 @@ def print_summary():
     print(f"  테스트 계정:")
     print(f"    system / system001 (시스템 관리자)")
     print(f"    admin / admin001 (병원 관리자)")
-    print(f"    doctor1 / doctor001 (의사)")
+    print(f"    doctor1~5 / doctor001~005 (의사 5명)")
     print(f"    nurse1 / nurse001 (간호사)")
     print(f"    patient1 / patient001 (환자)")
     print(f"    ris1 / ris001 (영상과)")
     print(f"    lis1 / lis001 (검사과)")
 
 
+def reset_dummy_data():
+    """기존 더미 데이터 삭제"""
+    print("\n[RESET] 기존 더미 데이터 삭제 중...")
+
+    from apps.ocs.models import OCS, OCSHistory
+    from apps.imaging.models import ImagingStudy
+    from apps.encounters.models import Encounter
+    from apps.patients.models import Patient
+
+    # 삭제 순서: 의존성 역순
+    ocs_history_count = OCSHistory.objects.count()
+    OCSHistory.objects.all().delete()
+    print(f"  OCSHistory: {ocs_history_count}건 삭제")
+
+    imaging_count = ImagingStudy.objects.count()
+    ImagingStudy.objects.all().delete()
+    print(f"  ImagingStudy: {imaging_count}건 삭제")
+
+    ocs_count = OCS.objects.count()
+    OCS.objects.all().delete()
+    print(f"  OCS: {ocs_count}건 삭제")
+
+    encounter_count = Encounter.objects.count()
+    Encounter.objects.all().delete()
+    print(f"  Encounter: {encounter_count}건 삭제")
+
+    patient_count = Patient.objects.count()
+    Patient.objects.all().delete()
+    print(f"  Patient: {patient_count}건 삭제")
+
+    print("[OK] 더미 데이터 삭제 완료")
+
+
 def main():
     """메인 실행 함수"""
+    # 명령줄 인자 파싱
+    parser = argparse.ArgumentParser(description='Brain Tumor CDSS 더미 데이터 생성')
+    parser.add_argument('--reset', action='store_true', help='기존 데이터 삭제 후 새로 생성')
+    parser.add_argument('--force', action='store_true', help='목표 수량 이상이어도 강제 추가')
+    args = parser.parse_args()
+
     print("="*60)
     print("Brain Tumor CDSS - 더미 데이터 생성")
     print("="*60)
@@ -810,20 +851,31 @@ def main():
     if not check_prerequisites():
         sys.exit(1)
 
+    # --reset 옵션: 기존 데이터 삭제
+    if args.reset:
+        confirm = input("\n정말 기존 데이터를 모두 삭제하시겠습니까? (yes/no): ")
+        if confirm.lower() == 'yes':
+            reset_dummy_data()
+        else:
+            print("삭제 취소됨")
+            sys.exit(0)
+
+    force = args.reset or args.force  # reset 시에는 force=True
+
     # 메뉴/권한 시드 데이터 로드
     load_menu_permission_seed()
 
     # 환자 데이터 생성
-    create_dummy_patients(30)
+    create_dummy_patients(30, force=force)
 
     # 진료 데이터 생성
-    create_dummy_encounters(20)
+    create_dummy_encounters(20, force=force)
 
     # 영상 검사 데이터 생성 (OCS 통합)
-    create_dummy_imaging_with_ocs(30)
+    create_dummy_imaging_with_ocs(30, force=force)
 
     # 검사 오더 생성 (LIS)
-    create_dummy_lis_orders(20)
+    create_dummy_lis_orders(20, force=force)
 
     # 요약 출력
     print_summary()
