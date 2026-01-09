@@ -15,9 +15,10 @@
 .modal-content {
   background: white;
   border-radius: 8px;
-  width: 90%;
-  max-width: 700px;
-  max-height: 90vh;
+  width: 70vw;
+  max-width: 900px;
+  min-width: 400px;
+  max-height: 80vh;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
@@ -25,9 +26,11 @@
   padding: 1.5rem;
 }
 
-/* 진료 등록 모달 전용 스타일 */
+/* 진료 등록 모달 전용 스타일 - 75% */
 .encounter-modal-content {
-  max-width: 800px;
+  width: 75vw;
+  max-width: 950px;
+  min-width: 450px;
   padding: 2rem;
 }
 
@@ -252,9 +255,41 @@
   cursor: not-allowed;
 }
 
-/* Small modal for delete confirmation */
+/* 모달 크기 클래스 - 화면 비율 기반 */
+/* Small modal for delete confirmation - 50% */
 .modal-small {
+  width: 50vw;
   max-width: 500px;
+  min-width: 350px;
+  padding: 1.5rem;
+}
+
+/* Medium modal (default) - 70% */
+.modal-medium {
+  width: 70vw;
+  max-width: 800px;
+  min-width: 450px;
+  padding: 2rem;
+}
+
+/* Large modal - 판독문, 상세 정보 등 - 85% */
+.modal-large {
+  width: 85vw;
+  max-width: 1200px;
+  min-width: 600px;
+  padding: 2.5rem;
+}
+
+.modal-large .modal-body {
+  padding: 2rem;
+}
+
+.modal-large .modal-header {
+  padding: 1.5rem 2rem;
+}
+
+.modal-large .modal-footer {
+  padding: 1.5rem 2rem;
 }
 
 /* Delete confirmation styles */

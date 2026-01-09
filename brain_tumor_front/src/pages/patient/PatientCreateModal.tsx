@@ -131,7 +131,7 @@ export default function PatientCreateModal({ isOpen, onClose, onSuccess }: Props
 
   return (
     <div className="modal-overlay" onClick={handleClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+      <div className="modal-content modal-large" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h2>환자 등록</h2>
           <button className="btn-close" onClick={handleClose}>

@@ -85,7 +85,7 @@ export default function EncounterEditModal({ isOpen, onClose, onSuccess, encount
 
   return (
     <div className="modal-overlay" onClick={handleClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+      <div className="modal-content modal-large" onClick={(e) => e.stopPropagation()}>
         <h2>진료 수정</h2>
 
         {error && <div className="error-message">{error}</div>}

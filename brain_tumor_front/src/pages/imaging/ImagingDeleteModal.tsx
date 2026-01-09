@@ -34,7 +34,7 @@ export default function ImagingDeleteModal({ isOpen, onClose, onSuccess, study }
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '500px' }}>
+      <div className="modal-content modal-small" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h2>영상 검사 삭제</h2>
           <button className="modal-close" onClick={onClose}>×</button>

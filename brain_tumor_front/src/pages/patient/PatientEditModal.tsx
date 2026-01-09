@@ -126,7 +126,7 @@ export default function PatientEditModal({ isOpen, patient, onClose, onSuccess }
 
   return (
     <div className="modal-overlay" onClick={handleClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+      <div className="modal-content modal-large" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h2>환자 정보 수정</h2>
           <button className="btn-close" onClick={handleClose}>

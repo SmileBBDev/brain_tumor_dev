@@ -5,12 +5,14 @@ import PatientListPage from '@/pages/patient/PatientListPage';
 import PatientDetailPage from '@/pages/patient/PatientDetailPage';
 import EncounterListPage from '@/pages/encounter/EncounterListPage';
 import ImagingListPage from '@/pages/imaging/ImagingListPage';
+import PatientImagingHistoryPage from '@/pages/imaging/PatientImagingHistoryPage';
 import AISummaryPage from '@/pages/ai/AISummaryPage';
 import RISWorklistPage from '@/pages/ris/RISWorklistPage';
 import OrderListPage from '@/pages/orders/OrderListPage';
 import OrderCreatePage from '@/pages/orders/OrderCreate';
 import { DoctorOrderPage, RISWorklistPage as OCSRISWorklistPage, RISStudyDetailPage, LISWorklistPage, LISStudyDetailPage, RISDashboardPage, LISUploadPage, LISProcessStatusPage } from '@/pages/ocs';
 import { NurseReceptionPage } from '@/pages/nurse';
+import { AIRequestListPage, AIRequestCreatePage, AIRequestDetailPage } from '@/pages/ai-inference';
 import { ComingSoonPage } from '@/pages/common/CommingSoon';
 import MenuPermissionPage from '@/pages/admin/MenuPermissionPage';
 import UserList from '@/pages/admin/usersManagement/UserList';
@@ -49,6 +51,7 @@ export const routeMap: Record<string, ComponentType> = {
 
   // === IMAGING 그룹 ===
   IMAGE_VIEWER: ImagingListPage,
+  PATIENT_IMAGING_HISTORY: PatientImagingHistoryPage,
   RIS_WORKLIST: RISWorklistPage,
   OCS_RIS: OCSRISWorklistPage,
   OCS_RIS_DETAIL: RISStudyDetailPage,
@@ -63,6 +66,9 @@ export const routeMap: Record<string, ComponentType> = {
 
   // === AI ===
   AI_SUMMARY: AISummaryPage,
+  AI_REQUEST_LIST: AIRequestListPage,
+  AI_REQUEST_CREATE: AIRequestCreatePage,
+  AI_REQUEST_DETAIL: AIRequestDetailPage,
 
   // === NURSE ===
   NURSE_RECEPTION: NurseReceptionPage,

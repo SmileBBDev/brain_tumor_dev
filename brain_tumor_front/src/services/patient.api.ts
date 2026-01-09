@@ -45,10 +45,8 @@ export const deletePatient = async (patientId: number): Promise<void> => {
 };
 
 // Search patients (autocomplete)
-export const searchPatients = async (query: string): Promise<Patient[]> => {
-  const response = await api.get<Patient[]>('/patients/search/', {
-    params: { q: query },
-  });
+export const searchPatients = async (params: { q?: string; id?: number }): Promise<Patient[]> => {
+  const response = await api.get<Patient[]>('/patients/search/', { params });
   return response.data;
 };
 

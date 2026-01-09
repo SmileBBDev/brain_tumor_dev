@@ -9,6 +9,7 @@ import {
   cancelOCS,
 } from '@/services/ocs.api';
 import type { OCSDetail, OCSHistory } from '@/types/ocs';
+import '@/pages/patient/PatientCreateModal.css';
 
 type Props = {
   isOpen: boolean;
@@ -158,7 +159,7 @@ export default function OCSDetailModal({ isOpen, ocsId, onClose, onSuccess }: Pr
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content large" onClick={(e) => e.stopPropagation()}>
+      <div className="modal-content modal-large" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h2>OCS 상세 정보</h2>
           <button className="close-btn" onClick={onClose}>

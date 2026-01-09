@@ -9,3 +9,17 @@ export type { UseOCSActionsOptions, UseOCSActionsReturn } from './useOCSActions'
 
 export { useOCSNotification } from './useOCSNotification';
 export type { OCSNotification } from './useOCSNotification';
+
+export {
+  useAIRequestList,
+  useAIRequestDetail,
+  useAIModels,
+  usePatientAvailableModels,
+  useCreateAIRequest,
+} from './useAIInference';
+export type {
+  UseAIRequestListOptions,
+  UseAIRequestListReturn,
+  UseAIRequestDetailReturn,
+  UseCreateAIRequestReturn,
+} from './useAIInference';

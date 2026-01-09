@@ -166,7 +166,7 @@ export default function ImagingReportModal({ isOpen, onClose, onSuccess, study }
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '800px' }}>
+      <div className="modal-content modal-large" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <div>
             <h2>영상 판독문</h2>

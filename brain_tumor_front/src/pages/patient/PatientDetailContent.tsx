@@ -3,6 +3,8 @@ import SummaryTab from './tabs/SummaryTab';
 import ImagingTab from './tabs/ImagingTab';
 import LabResultTab from './tabs/LabResultTab';
 import AiSummaryTab from './tabs/AiSummaryTab';
+import TreatmentTab from './tabs/TreatmentTab';
+import FollowUpTab from './tabs/FollowUpTab';
 
 type Props = {
   role: string;
@@ -10,7 +12,9 @@ type Props = {
 
 export default function PatientDetailContent({ role }: Props) {
   const isDoctor = role === 'DOCTOR';
+  const isNurse = role === 'NURSE';
   const isSystemManager = role === 'SYSTEMMANAGER';
+  const canViewTreatment = isDoctor || isNurse || isSystemManager;
 
   const [params] = useSearchParams();
   const tab = params.get('tab') ?? 'summary';
@@ -20,6 +24,10 @@ export default function PatientDetailContent({ role }: Props) {
   if (tab === 'lab') return <LabResultTab role={role} />;
   if (tab === 'ai')
     return isDoctor || isSystemManager ? <AiSummaryTab role={role} /> : null;
+  if (tab === 'treatment')
+    return canViewTreatment ? <TreatmentTab role={role} /> : null;
+  if (tab === 'followup')
+    return canViewTreatment ? <FollowUpTab role={role} /> : null;
 
   return <div>잘못된 접근</div>;
 }

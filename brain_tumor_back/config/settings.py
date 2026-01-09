@@ -47,15 +47,9 @@ INSTALLED_APPS = [
     "apps.imaging",         # 영상 관리
     "apps.ocs",             # OCS (Order Communication System)
     "apps.ai_inference",    # AI 추론 관리
-    # "apps.scripts",         # 스크립트
-    # # 새로운 권한별 앱들
-    # "apps.doctor",          # 의사용 앱
-    # "apps.nurse",           # 간호사용 앱
-    # "apps.patient",         # 환자용 앱
-    # "apps.radiologist",     # 영상의학과용 앱
-    # "apps.lab_tech",        # 검사실용 앱
-    # "apps.admin_clinical",  # 관리자용 앱
-    # "apps.external",        # 외부 연동용 앱
+    "apps.treatment",       # 치료 관리
+    "apps.followup",        # 경과 추적
+
 ]
 
 MIDDLEWARE = [

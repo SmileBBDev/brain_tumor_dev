@@ -12,6 +12,8 @@ export default function PatientDetailTabs( {role} : Props ) {
     { key: 'imaging', label: '영상', roles: ['DOCTOR', 'NURSE', 'RIS'] },
     { key: 'lab', label: '검사 결과', roles: ['DOCTOR', 'NURSE', 'LIS'] },
     { key: 'ai', label: 'AI 분석', roles: ['DOCTOR'] },
+    { key: 'treatment', label: '치료 계획', roles: ['DOCTOR', 'NURSE'] },
+    { key: 'followup', label: '경과 추적', roles: ['DOCTOR', 'NURSE'] },
   ];
 
   return (

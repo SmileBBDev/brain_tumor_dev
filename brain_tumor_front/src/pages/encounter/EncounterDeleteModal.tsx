@@ -39,7 +39,7 @@ export default function EncounterDeleteModal({ isOpen, onClose, onSuccess, encou
 
   return (
     <div className="modal-overlay" onClick={handleClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+      <div className="modal-content modal-small" onClick={(e) => e.stopPropagation()}>
         <h2>진료 삭제</h2>
 
         {error && <div className="error-message">{error}</div>}

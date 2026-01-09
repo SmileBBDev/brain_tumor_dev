@@ -30,6 +30,15 @@ urlpatterns = [
     # OCS (Order Communication System) API
     path("api/ocs/", include("apps.ocs.urls")),
 
+    # AI Inference API
+    path("api/ai/", include("apps.ai_inference.urls")),
+
+    # 치료 관리 API
+    path("api/treatment/", include("apps.treatment.urls")),
+
+    # 경과 추적 API
+    path("api/followup/", include("apps.followup.urls")),
+
     # API 문서화 엔드포인트
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
     path(

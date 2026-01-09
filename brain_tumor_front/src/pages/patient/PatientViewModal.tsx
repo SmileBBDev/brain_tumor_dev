@@ -41,7 +41,7 @@ export default function PatientViewModal({ isOpen, patient, onClose, onEdit, onD
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+      <div className="modal-content modal-large" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h2>환자 상세 정보</h2>
           <button className="btn-close" onClick={onClose}>

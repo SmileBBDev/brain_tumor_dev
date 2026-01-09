@@ -109,7 +109,7 @@ export default function ImagingEditModal({ isOpen, onClose, onSuccess, study }: 
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+      <div className="modal-content modal-large" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h2>영상 검사 정보 수정</h2>
           <button className="modal-close" onClick={onClose}>×</button>
@@ -135,7 +135,7 @@ export default function ImagingEditModal({ isOpen, onClose, onSuccess, study }: 
               </div>
             </div>
 
-            <div className="form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            <div className="form-row">
               <div className="form-group">
                 <label htmlFor="modality">검사 종류</label>
                 <select
@@ -182,7 +182,7 @@ export default function ImagingEditModal({ isOpen, onClose, onSuccess, study }: 
               </div>
             </div>
 
-            <div className="form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            <div className="form-row">
               <div className="form-group">
                 <label htmlFor="scheduled_at">검사 예약 일시</label>
                 <input
