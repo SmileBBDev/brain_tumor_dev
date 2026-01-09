@@ -38,6 +38,8 @@ export default function DoctorOrderPage() {
   const [statusFilter, setStatusFilter] = useState<OcsStatus | ''>('');
   const [jobRoleFilter, setJobRoleFilter] = useState<JobRole | ''>('');
   const [priorityFilter, setPriorityFilter] = useState<Priority | ''>('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchInput, setSearchInput] = useState('');
 
   // Modal states
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
@@ -59,6 +61,17 @@ export default function DoctorOrderPage() {
   const [isSearching, setIsSearching] = useState(false);
   const [showPatientDropdown, setShowPatientDropdown] = useState(false);
 
+  // Job type search states
+  const [jobTypeSearch, setJobTypeSearch] = useState('');
+
+  // Job type options by role
+  const JOB_TYPE_OPTIONS: Record<JobRole, string[]> = {
+    RIS: ['CT', 'MRI', 'PET', 'X-RAY', 'Ultrasound', 'Mammography', 'Fluoroscopy'],
+    LIS: ['CBC', 'BMP', 'CMP', 'Lipid Panel', 'LFT', 'RFT', 'Thyroid Panel', 'Coagulation', 'Urinalysis', 'Tumor Markers'],
+    TREATMENT: ['Chemotherapy', 'Radiation', 'Surgery', 'Biopsy', 'Injection'],
+    CONSULT: ['Neurology', 'Oncology', 'Radiology', 'Pathology'],
+  };
+
   // OCS 목록 조회
   useEffect(() => {
     const fetchOCSList = async () => {
@@ -72,6 +85,7 @@ export default function DoctorOrderPage() {
         if (statusFilter) params.ocs_status = statusFilter;
         if (jobRoleFilter) params.job_role = jobRoleFilter;
         if (priorityFilter) params.priority = priorityFilter;
+        if (searchQuery) params.q = searchQuery;
 
         // 의사인 경우 자신의 오더만
         if (role === 'DOCTOR' && user?.id) {
@@ -79,8 +93,14 @@ export default function DoctorOrderPage() {
         }
 
         const response = await getOCSList(params);
-        setOcsList(response.results);
-        setTotalCount(response.count);
+        // 페이지네이션 응답과 배열 응답 모두 처리
+        if (Array.isArray(response)) {
+          setOcsList(response as unknown as OCSListItem[]);
+          setTotalCount(response.length);
+        } else {
+          setOcsList(response.results);
+          setTotalCount(response.count);
+        }
       } catch (error) {
         console.error('Failed to fetch OCS list:', error);
       } finally {
@@ -89,7 +109,7 @@ export default function DoctorOrderPage() {
     };
 
     fetchOCSList();
-  }, [page, pageSize, statusFilter, jobRoleFilter, priorityFilter, role, user?.id, refreshKey]);
+  }, [page, pageSize, statusFilter, jobRoleFilter, priorityFilter, searchQuery, role, user?.id, refreshKey]);
 
   // 환자 검색
   const searchPatients = useCallback(async (query: string) => {
@@ -224,6 +244,43 @@ export default function DoctorOrderPage() {
           </button>
         </div>
         <div className="filter-right">
+          {/* 검색 */}
+          <div className="search-box">
+            <input
+              type="text"
+              placeholder="환자명 / 환자번호 / OCS ID 검색"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  setSearchQuery(searchInput);
+                  setPage(1);
+                }
+              }}
+            />
+            <button
+              className="btn btn-search"
+              onClick={() => {
+                setSearchQuery(searchInput);
+                setPage(1);
+              }}
+            >
+              검색
+            </button>
+            {searchQuery && (
+              <button
+                className="btn btn-clear"
+                onClick={() => {
+                  setSearchInput('');
+                  setSearchQuery('');
+                  setPage(1);
+                }}
+              >
+                초기화
+              </button>
+            )}
+          </div>
+
           <select value={statusFilter} onChange={handleStatusChange}>
             <option value="">전체 상태</option>
             {Object.entries(OCS_STATUS_LABELS).map(([value, label]) => (
@@ -368,9 +425,10 @@ export default function DoctorOrderPage() {
                 <label>작업 역할 *</label>
                 <select
                   value={createForm.job_role}
-                  onChange={(e) =>
-                    setCreateForm({ ...createForm, job_role: e.target.value as JobRole })
-                  }
+                  onChange={(e) => {
+                    setCreateForm({ ...createForm, job_role: e.target.value as JobRole, job_type: '' });
+                    setJobTypeSearch('');
+                  }}
                 >
                   {Object.entries(JOB_ROLE_LABELS).map(([value, label]) => (
                     <option key={value} value={value}>
@@ -383,12 +441,26 @@ export default function DoctorOrderPage() {
                 <label>작업 유형 *</label>
                 <input
                   type="text"
-                  value={createForm.job_type || ''}
-                  onChange={(e) =>
-                    setCreateForm({ ...createForm, job_type: e.target.value })
-                  }
-                  placeholder="예: MRI, CT, BLOOD"
+                  placeholder="검색 (예: CT, MRI, CBC...)"
+                  value={jobTypeSearch}
+                  onChange={(e) => setJobTypeSearch(e.target.value)}
+                  className="search-input"
                 />
+                <select
+                  value={createForm.job_type || ''}
+                  onChange={(e) => setCreateForm({ ...createForm, job_type: e.target.value })}
+                  size={5}
+                  className="searchable-select"
+                >
+                  <option value="">작업 유형을 선택하세요</option>
+                  {(JOB_TYPE_OPTIONS[createForm.job_role as JobRole] || [])
+                    .filter(type => type.toLowerCase().includes(jobTypeSearch.toLowerCase()))
+                    .map((type) => (
+                      <option key={type} value={type}>
+                        {type}
+                      </option>
+                    ))}
+                </select>
               </div>
               <div className="form-group">
                 <label>우선순위</label>
@@ -537,6 +609,78 @@ export default function DoctorOrderPage() {
 
         .selected-patient-info span {
           color: #666;
+        }
+
+        .search-input {
+          width: 100%;
+          padding: 8px 12px;
+          border: 1px solid #ddd;
+          border-radius: 4px;
+          font-size: 14px;
+          margin-bottom: 8px;
+        }
+
+        .searchable-select {
+          width: 100%;
+          padding: 4px;
+          border: 1px solid #ddd;
+          border-radius: 4px;
+          font-size: 14px;
+        }
+
+        .searchable-select option {
+          padding: 8px;
+        }
+
+        .searchable-select option:hover {
+          background-color: #f5f5f5;
+        }
+
+        .search-box {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+
+        .search-box input {
+          padding: 8px 12px;
+          border: 1px solid #ddd;
+          border-radius: 4px;
+          font-size: 14px;
+          width: 220px;
+        }
+
+        .search-box input:focus {
+          outline: none;
+          border-color: #1976d2;
+        }
+
+        .btn-search {
+          padding: 8px 16px;
+          background-color: #1976d2;
+          color: white;
+          border: none;
+          border-radius: 4px;
+          cursor: pointer;
+          font-size: 14px;
+        }
+
+        .btn-search:hover {
+          background-color: #1565c0;
+        }
+
+        .btn-clear {
+          padding: 8px 12px;
+          background-color: #f5f5f5;
+          color: #666;
+          border: 1px solid #ddd;
+          border-radius: 4px;
+          cursor: pointer;
+          font-size: 14px;
+        }
+
+        .btn-clear:hover {
+          background-color: #e0e0e0;
         }
       `}</style>
     </div>

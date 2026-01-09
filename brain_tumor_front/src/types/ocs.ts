@@ -276,6 +276,7 @@ export interface OCSSearchParams {
   unassigned?: boolean;
   page?: number;
   page_size?: number;
+  q?: string; // 검색어 (환자명, 환자번호, OCS ID, 작업유형)
 }
 
 export interface OCSCreateData {

@@ -3,6 +3,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import PermissionDenied
+from rest_framework.pagination import PageNumberPagination
 from django.db import transaction
 from django.utils import timezone
 from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiParameter
@@ -31,6 +32,13 @@ from .serializers import (
 # =============================================================================
 
 
+class OCSPagination(PageNumberPagination):
+    """OCS 목록 페이지네이션"""
+    page_size = 20
+    page_size_query_param = 'page_size'
+    max_page_size = 100
+
+
 @extend_schema_view(
     list=extend_schema(
         summary="OCS 목록 조회",
@@ -57,6 +65,7 @@ class OCSViewSet(viewsets.ModelViewSet):
     의사와 작업자 간 오더 관리를 위한 API.
     """
     permission_classes = [IsAuthenticated, OCSPermission]
+    pagination_class = OCSPagination
 
     def get_queryset(self):
         """필터링된 OCS 목록 반환"""
@@ -87,6 +96,17 @@ class OCSViewSet(viewsets.ModelViewSet):
 
         if params.get('unassigned') == 'true':
             queryset = queryset.filter(worker__isnull=True)
+
+        # 검색 기능 (환자명, 환자번호, OCS ID, 작업유형)
+        search_query = params.get('q') or params.get('search')
+        if search_query:
+            from django.db.models import Q
+            queryset = queryset.filter(
+                Q(patient__name__icontains=search_query) |
+                Q(patient__patient_number__icontains=search_query) |
+                Q(ocs_id__icontains=search_query) |
+                Q(job_type__icontains=search_query)
+            )
 
         return queryset
 

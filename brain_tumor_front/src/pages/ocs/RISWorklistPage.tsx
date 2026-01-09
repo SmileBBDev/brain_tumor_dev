@@ -90,8 +90,16 @@ export default function RISWorklistPage() {
         console.log('[RISWorklistPage] Fetching with params:', params);
         const response = await getOCSList(params);
         console.log('[RISWorklistPage] Response:', response);
-        setOcsList(response.results);
-        setTotalCount(response.count);
+        // 페이지네이션 응답과 배열 응답 모두 처리
+        if (Array.isArray(response)) {
+          // 배열 응답 (페이지네이션 없음)
+          setOcsList(response as unknown as OCSListItem[]);
+          setTotalCount(response.length);
+        } else {
+          // 페이지네이션 응답
+          setOcsList(response.results);
+          setTotalCount(response.count);
+        }
       } catch (error) {
         console.error('[RISWorklistPage] Failed to fetch OCS list:', error);
       } finally {

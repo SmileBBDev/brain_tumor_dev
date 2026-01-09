@@ -572,6 +572,135 @@ def create_dummy_imaging_with_ocs(num_orders=30, force=False):
     return True
 
 
+def create_dummy_lis_orders(num_orders=20, force=False):
+    """더미 LIS (검사) 오더 생성"""
+    print(f"\n[5단계] 검사 오더 데이터 생성 - LIS (목표: {num_orders}건)...")
+
+    from apps.ocs.models import OCS
+    from apps.patients.models import Patient
+    from apps.encounters.models import Encounter
+    from django.contrib.auth import get_user_model
+    User = get_user_model()
+
+    # 기존 데이터 확인
+    existing_ocs = OCS.objects.filter(job_role='LIS').count()
+    if existing_ocs >= num_orders and not force:
+        print(f"[SKIP] 이미 {existing_ocs}건의 LIS 오더가 존재합니다.")
+        return True
+
+    # 필요한 데이터
+    patients = list(Patient.objects.filter(is_deleted=False))
+    encounters = list(Encounter.objects.all())
+    doctors = list(User.objects.filter(role__code='DOCTOR'))
+    lab_workers = list(User.objects.filter(role__code__in=['LIS', 'DOCTOR']))
+
+    if not patients:
+        print("[ERROR] 환자가 없습니다.")
+        return False
+
+    if not doctors:
+        doctors = list(User.objects.all()[:1])
+
+    if not lab_workers:
+        lab_workers = doctors
+
+    # 검사 항목
+    test_types = [
+        'CBC', 'BMP', 'CMP', 'Lipid Panel', 'LFT', 'RFT',
+        'Thyroid Panel', 'Coagulation', 'Urinalysis', 'Tumor Markers'
+    ]
+    ocs_statuses = ['ORDERED', 'ACCEPTED', 'IN_PROGRESS', 'RESULT_READY', 'CONFIRMED']
+    priorities = ['urgent', 'normal', 'scheduled']
+
+    created_count = 0
+
+    for i in range(num_orders):
+        patient = random.choice(patients)
+        doctor = random.choice(doctors)
+        encounter = random.choice(encounters) if encounters else None
+        test_type = random.choice(test_types)
+
+        days_ago = random.randint(0, 60)
+        ocs_status = random.choice(ocs_statuses)
+
+        # 작업자 (ACCEPTED 이후에만)
+        worker = None
+        if ocs_status in ['ACCEPTED', 'IN_PROGRESS', 'RESULT_READY', 'CONFIRMED']:
+            worker = random.choice(lab_workers)
+
+        # doctor_request 데이터
+        doctor_request = {
+            "_template": "default",
+            "_version": "1.0",
+            "clinical_info": f"{patient.name} - 정기검사",
+            "request_detail": f"{test_type} 검사 요청",
+            "special_instruction": random.choice(["", "공복 필요", "아침 첫 소변", ""]),
+        }
+
+        # worker_result 데이터 (RESULT_READY 이후에만)
+        worker_result = {}
+        if ocs_status in ['RESULT_READY', 'CONFIRMED']:
+            is_abnormal = random.random() < 0.2
+
+            # 검사 결과 샘플
+            test_results = []
+            if test_type == 'CBC':
+                test_results = [
+                    {"code": "WBC", "name": "백혈구", "value": str(round(random.uniform(4.0, 11.0), 1)), "unit": "10^3/uL", "reference": "4.0-11.0", "is_abnormal": False},
+                    {"code": "RBC", "name": "적혈구", "value": str(round(random.uniform(4.0, 6.0), 2)), "unit": "10^6/uL", "reference": "4.0-6.0", "is_abnormal": False},
+                    {"code": "HGB", "name": "혈색소", "value": str(round(random.uniform(12.0, 17.0), 1)), "unit": "g/dL", "reference": "12.0-17.0", "is_abnormal": False},
+                    {"code": "PLT", "name": "혈소판", "value": str(random.randint(150, 400)), "unit": "10^3/uL", "reference": "150-400", "is_abnormal": False},
+                ]
+            elif test_type == 'Tumor Markers':
+                cea_val = round(random.uniform(0.5, 5.0), 2) if not is_abnormal else round(random.uniform(5.1, 20.0), 2)
+                afp_val = round(random.uniform(0.5, 10.0), 2) if not is_abnormal else round(random.uniform(10.1, 50.0), 2)
+                test_results = [
+                    {"code": "CEA", "name": "암배아항원", "value": str(cea_val), "unit": "ng/mL", "reference": "0-5.0", "is_abnormal": cea_val > 5.0},
+                    {"code": "AFP", "name": "알파태아단백", "value": str(afp_val), "unit": "ng/mL", "reference": "0-10.0", "is_abnormal": afp_val > 10.0},
+                ]
+            else:
+                # 일반 검사
+                test_results = [
+                    {"code": "TEST1", "name": f"{test_type} 항목1", "value": str(round(random.uniform(50, 150), 1)), "unit": "mg/dL", "reference": "50-150", "is_abnormal": False},
+                    {"code": "TEST2", "name": f"{test_type} 항목2", "value": str(round(random.uniform(10, 50), 1)), "unit": "U/L", "reference": "10-50", "is_abnormal": False},
+                ]
+
+            worker_result = {
+                "_template": "LIS",
+                "_version": "1.0",
+                "_confirmed": ocs_status == 'CONFIRMED',
+                "test_results": test_results,
+                "summary": "이상 소견 있음" if is_abnormal else "정상 범위",
+                "interpretation": "추가 검사 권장" if is_abnormal else "특이 소견 없음",
+                "_custom": {}
+            }
+
+        try:
+            with transaction.atomic():
+                # OCS 생성
+                ocs = OCS.objects.create(
+                    patient=patient,
+                    doctor=doctor,
+                    worker=worker,
+                    encounter=encounter,
+                    job_role='LIS',
+                    job_type=test_type,
+                    ocs_status=ocs_status,
+                    priority=random.choice(priorities),
+                    doctor_request=doctor_request,
+                    worker_result=worker_result,
+                    ocs_result=True if ocs_status == 'CONFIRMED' else None,
+                )
+                created_count += 1
+
+        except Exception as e:
+            print(f"  오류: {e}")
+
+    print(f"[OK] OCS(LIS) 생성: {created_count}건")
+    print(f"  현재 전체 OCS(LIS): {OCS.objects.filter(job_role='LIS').count()}건")
+    return True
+
+
 def print_summary():
     """더미 데이터 요약"""
     print("\n" + "="*60)
@@ -593,6 +722,7 @@ def print_summary():
     print(f"  - 환자: {Patient.objects.filter(is_deleted=False).count()}명")
     print(f"  - 진료: {Encounter.objects.count()}건")
     print(f"  - OCS (RIS): {OCS.objects.filter(job_role='RIS').count()}건")
+    print(f"  - OCS (LIS): {OCS.objects.filter(job_role='LIS').count()}건")
     print(f"  - 영상 검사: {ImagingStudy.objects.count()}건")
 
     print(f"\n[다음 단계]")
@@ -630,6 +760,9 @@ def main():
 
     # 영상 검사 데이터 생성 (OCS 통합)
     create_dummy_imaging_with_ocs(30)
+
+    # 검사 오더 생성 (LIS)
+    create_dummy_lis_orders(20)
 
     # 요약 출력
     print_summary()
