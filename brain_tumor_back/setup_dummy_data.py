@@ -97,7 +97,6 @@ def load_menu_permission_seed():
         ('RIS_DASHBOARD', '판독 현황 대시보드', 'RIS 전체 판독 현황 대시보드'),
         ('OCS_LIS', '검사 워크리스트', 'LIS 작업자용 검사 오더 처리'),
         ('OCS_LIS_DETAIL', '검사 결과 상세', 'LIS 검사 결과 상세 페이지'),
-        ('LIS_ALERT', '검사 결과 Alert', 'LIS 이상/치명적 검사 결과 알림'),
         ('LIS_PROCESS_STATUS', '결과 처리 상태', 'LIS 업로드 데이터 처리 상태 모니터링'),
         ('NURSE_RECEPTION', '진료 접수 현황', '간호사용 진료 접수 현황 페이지'),
         ('IMAGING', '영상', '영상 메뉴'),
@@ -181,9 +180,6 @@ def load_menu_permission_seed():
 
     # 간호사 진료 접수 메뉴
     create_menu(28, code='NURSE_RECEPTION', path='/nurse/reception', icon='clipboard-list', order=30, is_active=True, parent=None)
-
-    # LIS Alert 메뉴
-    create_menu(29, code='LIS_ALERT', path='/ocs/lis/alert', icon='bell', order=6, is_active=True, parent=menu_order)
 
     # RIS Dashboard 메뉴
     create_menu(30, code='RIS_DASHBOARD', path='/ocs/ris/dashboard', icon='chart-bar', order=7, is_active=True, parent=menu_order)
@@ -299,7 +295,7 @@ def load_menu_permission_seed():
         'DOCTOR': ['DASHBOARD', 'PATIENT_LIST', 'PATIENT_DETAIL', 'PATIENT_CARE', 'ORDER_LIST', 'OCS_ORDER', 'IMAGE_VIEWER', 'RIS_WORKLIST', 'AI_SUMMARY'],
         'NURSE': ['DASHBOARD', 'PATIENT_LIST', 'PATIENT_DETAIL', 'PATIENT_CARE', 'ORDER_LIST', 'IMAGE_VIEWER', 'LAB_RESULT_VIEW', 'NURSE_RECEPTION'],
         'RIS': ['DASHBOARD', 'IMAGE_VIEWER', 'RIS_WORKLIST', 'OCS_RIS', 'OCS_RIS_DETAIL', 'RIS_DASHBOARD'],
-        'LIS': ['DASHBOARD', 'LAB_RESULT_VIEW', 'LAB_RESULT_UPLOAD', 'OCS_LIS', 'OCS_LIS_DETAIL', 'LIS_ALERT', 'LIS_PROCESS_STATUS'],
+        'LIS': ['DASHBOARD', 'LAB_RESULT_VIEW', 'LAB_RESULT_UPLOAD', 'OCS_LIS', 'OCS_LIS_DETAIL', 'LIS_PROCESS_STATUS'],
     }
 
     for role_code, perm_codes in role_permissions.items():

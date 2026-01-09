@@ -11,7 +11,7 @@ import AISummaryPage from '@/pages/ai/AISummaryPage';
 import RISWorklistPage from '@/pages/ris/RISWorklistPage';
 import OrderListPage from '@/pages/orders/OrderListPage';
 import OrderCreatePage from '@/pages/orders/OrderCreate';
-import { DoctorOrderPage, RISWorklistPage as OCSRISWorklistPage, RISStudyDetailPage, LISWorklistPage, LISStudyDetailPage, LISAlertPage, RISDashboardPage, LISUploadPage, LISProcessStatusPage } from '@/pages/ocs';
+import { DoctorOrderPage, RISWorklistPage as OCSRISWorklistPage, RISStudyDetailPage, LISWorklistPage, LISStudyDetailPage, RISDashboardPage, LISUploadPage, LISProcessStatusPage } from '@/pages/ocs';
 import { NurseReceptionPage } from '@/pages/nurse';
 import { ComingSoonPage } from '@/pages/common/CommingSoon';
 import MenuPermissionPage from '@/pages/admin/MenuPermissionPage';
@@ -47,7 +47,6 @@ export const routeMap: Record<string, ComponentType> = {
   OCS_RIS_DETAIL: RISStudyDetailPage,
   OCS_LIS: LISWorklistPage,
   OCS_LIS_DETAIL: LISStudyDetailPage,
-  LIS_ALERT: LISAlertPage,
   RIS_DASHBOARD: RISDashboardPage,
   RIS_WORKLIST : RISWorklistPage,
 
