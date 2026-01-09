@@ -3,134 +3,128 @@
  * - 오더 조회, 확정, 취소
  * - 오더 생성은 /orders/create 페이지로 이동
  */
-import { useState, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider';
 import Pagination from '@/layout/Pagination';
-import { getOCSList } from '@/services/ocs.api';
-import type {
-  OCSListItem,
-  OCSSearchParams,
-  OcsStatus,
-  JobRole,
-  Priority,
-} from '@/types/ocs';
+import { useOCSList } from '@/hooks/useOCSList';
+import { useOCSActions } from '@/hooks/useOCSActions';
+import { LoadingSpinner, EmptyState, useToast } from '@/components/common';
 import {
   OCS_STATUS_LABELS,
   PRIORITY_LABELS,
   JOB_ROLE_LABELS,
 } from '@/types/ocs';
+import type { OCSListItem, JobRole } from '@/types/ocs';
 import OCSListTable from './OCSListTable';
 import OCSDetailModal from './OCSDetailModal';
+import './DoctorOrderPage.css';
 
 export default function DoctorOrderPage() {
   const navigate = useNavigate();
   const { role, user } = useAuth();
+  const toast = useToast();
 
-  const [page, setPage] = useState(1);
-  const [pageSize] = useState(20);
-  const [ocsList, setOcsList] = useState<OCSListItem[]>([]);
-  const [totalCount, setTotalCount] = useState(0);
-  const [loading, setLoading] = useState(false);
-  const [refreshKey, setRefreshKey] = useState(0);
-
-  // Filter states
-  const [statusFilter, setStatusFilter] = useState<OcsStatus | ''>('');
-  const [jobRoleFilter, setJobRoleFilter] = useState<JobRole | ''>('');
-  const [priorityFilter, setPriorityFilter] = useState<Priority | ''>('');
-  const [searchQuery, setSearchQuery] = useState('');
+  // 검색 입력 상태
   const [searchInput, setSearchInput] = useState('');
+
+  // JobRole 필터 (의사 페이지 전용)
+  const [jobRoleFilter, setJobRoleFilter] = useState<JobRole | ''>('');
 
   // Modal states
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [selectedOcsId, setSelectedOcsId] = useState<number | null>(null);
 
-  // OCS 목록 조회
-  useEffect(() => {
-    const fetchOCSList = async () => {
-      setLoading(true);
-      try {
-        const params: OCSSearchParams = {
-          page,
-          page_size: pageSize,
-        };
+  // OCS 목록 훅 (의사인 경우 자신의 오더만)
+  const {
+    ocsList,
+    totalCount,
+    loading,
+    page,
+    pageSize,
+    totalPages,
+    setPage,
+    filters,
+    setStatusFilter,
+    setPriorityFilter,
+    setSearchQuery,
+    refresh,
+  } = useOCSList(user?.id, {
+    doctorId: role === 'DOCTOR' ? user?.id : undefined,
+  });
 
-        if (statusFilter) params.ocs_status = statusFilter;
-        if (jobRoleFilter) params.job_role = jobRoleFilter;
-        if (priorityFilter) params.priority = priorityFilter;
-        if (searchQuery) params.q = searchQuery;
+  // OCS 액션 훅
+  const { confirm, cancel } = useOCSActions({
+    onSuccess: (action) => {
+      const messages: Record<string, string> = {
+        confirm: '오더를 확정했습니다.',
+        cancel: '오더를 취소했습니다.',
+      };
+      toast.success(messages[action] || '작업이 완료되었습니다.');
+      refresh();
+    },
+    onError: (action) => {
+      const messages: Record<string, string> = {
+        confirm: '확정에 실패했습니다.',
+        cancel: '취소에 실패했습니다.',
+      };
+      toast.error(messages[action] || '작업에 실패했습니다.');
+    },
+  });
 
-        // 의사인 경우 자신의 오더만
-        if (role === 'DOCTOR' && user?.id) {
-          params.doctor_id = user.id;
-        }
+  // JobRole 필터 적용된 목록
+  const filteredOcsList = jobRoleFilter
+    ? ocsList.filter((ocs) => ocs.job_role === jobRoleFilter)
+    : ocsList;
 
-        const response = await getOCSList(params);
-        if (Array.isArray(response)) {
-          setOcsList(response as unknown as OCSListItem[]);
-          setTotalCount(response.length);
-        } else {
-          setOcsList(response.results);
-          setTotalCount(response.count);
-        }
-      } catch (error) {
-        console.error('Failed to fetch OCS list:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchOCSList();
-  }, [page, pageSize, statusFilter, jobRoleFilter, priorityFilter, searchQuery, role, user?.id, refreshKey]);
-
-  const totalPages = Math.ceil(totalCount / pageSize);
-
-  const handleStatusChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setStatusFilter(e.target.value as OcsStatus | '');
-    setPage(1);
-  };
-
-  const handleJobRoleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+  const handleJobRoleChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
     setJobRoleFilter(e.target.value as JobRole | '');
-    setPage(1);
-  };
+  }, []);
 
-  const handlePriorityChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setPriorityFilter(e.target.value as Priority | '');
-    setPage(1);
-  };
-
-  const handleRowClick = (ocs: OCSListItem) => {
+  const handleRowClick = useCallback((ocs: OCSListItem) => {
     setSelectedOcsId(ocs.id);
     setIsDetailModalOpen(true);
-  };
+  }, []);
 
-  const handleModalClose = () => {
+  const handleModalClose = useCallback(() => {
     setIsDetailModalOpen(false);
     setSelectedOcsId(null);
-  };
+  }, []);
 
-  const handleModalSuccess = () => {
-    setRefreshKey((prev) => prev + 1);
-  };
+  const handleModalSuccess = useCallback(() => {
+    refresh();
+  }, [refresh]);
 
   // 오더 생성 페이지로 이동
-  const handleCreateOrder = () => {
+  const handleCreateOrder = useCallback(() => {
     navigate('/orders/create');
-  };
+  }, [navigate]);
+
+  // 검색
+  const handleSearch = useCallback(() => {
+    setSearchQuery(searchInput);
+  }, [searchInput, setSearchQuery]);
+
+  const handleClearSearch = useCallback(() => {
+    setSearchInput('');
+    setSearchQuery('');
+  }, [setSearchQuery]);
 
   return (
     <div className="page doctor-order">
+      {/* 헤더 */}
+      <header className="page-header">
+        <h2>검사 오더 관리</h2>
+        <span className="subtitle">검사 오더를 조회하고 관리합니다</span>
+      </header>
+
       {/* 필터 영역 */}
       <section className="filter-bar">
         <div className="filter-left">
           <strong className="ocs-count">
             총 <span>{totalCount}</span>건의 오더
           </strong>
-          <button
-            className="btn btn-primary"
-            onClick={handleCreateOrder}
-          >
+          <button className="btn btn-primary" onClick={handleCreateOrder}>
             + 오더 생성
           </button>
         </div>
@@ -143,36 +137,20 @@ export default function DoctorOrderPage() {
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  setSearchQuery(searchInput);
-                  setPage(1);
-                }
+                if (e.key === 'Enter') handleSearch();
               }}
             />
-            <button
-              className="btn btn-search"
-              onClick={() => {
-                setSearchQuery(searchInput);
-                setPage(1);
-              }}
-            >
+            <button className="btn btn-search" onClick={handleSearch}>
               검색
             </button>
-            {searchQuery && (
-              <button
-                className="btn btn-clear"
-                onClick={() => {
-                  setSearchInput('');
-                  setSearchQuery('');
-                  setPage(1);
-                }}
-              >
+            {filters.searchQuery && (
+              <button className="btn btn-clear" onClick={handleClearSearch}>
                 초기화
               </button>
             )}
           </div>
 
-          <select value={statusFilter} onChange={handleStatusChange}>
+          <select value={filters.status} onChange={(e) => setStatusFilter(e.target.value as any)}>
             <option value="">전체 상태</option>
             {Object.entries(OCS_STATUS_LABELS).map(([value, label]) => (
               <option key={value} value={value}>
@@ -190,7 +168,7 @@ export default function DoctorOrderPage() {
             ))}
           </select>
 
-          <select value={priorityFilter} onChange={handlePriorityChange}>
+          <select value={filters.priority} onChange={(e) => setPriorityFilter(e.target.value as any)}>
             <option value="">전체 우선순위</option>
             {Object.entries(PRIORITY_LABELS).map(([value, label]) => (
               <option key={value} value={value}>
@@ -204,13 +182,16 @@ export default function DoctorOrderPage() {
       {/* OCS 리스트 */}
       <section className="content">
         {loading ? (
-          <div>로딩 중...</div>
-        ) : (
-          <OCSListTable
-            role={role}
-            ocsList={ocsList}
-            onRowClick={handleRowClick}
+          <LoadingSpinner text="오더 목록을 불러오는 중..." />
+        ) : filteredOcsList.length === 0 ? (
+          <EmptyState
+            icon="📋"
+            title="오더가 없습니다"
+            description="새 오더를 생성하거나 필터 조건을 변경해주세요."
+            action={{ label: '오더 생성', onClick: handleCreateOrder }}
           />
+        ) : (
+          <OCSListTable role={role} ocsList={filteredOcsList} onRowClick={handleRowClick} />
         )}
       </section>
 
@@ -234,54 +215,8 @@ export default function DoctorOrderPage() {
         />
       )}
 
-      <style>{`
-        .search-box {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        }
-
-        .search-box input {
-          padding: 8px 12px;
-          border: 1px solid #ddd;
-          border-radius: 4px;
-          font-size: 14px;
-          width: 220px;
-        }
-
-        .search-box input:focus {
-          outline: none;
-          border-color: #1976d2;
-        }
-
-        .btn-search {
-          padding: 8px 16px;
-          background-color: #1976d2;
-          color: white;
-          border: none;
-          border-radius: 4px;
-          cursor: pointer;
-          font-size: 14px;
-        }
-
-        .btn-search:hover {
-          background-color: #1565c0;
-        }
-
-        .btn-clear {
-          padding: 8px 12px;
-          background-color: #f5f5f5;
-          color: #666;
-          border: 1px solid #ddd;
-          border-radius: 4px;
-          cursor: pointer;
-          font-size: 14px;
-        }
-
-        .btn-clear:hover {
-          background-color: #e0e0e0;
-        }
-      `}</style>
+      {/* Toast 컨테이너 */}
+      <toast.ToastContainer position="top-right" />
     </div>
   );
 }

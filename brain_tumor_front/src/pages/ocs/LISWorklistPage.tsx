@@ -4,163 +4,95 @@
  * - 상세 페이지로 이동하여 결과 입력
  * - 실시간 OCS 상태 변경 알림
  */
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider';
 import Pagination from '@/layout/Pagination';
-import { getOCSList, acceptOCS, startOCS } from '@/services/ocs.api';
-import type {
-  OCSListItem,
-  OCSSearchParams,
-  OcsStatus,
-  Priority,
-} from '@/types/ocs';
-import { OCS_STATUS_LABELS, PRIORITY_LABELS } from '@/types/ocs';
+import { useOCSList } from '@/hooks/useOCSList';
+import { useOCSActions } from '@/hooks/useOCSActions';
 import { useOCSNotification } from '@/hooks/useOCSNotification';
+import { LoadingSpinner, EmptyState, useToast } from '@/components/common';
 import OCSNotificationToast from '@/components/OCSNotificationToast';
-
-// 날짜 포맷
-const formatDate = (dateStr: string): string => {
-  const date = new Date(dateStr);
-  return date.toLocaleString('ko-KR', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-};
-
-// 상태별 스타일 클래스
-const getStatusClass = (status: string): string => {
-  const classes: Record<string, string> = {
-    ORDERED: 'status-ordered',
-    ACCEPTED: 'status-accepted',
-    IN_PROGRESS: 'status-in-progress',
-    RESULT_READY: 'status-result-ready',
-    CONFIRMED: 'status-confirmed',
-    CANCELLED: 'status-cancelled',
-  };
-  return classes[status] || '';
-};
-
-// 우선순위별 스타일 클래스
-const getPriorityClass = (priority: string): string => {
-  const classes: Record<string, string> = {
-    urgent: 'priority-urgent',
-    normal: 'priority-normal',
-  };
-  return classes[priority] || '';
-};
+import {
+  formatDate,
+  getStatusClass,
+  getPriorityClass,
+  LIS_TEST_TYPES,
+} from '@/utils/ocs.utils';
+import { OCS_STATUS_LABELS, PRIORITY_LABELS } from '@/types/ocs';
+import type { OCSListItem } from '@/types/ocs';
+import './LISWorklistPage.css';
 
 export default function LISWorklistPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const toast = useToast();
 
-  const [page, setPage] = useState(1);
-  const [pageSize] = useState(20);
-  const [ocsList, setOcsList] = useState<OCSListItem[]>([]);
-  const [totalCount, setTotalCount] = useState(0);
-  const [loading, setLoading] = useState(false);
-  const [refreshKey, setRefreshKey] = useState(0);
+  // 검색 입력 상태
+  const [searchInput, setSearchInput] = useState('');
 
-  // Filter states
-  const [statusFilter, setStatusFilter] = useState<OcsStatus | ''>('');
-  const [priorityFilter, setPriorityFilter] = useState<Priority | ''>('');
-  const [unassignedOnly, setUnassignedOnly] = useState(false);
-  const [myWorkOnly, setMyWorkOnly] = useState(false);
+  // OCS 목록 훅
+  const {
+    ocsList,
+    totalCount,
+    loading,
+    page,
+    pageSize,
+    totalPages,
+    setPage,
+    filters,
+    setStatusFilter,
+    setPriorityFilter,
+    setModalityFilter,
+    setUnassignedOnly,
+    setMyWorkOnly,
+    setSearchQuery,
+    refresh,
+    statusCounts,
+  } = useOCSList(user?.id, { jobRole: 'LIS' });
 
-  // 목록 새로고침 함수
-  const refreshList = useCallback(() => {
-    setRefreshKey((prev) => prev + 1);
-  }, []);
+  // OCS 액션 훅
+  const { accept, start } = useOCSActions({
+    onSuccess: (action) => {
+      const messages: Record<string, string> = {
+        accept: '오더를 접수했습니다.',
+        start: '작업을 시작합니다.',
+      };
+      toast.success(messages[action] || '작업이 완료되었습니다.');
+      refresh();
+    },
+    onError: (action) => {
+      const messages: Record<string, string> = {
+        accept: '접수에 실패했습니다.',
+        start: '작업 시작에 실패했습니다.',
+      };
+      toast.error(messages[action] || '작업에 실패했습니다.');
+    },
+  });
 
-  // OCS 실시간 알림
+  // 실시간 알림
   const { notifications, removeNotification } = useOCSNotification({
-    autoRefresh: refreshList,
+    autoRefresh: refresh,
   });
 
   // 알림 클릭 시 상세 페이지로 이동
-  const handleNotificationClick = useCallback((notification: { ocsPk: number }) => {
-    navigate(`/ocs/lis/${notification.ocsPk}`);
-  }, [navigate]);
-
-  // OCS 목록 조회
-  useEffect(() => {
-    console.log('[LISWorklistPage] useEffect triggered, fetching OCS list...');
-    const fetchOCSList = async () => {
-      setLoading(true);
-      try {
-        const params: OCSSearchParams = {
-          page,
-          page_size: pageSize,
-          job_role: 'LIS', // LIS 오더만
-        };
-
-        if (statusFilter) params.ocs_status = statusFilter;
-        if (priorityFilter) params.priority = priorityFilter;
-        if (unassignedOnly) params.unassigned = true;
-        if (myWorkOnly && user) params.worker_id = user.id;
-
-        console.log('[LISWorklistPage] Fetching with params:', params);
-        const response = await getOCSList(params);
-        console.log('[LISWorklistPage] Response:', response);
-        // 페이지네이션 응답과 배열 응답 모두 처리
-        if (Array.isArray(response)) {
-          // 배열 응답 (페이지네이션 없음)
-          setOcsList(response as unknown as OCSListItem[]);
-          setTotalCount(response.length);
-        } else {
-          // 페이지네이션 응답
-          setOcsList(response.results);
-          setTotalCount(response.count);
-        }
-      } catch (error) {
-        console.error('[LISWorklistPage] Failed to fetch OCS list:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchOCSList();
-  }, [page, pageSize, statusFilter, priorityFilter, unassignedOnly, myWorkOnly, user, refreshKey]);
-
-  const totalPages = Math.ceil(totalCount / pageSize);
-
-  const handleStatusChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setStatusFilter(e.target.value as OcsStatus | '');
-    setPage(1);
-  };
-
-  const handlePriorityChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setPriorityFilter(e.target.value as Priority | '');
-    setPage(1);
-  };
+  const handleNotificationClick = useCallback(
+    (notification: { ocsPk: number }) => {
+      navigate(`/ocs/lis/${notification.ocsPk}`);
+    },
+    [navigate]
+  );
 
   // 오더 접수
   const handleAccept = async (ocsId: number, e: React.MouseEvent) => {
     e.stopPropagation();
-    try {
-      await acceptOCS(ocsId);
-      alert('오더를 접수했습니다.');
-      setRefreshKey((prev) => prev + 1);
-    } catch (error) {
-      console.error('Failed to accept OCS:', error);
-      alert('접수에 실패했습니다.');
-    }
+    await accept(ocsId);
   };
 
   // 작업 시작
   const handleStart = async (ocsId: number, e: React.MouseEvent) => {
     e.stopPropagation();
-    try {
-      await startOCS(ocsId);
-      alert('작업을 시작합니다.');
-      setRefreshKey((prev) => prev + 1);
-    } catch (error) {
-      console.error('Failed to start OCS:', error);
-      alert('작업 시작에 실패했습니다.');
-    }
+    await start(ocsId);
   };
 
   // 행 클릭 시 상세 페이지로 이동
@@ -168,8 +100,40 @@ export default function LISWorklistPage() {
     navigate(`/ocs/lis/${ocs.id}`);
   };
 
+  // 검색
+  const handleSearch = () => {
+    setSearchQuery(searchInput);
+  };
+
+  const handleClearSearch = () => {
+    setSearchInput('');
+    setSearchQuery('');
+  };
+
   return (
     <div className="page lis-worklist">
+      {/* 헤더 */}
+      <header className="page-header">
+        <h2>검사 Worklist</h2>
+        <span className="subtitle">담당 검사 목록을 확인하고 결과를 입력합니다</span>
+      </header>
+
+      {/* 요약 카드 */}
+      <section className="summary-cards">
+        <div className="summary-card pending">
+          <span className="count">{statusCounts.pending}</span>
+          <span className="label">대기 중</span>
+        </div>
+        <div className="summary-card reading">
+          <span className="count">{statusCounts.inProgress}</span>
+          <span className="label">진행 중</span>
+        </div>
+        <div className="summary-card completed">
+          <span className="count">{statusCounts.completed}</span>
+          <span className="label">완료</span>
+        </div>
+      </section>
+
       {/* 필터 영역 */}
       <section className="filter-bar">
         <div className="filter-left">
@@ -178,7 +142,45 @@ export default function LISWorklistPage() {
           </strong>
         </div>
         <div className="filter-right">
-          <select value={statusFilter} onChange={handleStatusChange}>
+          {/* 검색 */}
+          <div className="search-box">
+            <input
+              type="text"
+              placeholder="환자명 / 환자번호 검색"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleSearch();
+              }}
+            />
+            <button className="btn btn-search" onClick={handleSearch}>
+              검색
+            </button>
+            {filters.searchQuery && (
+              <button className="btn btn-clear" onClick={handleClearSearch}>
+                초기화
+              </button>
+            )}
+          </div>
+
+          {/* 검사 유형 필터 */}
+          <select
+            value={filters.modality}
+            onChange={(e) => setModalityFilter(e.target.value)}
+          >
+            <option value="">전체 검사</option>
+            {LIS_TEST_TYPES.map((t) => (
+              <option key={t} value={t}>
+                {t}
+              </option>
+            ))}
+          </select>
+
+          {/* 상태 필터 */}
+          <select
+            value={filters.status}
+            onChange={(e) => setStatusFilter(e.target.value as any)}
+          >
             <option value="">전체 상태</option>
             {Object.entries(OCS_STATUS_LABELS).map(([value, label]) => (
               <option key={value} value={value}>
@@ -187,7 +189,11 @@ export default function LISWorklistPage() {
             ))}
           </select>
 
-          <select value={priorityFilter} onChange={handlePriorityChange}>
+          {/* 우선순위 필터 */}
+          <select
+            value={filters.priority}
+            onChange={(e) => setPriorityFilter(e.target.value as any)}
+          >
             <option value="">전체 우선순위</option>
             {Object.entries(PRIORITY_LABELS).map(([value, label]) => (
               <option key={value} value={value}>
@@ -199,12 +205,8 @@ export default function LISWorklistPage() {
           <label className="checkbox-label">
             <input
               type="checkbox"
-              checked={unassignedOnly}
-              onChange={(e) => {
-                setUnassignedOnly(e.target.checked);
-                if (e.target.checked) setMyWorkOnly(false);
-                setPage(1);
-              }}
+              checked={filters.unassignedOnly}
+              onChange={(e) => setUnassignedOnly(e.target.checked)}
             />
             미배정만
           </label>
@@ -212,12 +214,8 @@ export default function LISWorklistPage() {
           <label className="checkbox-label">
             <input
               type="checkbox"
-              checked={myWorkOnly}
-              onChange={(e) => {
-                setMyWorkOnly(e.target.checked);
-                if (e.target.checked) setUnassignedOnly(false);
-                setPage(1);
-              }}
+              checked={filters.myWorkOnly}
+              onChange={(e) => setMyWorkOnly(e.target.checked)}
             />
             내 작업만
           </label>
@@ -227,7 +225,13 @@ export default function LISWorklistPage() {
       {/* 워크리스트 테이블 */}
       <section className="content">
         {loading ? (
-          <div>로딩 중...</div>
+          <LoadingSpinner text="목록을 불러오는 중..." />
+        ) : !ocsList || ocsList.length === 0 ? (
+          <EmptyState
+            icon="🔬"
+            title="검색 결과가 없습니다"
+            description="필터 조건을 변경하거나 검색어를 확인해주세요."
+          />
         ) : (
           <table className="ocs-table worklist-table">
             <thead>
@@ -238,92 +242,86 @@ export default function LISWorklistPage() {
                 <th>환자</th>
                 <th>검사 항목</th>
                 <th>처방 의사</th>
+                <th>담당자</th>
                 <th>생성일시</th>
                 <th>액션</th>
               </tr>
             </thead>
             <tbody>
-              {!ocsList || ocsList.length === 0 ? (
-                <tr>
-                  <td colSpan={8} align="center">
-                    데이터 없음
+              {ocsList.map((ocs) => (
+                <tr
+                  key={ocs.id}
+                  onClick={() => handleRowClick(ocs)}
+                  className={`clickable-row ${ocs.priority === 'urgent' ? 'urgent-row' : ''}`}
+                >
+                  <td>{ocs.ocs_id}</td>
+                  <td>
+                    <span className={`status-badge ${getStatusClass(ocs.ocs_status)}`}>
+                      {ocs.ocs_status_display}
+                    </span>
+                  </td>
+                  <td>
+                    <span className={`priority-badge ${getPriorityClass(ocs.priority)}`}>
+                      {ocs.priority_display}
+                    </span>
+                  </td>
+                  <td>{ocs.patient.name}</td>
+                  <td>{ocs.job_type}</td>
+                  <td>{ocs.doctor.name}</td>
+                  <td>{ocs.worker?.name || <span className="unassigned">미배정</span>}</td>
+                  <td>{formatDate(ocs.created_at)}</td>
+                  <td onClick={(e) => e.stopPropagation()}>
+                    {ocs.ocs_status === 'ORDERED' && (
+                      <button
+                        className="btn btn-sm btn-primary"
+                        onClick={(e) => handleAccept(ocs.id, e)}
+                      >
+                        접수
+                      </button>
+                    )}
+                    {ocs.ocs_status === 'ACCEPTED' && ocs.worker?.id === user?.id && (
+                      <button
+                        className="btn btn-sm btn-success"
+                        onClick={(e) => handleStart(ocs.id, e)}
+                      >
+                        시작
+                      </button>
+                    )}
+                    {ocs.ocs_status === 'IN_PROGRESS' && ocs.worker?.id === user?.id && (
+                      <button
+                        className="btn btn-sm btn-info"
+                        onClick={() => handleRowClick(ocs)}
+                      >
+                        결과 입력
+                      </button>
+                    )}
+                    {ocs.ocs_status === 'RESULT_READY' && (
+                      <button
+                        className="btn btn-sm btn-secondary"
+                        onClick={() => handleRowClick(ocs)}
+                      >
+                        조회
+                      </button>
+                    )}
+                    {ocs.ocs_status === 'CONFIRMED' && (
+                      <button
+                        className="btn btn-sm btn-success"
+                        onClick={() => navigate(`/ocs/report/${ocs.id}`)}
+                      >
+                        결과 보기
+                      </button>
+                    )}
+                    {ocs.ocs_status === 'CANCELLED' && (
+                      <button
+                        className="btn btn-sm btn-secondary"
+                        onClick={() => handleRowClick(ocs)}
+                      >
+                        조회
+                      </button>
+                    )}
                   </td>
                 </tr>
-              ) : (
-                ocsList.map((ocs) => (
-                  <tr
-                    key={ocs.id}
-                    onClick={() => handleRowClick(ocs)}
-                    className="clickable-row"
-                  >
-                    <td>{ocs.ocs_id}</td>
-                    <td>
-                      <span className={`status-badge ${getStatusClass(ocs.ocs_status)}`}>
-                        {ocs.ocs_status_display}
-                      </span>
-                    </td>
-                    <td>
-                      <span className={`priority-badge ${getPriorityClass(ocs.priority)}`}>
-                        {ocs.priority_display}
-                      </span>
-                    </td>
-                    <td>{ocs.patient.name}</td>
-                    <td>{ocs.job_type}</td>
-                    <td>{ocs.doctor.name}</td>
-                    <td>{formatDate(ocs.created_at)}</td>
-                    <td onClick={(e) => e.stopPropagation()}>
-                      {ocs.ocs_status === 'ORDERED' && (
-                        <button
-                          className="btn btn-sm btn-primary"
-                          onClick={(e) => handleAccept(ocs.id, e)}
-                        >
-                          접수
-                        </button>
-                      )}
-                      {ocs.ocs_status === 'ACCEPTED' && ocs.worker?.id === user?.id && (
-                        <button
-                          className="btn btn-sm btn-success"
-                          onClick={(e) => handleStart(ocs.id, e)}
-                        >
-                          시작
-                        </button>
-                      )}
-                      {ocs.ocs_status === 'IN_PROGRESS' && ocs.worker?.id === user?.id && (
-                        <button
-                          className="btn btn-sm btn-info"
-                          onClick={() => handleRowClick(ocs)}
-                        >
-                          결과 입력
-                        </button>
-                      )}
-                      {ocs.ocs_status === 'RESULT_READY' && (
-                        <button
-                          className="btn btn-sm btn-secondary"
-                          onClick={() => handleRowClick(ocs)}
-                        >
-                          조회
-                        </button>
-                      )}
-                      {ocs.ocs_status === 'CONFIRMED' && (
-                        <button
-                          className="btn btn-sm btn-success"
-                          onClick={() => navigate(`/ocs/report/${ocs.id}`)}
-                        >
-                          결과 보기
-                        </button>
-                      )}
-                      {ocs.ocs_status === 'CANCELLED' && (
-                        <button
-                          className="btn btn-sm btn-secondary"
-                          onClick={() => handleRowClick(ocs)}
-                        >
-                          조회
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                ))
-              )}
+              ))}
             </tbody>
           </table>
         )}
@@ -345,6 +343,9 @@ export default function LISWorklistPage() {
         onDismiss={removeNotification}
         onClickNotification={handleNotificationClick}
       />
+
+      {/* Toast 컨테이너 */}
+      <toast.ToastContainer position="top-right" />
     </div>
   );
 }
