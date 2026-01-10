@@ -1,62 +1,256 @@
 #!/usr/bin/env python
 """
-Brain Tumor CDSS - 더미 데이터 설정 스크립트 (2/2)
+Brain Tumor CDSS - 더미 데이터 설정 스크립트 (1/2) - 기본 데이터
 
-이 스크립트는 테스트용 더미 데이터를 생성합니다.
-중복 실행에도 안전합니다.
+이 스크립트는 기본 더미 데이터를 생성합니다:
+- DB 자동 생성 (없는 경우)
+- 마이그레이션 자동 실행
+- 역할/사용자 기본 데이터
+- 메뉴/권한 시드 데이터
+- 환자 데이터
+- 진료 데이터
+- OCS (RIS/LIS) 데이터
+- 영상 검사 데이터
+- AI 모델 시드 데이터
 
 사용법:
-    python setup_dummy_data.py          # 기존 데이터 유지, 부족분만 추가
-    python setup_dummy_data.py --reset  # 기존 데이터 삭제 후 새로 생성
-
-선행 조건:
-    python setup_database.py  (마이그레이션 및 기본 데이터)
+    python setup_dummy_data_1_base.py          # 기존 데이터 유지, 부족분만 추가
+    python setup_dummy_data_1_base.py --reset  # 기존 데이터 삭제 후 새로 생성
+    python setup_dummy_data_1_base.py --force  # 목표 수량 이상이어도 강제 추가
 """
 
 import os
 import sys
+import subprocess
 from pathlib import Path
 from datetime import timedelta
 import random
+import argparse
 
-# Django 설정
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
-
-# 프로젝트 루트 디렉토리로 이동
-PROJECT_ROOT = Path(__file__).resolve().parent
+# 프로젝트 루트 디렉토리로 이동 (상위 폴더)
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
 os.chdir(PROJECT_ROOT)
 
-# Django 초기화
+
+def create_database_if_not_exists():
+    """데이터베이스가 없으면 생성 (Django 초기화 전에 실행)"""
+    print("\n[0단계] 데이터베이스 존재 확인...")
+
+    from dotenv import load_dotenv
+    import environ
+
+    env_path = PROJECT_ROOT / 'dbconn.env'
+    load_dotenv(env_path)
+
+    env = environ.Env()
+
+    db_name = env('MYSQL_DB', default='brain_tumor')
+    db_user = env('MYSQL_USER', default='root')
+    db_password = env('MYSQL_PASSWORD', default='')
+    db_host = env('MYSQL_HOST', default='localhost')
+    db_port = env('MYSQL_PORT', default='3306')
+
+    try:
+        import pymysql
+    except ImportError:
+        print("[WARNING] pymysql이 설치되지 않았습니다.")
+        print("  pip install pymysql")
+        return False
+
+    try:
+        # DB 없이 MySQL 서버에 연결
+        conn = pymysql.connect(
+            host=db_host,
+            port=int(db_port),
+            user=db_user,
+            password=db_password,
+            charset='utf8mb4'
+        )
+
+        cursor = conn.cursor()
+
+        # DB 존재 확인
+        cursor.execute(f"SHOW DATABASES LIKE '{db_name}'")
+        result = cursor.fetchone()
+
+        if result:
+            print(f"[OK] 데이터베이스 '{db_name}' 이미 존재")
+        else:
+            # DB 생성
+            print(f"[INFO] 데이터베이스 '{db_name}' 생성 중...")
+            cursor.execute(f"CREATE DATABASE `{db_name}` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci")
+            conn.commit()
+            print(f"[OK] 데이터베이스 '{db_name}' 생성 완료")
+
+        cursor.close()
+        conn.close()
+        return True
+
+    except pymysql.Error as e:
+        print(f"[ERROR] MySQL 연결 실패: {e}")
+        print(f"  Host: {db_host}:{db_port}")
+        print(f"  User: {db_user}")
+        print("  MySQL 서버가 실행 중인지 확인하세요.")
+        return False
+
+
+def run_migrations():
+    """마이그레이션 실행"""
+    print("\n[1단계] 마이그레이션 실행...")
+
+    try:
+        result = subprocess.run(
+            [sys.executable, 'manage.py', 'migrate', '--no-input'],
+            cwd=str(PROJECT_ROOT),
+            capture_output=True,
+            text=True
+        )
+        if result.returncode == 0:
+            print("[OK] 마이그레이션 완료")
+            return True
+        else:
+            print(f"[ERROR] 마이그레이션 실패")
+            if result.stderr:
+                print(result.stderr[:500])
+            return False
+    except Exception as e:
+        print(f"[ERROR] 마이그레이션 실행 실패: {e}")
+        return False
+
+
+# DB 생성 및 마이그레이션 (Django 초기화 전)
+if __name__ == '__main__' or True:  # import 시에도 실행
+    if not create_database_if_not_exists():
+        print("[WARNING] DB 자동 생성 실패 - 계속 진행합니다.")
+
+    if not run_migrations():
+        print("[WARNING] 마이그레이션 실패 - 계속 진행합니다.")
+
+# Django 설정 (DB 생성 후)
+sys.path.insert(0, str(PROJECT_ROOT))
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 import django
 django.setup()
 
 from django.utils import timezone
 from django.db import IntegrityError, transaction
-import argparse
 
 
-def check_prerequisites():
-    """선행 조건 확인"""
-    print("\n[0단계] 선행 조건 확인...")
+def setup_roles():
+    """기본 역할 생성"""
+    print("\n[1단계] 기본 역할 설정...")
+
+    from apps.accounts.models import Role
+
+    roles = [
+        ('SYSTEMMANAGER', 'System Manager', '시스템 관리자'),
+        ('ADMIN', 'Admin', '병원 관리자'),
+        ('DOCTOR', 'Doctor', '의사'),
+        ('NURSE', 'Nurse', '간호사'),
+        ('PATIENT', 'Patient', '환자'),
+        ('RIS', 'RIS', '영상과'),
+        ('LIS', 'LIS', '검사과'),
+    ]
+
+    created_count = 0
+    for code, name, description in roles:
+        role, created = Role.objects.get_or_create(
+            code=code,
+            defaults={'name': name, 'description': description, 'is_active': True}
+        )
+        if created:
+            created_count += 1
+            print(f"  생성: {code}")
+        else:
+            print(f"  존재: {code}")
+
+    print(f"[OK] 역할 설정 완료 ({created_count}개 생성)")
+    return True
+
+
+def setup_superuser():
+    """슈퍼유저 생성"""
+    print("\n[2단계] 슈퍼유저 확인...")
 
     from django.contrib.auth import get_user_model
     from apps.accounts.models import Role
 
     User = get_user_model()
 
-    # 사용자 확인
-    if not User.objects.exists():
-        print("[ERROR] 사용자가 없습니다.")
-        print("  먼저 실행하세요: python setup_database.py")
+    if User.objects.filter(is_superuser=True).exists():
+        superuser = User.objects.filter(is_superuser=True).first()
+        print(f"[OK] 슈퍼유저 이미 존재: {superuser.login_id}")
+        return True
+
+    print("슈퍼유저가 없습니다. 기본 슈퍼유저를 생성합니다.")
+
+    # Role 가져오기
+    system_role = Role.objects.filter(code='SYSTEMMANAGER').first()
+
+    try:
+        superuser = User(
+            login_id='system',
+            name='시스템관리자',
+            is_superuser=True,
+            is_staff=True,
+            is_active=True,
+            role=system_role
+        )
+        superuser.set_password('system001')
+        superuser.save()
+        print(f"[OK] 슈퍼유저 생성: system / system001")
+        return True
+    except Exception as e:
+        print(f"[ERROR] 슈퍼유저 생성 실패: {e}")
         return False
 
-    # 역할 확인
-    if not Role.objects.filter(code='DOCTOR').exists():
-        print("[ERROR] DOCTOR 역할이 없습니다.")
-        print("  먼저 실행하세요: python setup_database.py")
-        return False
 
-    print("[OK] 선행 조건 충족")
+def setup_test_users():
+    """테스트 사용자 생성"""
+    print("\n[3단계] 테스트 사용자 설정...")
+
+    from django.contrib.auth import get_user_model
+    from apps.accounts.models import Role
+
+    User = get_user_model()
+
+    # (login_id, password, name, role_code, is_staff)
+    test_users = [
+        ('admin', 'admin001', '병원관리자', 'ADMIN', True),
+        ('doctor1', 'doctor001', '김철수 의사', 'DOCTOR', False),
+        ('doctor2', 'doctor002', '이영희 의사', 'DOCTOR', False),
+        ('doctor3', 'doctor003', '박민수 의사', 'DOCTOR', False),
+        ('doctor4', 'doctor004', '최지은 의사', 'DOCTOR', False),
+        ('doctor5', 'doctor005', '정현우 의사', 'DOCTOR', False),
+        ('nurse1', 'nurse001', '간호사', 'NURSE', False),
+        ('patient1', 'patient001', '환자', 'PATIENT', False),
+        ('ris1', 'ris001', '영상과', 'RIS', False),
+        ('lis1', 'lis001', '검사과', 'LIS', False),
+    ]
+
+    created_count = 0
+    for login_id, password, name, role_code, is_staff in test_users:
+        if User.objects.filter(login_id=login_id).exists():
+            print(f"  존재: {login_id}")
+            continue
+
+        try:
+            role = Role.objects.filter(code=role_code).first()
+            user = User(
+                login_id=login_id,
+                name=name,
+                is_staff=is_staff,
+                is_active=True,
+                role=role
+            )
+            user.set_password(password)
+            user.save()
+            created_count += 1
+            print(f"  생성: {login_id} / {password}")
+        except Exception as e:
+            print(f"  오류 ({login_id}): {e}")
+
+    print(f"[OK] 테스트 사용자 설정 완료 ({created_count}개 생성)")
     return True
 
 
@@ -791,329 +985,9 @@ def create_dummy_lis_orders(num_orders=20, force=False):
     return True
 
 
-def create_dummy_treatment_plans(num_plans=15, force=False):
-    """더미 치료 계획 데이터 생성"""
-    print(f"\n[6단계] 치료 계획 데이터 생성 (목표: {num_plans}건)...")
-
-    from apps.treatment.models import TreatmentPlan, TreatmentSession
-    from apps.patients.models import Patient
-    from django.contrib.auth import get_user_model
-    User = get_user_model()
-
-    # 기존 데이터 확인
-    existing_count = TreatmentPlan.objects.count()
-    if existing_count >= num_plans and not force:
-        print(f"[SKIP] 이미 {existing_count}건의 치료 계획이 존재합니다.")
-        return True
-
-    # 필요한 데이터
-    patients = list(Patient.objects.filter(is_deleted=False))
-    doctors = list(User.objects.filter(role__code='DOCTOR'))
-
-    if not patients:
-        print("[ERROR] 환자가 없습니다.")
-        return False
-
-    if not doctors:
-        doctors = list(User.objects.all()[:1])
-
-    treatment_types = ['surgery', 'radiation', 'chemotherapy', 'observation', 'combined']
-    statuses = ['draft', 'planned', 'active', 'completed', 'cancelled']
-
-    treatment_titles = {
-        'surgery': ['뇌종양 절제술', '내시경 수술', '감압술', '조직 검사'],
-        'radiation': ['전뇌 방사선 치료', '정위적 방사선 수술', 'IMRT 치료', '양성자 치료'],
-        'chemotherapy': ['테모졸로마이드 치료', '베바시주맙 치료', '복합 항암 요법', '면역 항암 치료'],
-        'observation': ['정기 MRI 추적', '증상 모니터링', '경과 관찰'],
-        'combined': ['수술 후 방사선+항암', '동시 화학방사선 요법', '복합 치료 프로토콜']
-    }
-
-    goals_templates = [
-        '종양 완전 제거 및 신경학적 기능 보존',
-        '종양 성장 억제 및 증상 완화',
-        '재발 방지 및 생존율 향상',
-        '삶의 질 유지 및 증상 관리',
-        '잔존 종양 제거 및 추가 전이 예방'
-    ]
-
-    created_count = 0
-
-    for i in range(num_plans):
-        patient = random.choice(patients)
-        doctor = random.choice(doctors)
-        treatment_type = random.choice(treatment_types)
-        status = random.choice(statuses)
-
-        days_ago = random.randint(0, 180)
-        start_date = timezone.now().date() - timedelta(days=days_ago)
-
-        end_date = None
-        if status in ['completed', 'cancelled']:
-            end_date = start_date + timedelta(days=random.randint(14, 90))
-        elif status == 'active':
-            end_date = start_date + timedelta(days=random.randint(30, 120))
-
-        try:
-            with transaction.atomic():
-                plan = TreatmentPlan.objects.create(
-                    patient=patient,
-                    treatment_type=treatment_type,
-                    title=random.choice(treatment_titles[treatment_type]),
-                    description=f"{patient.name} 환자의 {treatment_type} 치료 계획",
-                    goals=random.choice(goals_templates),
-                    status=status,
-                    start_date=start_date,
-                    end_date=end_date,
-                    created_by=doctor,
-                    notes=f"담당의: {doctor.username}" if random.random() < 0.3 else ""
-                )
-
-                # 치료 세션 생성 (방사선, 항암의 경우)
-                if treatment_type in ['radiation', 'chemotherapy'] and status in ['active', 'completed']:
-                    num_sessions = random.randint(3, 8)
-                    for j in range(num_sessions):
-                        session_date = start_date + timedelta(days=j * 7)
-                        session_status = 'completed' if session_date < timezone.now().date() else 'scheduled'
-
-                        TreatmentSession.objects.create(
-                            plan=plan,
-                            session_number=j + 1,
-                            scheduled_date=session_date,
-                            status=session_status,
-                            notes=f"세션 {j + 1}" if random.random() < 0.2 else ""
-                        )
-
-                created_count += 1
-
-        except Exception as e:
-            print(f"  오류: {e}")
-
-    print(f"[OK] 치료 계획 생성: {created_count}건")
-    print(f"  현재 전체 치료 계획: {TreatmentPlan.objects.count()}건")
-    print(f"  현재 전체 치료 세션: {TreatmentSession.objects.count()}건")
-    return True
-
-
-def create_dummy_followups(num_followups=25, force=False):
-    """더미 경과 추적 데이터 생성"""
-    print(f"\n[7단계] 경과 추적 데이터 생성 (목표: {num_followups}건)...")
-
-    from apps.followup.models import FollowUp
-    from apps.patients.models import Patient
-    from django.contrib.auth import get_user_model
-    User = get_user_model()
-
-    # 기존 데이터 확인
-    existing_count = FollowUp.objects.count()
-    if existing_count >= num_followups and not force:
-        print(f"[SKIP] 이미 {existing_count}건의 경과 기록이 존재합니다.")
-        return True
-
-    # 필요한 데이터
-    patients = list(Patient.objects.filter(is_deleted=False))
-    doctors = list(User.objects.filter(role__code='DOCTOR'))
-
-    if not patients:
-        print("[ERROR] 환자가 없습니다.")
-        return False
-
-    if not doctors:
-        doctors = list(User.objects.all()[:1])
-
-    followup_types = ['routine', 'imaging', 'lab', 'symptom', 'emergency']
-    clinical_statuses = ['stable', 'improved', 'deteriorated', 'recurrence', 'unknown']
-
-    symptoms_list = [
-        '두통 호소', '어지러움 증상', '시야 흐림', '손발 저림',
-        '특이 증상 없음', '피로감 호소', '기억력 저하', '수면 장애',
-        '오심/구토', '경련 증상'
-    ]
-
-    assessments = [
-        '전반적으로 안정적인 상태 유지',
-        '영상 소견상 변화 없음',
-        '치료 반응 양호',
-        '경미한 증상 악화 관찰',
-        '추가 검사 필요',
-        '현 치료 계획 유지 권고'
-    ]
-
-    plans = [
-        '다음 정기 검진 예정',
-        'MRI 추적 검사 예정',
-        '현 치료 지속',
-        '약물 용량 조절 고려',
-        '전문과 협진 의뢰',
-        '증상 모니터링 지속'
-    ]
-
-    created_count = 0
-
-    for i in range(num_followups):
-        patient = random.choice(patients)
-        doctor = random.choice(doctors)
-        followup_type = random.choice(followup_types)
-        clinical_status = random.choice(clinical_statuses)
-
-        days_ago = random.randint(0, 365)
-        followup_date = timezone.now().date() - timedelta(days=days_ago)
-
-        # 다음 방문일 (50% 확률로 설정)
-        next_followup = None
-        if random.random() < 0.5:
-            next_followup = followup_date + timedelta(days=random.randint(30, 90))
-
-        try:
-            FollowUp.objects.create(
-                patient=patient,
-                followup_date=followup_date,
-                followup_type=followup_type,
-                clinical_status=clinical_status,
-                kps_score=random.choice([None, 70, 80, 90, 100]),
-                ecog_score=random.choice([None, 0, 1, 2]),
-                weight=round(random.uniform(50, 85), 1) if random.random() < 0.6 else None,
-                blood_pressure_systolic=random.randint(110, 140) if random.random() < 0.4 else None,
-                blood_pressure_diastolic=random.randint(70, 90) if random.random() < 0.4 else None,
-                symptoms=random.choice(symptoms_list) if random.random() < 0.7 else "",
-                physical_exam="이학적 검사 시행" if random.random() < 0.3 else "",
-                assessment=random.choice(assessments),
-                plan=random.choice(plans),
-                next_followup_date=next_followup,
-                recorded_by=doctor
-            )
-            created_count += 1
-
-        except Exception as e:
-            print(f"  오류: {e}")
-
-    print(f"[OK] 경과 기록 생성: {created_count}건")
-    print(f"  현재 전체 경과 기록: {FollowUp.objects.count()}건")
-    return True
-
-
-def create_dummy_ai_requests(num_requests=10, force=False):
-    """더미 AI 추론 요청 데이터 생성"""
-    print(f"\n[8단계] AI 추론 요청 데이터 생성 (목표: {num_requests}건)...")
-
-    from apps.ai_inference.models import AIModel, AIInferenceRequest, AIInferenceResult
-    from apps.patients.models import Patient
-    from django.contrib.auth import get_user_model
-    User = get_user_model()
-
-    # 기존 데이터 확인
-    existing_count = AIInferenceRequest.objects.count()
-    if existing_count >= num_requests and not force:
-        print(f"[SKIP] 이미 {existing_count}건의 AI 요청이 존재합니다.")
-        return True
-
-    # 필요한 데이터
-    patients = list(Patient.objects.filter(is_deleted=False))
-    doctors = list(User.objects.filter(role__code='DOCTOR'))
-    ai_models = list(AIModel.objects.filter(is_active=True))
-
-    if not patients:
-        print("[ERROR] 환자가 없습니다.")
-        return False
-
-    if not doctors:
-        doctors = list(User.objects.all()[:1])
-
-    if not ai_models:
-        print("[WARNING] 활성화된 AI 모델이 없습니다. 먼저 AI 모델을 생성합니다.")
-        create_ai_models()
-        ai_models = list(AIModel.objects.filter(is_active=True))
-
-    # AIInferenceRequest.Status에 맞춤
-    statuses = ['PENDING', 'VALIDATING', 'PROCESSING', 'COMPLETED', 'FAILED']
-    priorities = ['low', 'normal', 'high', 'urgent']
-
-    created_count = 0
-
-    for i in range(num_requests):
-        patient = random.choice(patients)
-        doctor = random.choice(doctors)
-        model = random.choice(ai_models)
-        status = random.choice(statuses)
-
-        days_ago = random.randint(0, 60)
-        requested_at = timezone.now() - timedelta(days=days_ago)
-
-        # 시작/완료 시간 설정
-        started_at = None
-        completed_at = None
-        error_message = None
-
-        if status in ['PROCESSING', 'COMPLETED', 'FAILED']:
-            started_at = requested_at + timedelta(minutes=random.randint(1, 30))
-
-        if status == 'COMPLETED':
-            completed_at = started_at + timedelta(minutes=random.randint(5, 60)) if started_at else None
-        elif status == 'FAILED':
-            completed_at = started_at + timedelta(minutes=random.randint(1, 10)) if started_at else None
-            error_message = random.choice([
-                "입력 데이터 검증 실패",
-                "모델 처리 중 오류 발생",
-                "타임아웃 초과",
-                "필수 데이터 누락"
-            ])
-
-        try:
-            with transaction.atomic():
-                ai_request = AIInferenceRequest.objects.create(
-                    patient=patient,
-                    model=model,
-                    requested_by=doctor,
-                    status=status,
-                    priority=random.choice(priorities),
-                    ocs_references=[],
-                    input_data={"patient_id": patient.id, "model_code": model.code},
-                    started_at=started_at,
-                    completed_at=completed_at,
-                    error_message=error_message,
-                )
-
-                # COMPLETED인 경우 결과도 생성
-                if status == 'COMPLETED':
-                    tumor_detected = random.random() < 0.7
-                    result_data = {
-                        "analysis_type": model.code,
-                        "tumor_detected": tumor_detected,
-                        "tumor_grade": random.choice(['Grade I', 'Grade II', 'Grade III', 'Grade IV']) if tumor_detected else None,
-                        "tumor_location": random.choice(["frontal", "temporal", "parietal", "occipital"]) if tumor_detected else None,
-                        "recommendations": [
-                            "추가 영상 검사 권장" if tumor_detected else "정기 검진 권장",
-                            "전문의 상담 권장"
-                        ],
-                    }
-
-                    review_status = random.choice(['pending', 'approved', 'rejected'])
-                    reviewed_by = doctor if review_status != 'pending' else None
-                    reviewed_at = completed_at + timedelta(hours=random.randint(1, 48)) if reviewed_by else None
-
-                    AIInferenceResult.objects.create(
-                        inference_request=ai_request,
-                        result_data=result_data,
-                        confidence_score=round(random.uniform(0.75, 0.98), 2),
-                        visualization_paths=[],
-                        reviewed_by=reviewed_by,
-                        review_status=review_status,
-                        review_comment="결과 확인함" if reviewed_by else None,
-                        reviewed_at=reviewed_at,
-                    )
-
-                created_count += 1
-
-        except Exception as e:
-            print(f"  오류: {e}")
-
-    print(f"[OK] AI 요청 생성: {created_count}건")
-    print(f"  현재 전체 AI 요청: {AIInferenceRequest.objects.count()}건")
-    return True
-
-
 def create_ai_models():
     """AI 모델 시드 데이터 생성"""
-    print(f"\n[9단계] AI 모델 데이터 생성...")
+    print(f"\n[6단계] AI 모델 데이터 생성...")
 
     from apps.ai_inference.models import AIModel
 
@@ -1192,55 +1066,9 @@ def create_ai_models():
     return True
 
 
-def print_summary():
-    """더미 데이터 요약"""
-    print("\n" + "="*60)
-    print("더미 데이터 생성 완료!")
-    print("="*60)
-
-    from apps.patients.models import Patient
-    from apps.encounters.models import Encounter
-    from apps.imaging.models import ImagingStudy
-    from apps.ocs.models import OCS
-    from apps.menus.models import Menu, MenuLabel, MenuPermission
-    from apps.accounts.models import Permission
-    from apps.ai_inference.models import AIModel, AIInferenceRequest
-    from apps.treatment.models import TreatmentPlan, TreatmentSession
-    from apps.followup.models import FollowUp
-
-    print(f"\n[통계]")
-    print(f"  - 메뉴: {Menu.objects.count()}개")
-    print(f"  - 메뉴 라벨: {MenuLabel.objects.count()}개")
-    print(f"  - 메뉴-권한 매핑: {MenuPermission.objects.count()}개")
-    print(f"  - 권한: {Permission.objects.count()}개")
-    print(f"  - 환자: {Patient.objects.filter(is_deleted=False).count()}명")
-    print(f"  - 진료: {Encounter.objects.count()}건")
-    print(f"  - OCS (RIS): {OCS.objects.filter(job_role='RIS').count()}건")
-    print(f"  - OCS (LIS): {OCS.objects.filter(job_role='LIS').count()}건")
-    print(f"  - 영상 검사: {ImagingStudy.objects.count()}건")
-    print(f"  - 치료 계획: {TreatmentPlan.objects.count()}건")
-    print(f"  - 치료 세션: {TreatmentSession.objects.count()}건")
-    print(f"  - 경과 기록: {FollowUp.objects.count()}건")
-    print(f"  - AI 모델: {AIModel.objects.count()}개")
-    print(f"  - AI 요청: {AIInferenceRequest.objects.count()}건")
-
-    print(f"\n[다음 단계]")
-    print(f"  서버 실행:")
-    print(f"    python manage.py runserver")
-    print(f"")
-    print(f"  테스트 계정:")
-    print(f"    system / system001 (시스템 관리자)")
-    print(f"    admin / admin001 (병원 관리자)")
-    print(f"    doctor1~5 / doctor001~005 (의사 5명)")
-    print(f"    nurse1 / nurse001 (간호사)")
-    print(f"    patient1 / patient001 (환자)")
-    print(f"    ris1 / ris001 (영상과)")
-    print(f"    lis1 / lis001 (검사과)")
-
-
-def reset_dummy_data():
-    """기존 더미 데이터 삭제"""
-    print("\n[RESET] 기존 더미 데이터 삭제 중...")
+def reset_base_data():
+    """기본 더미 데이터 삭제 (base 영역만)"""
+    print("\n[RESET] 기본 더미 데이터 삭제 중...")
 
     from apps.ocs.models import OCS, OCSHistory
     from apps.imaging.models import ImagingStudy
@@ -1252,7 +1080,7 @@ def reset_dummy_data():
     from apps.followup.models import FollowUp
 
     # 삭제 순서: 의존성 역순
-    # AI 로그/결과/요청 삭제
+    # AI 로그/결과/요청 삭제 (추가 데이터지만 base 데이터에 의존)
     ai_log_count = AIInferenceLog.objects.count()
     AIInferenceLog.objects.all().delete()
     print(f"  AIInferenceLog: {ai_log_count}건 삭제")
@@ -1265,7 +1093,7 @@ def reset_dummy_data():
     AIInferenceRequest.objects.all().delete()
     print(f"  AIInferenceRequest: {ai_request_count}건 삭제")
 
-    # 치료 세션/계획 삭제
+    # 치료 세션/계획 삭제 (추가 데이터지만 base 데이터에 의존)
     treatment_session_count = TreatmentSession.objects.count()
     TreatmentSession.objects.all().delete()
     print(f"  TreatmentSession: {treatment_session_count}건 삭제")
@@ -1274,11 +1102,12 @@ def reset_dummy_data():
     TreatmentPlan.objects.all().delete()
     print(f"  TreatmentPlan: {treatment_plan_count}건 삭제")
 
-    # 경과 기록 삭제
+    # 경과 기록 삭제 (추가 데이터지만 base 데이터에 의존)
     followup_count = FollowUp.objects.count()
     FollowUp.objects.all().delete()
     print(f"  FollowUp: {followup_count}건 삭제")
 
+    # 기본 데이터 삭제
     ocs_history_count = OCSHistory.objects.count()
     OCSHistory.objects.all().delete()
     print(f"  OCSHistory: {ocs_history_count}건 삭제")
@@ -1312,35 +1141,74 @@ def reset_dummy_data():
         except Exception as e:
             print(f"  Menu '{menu_code}' 삭제 실패: {e}")
 
-    print("[OK] 더미 데이터 삭제 완료")
+    print("[OK] 기본 더미 데이터 삭제 완료")
+
+
+def print_summary():
+    """기본 더미 데이터 요약"""
+    print("\n" + "="*60)
+    print("기본 더미 데이터 생성 완료!")
+    print("="*60)
+
+    from apps.patients.models import Patient
+    from apps.encounters.models import Encounter
+    from apps.imaging.models import ImagingStudy
+    from apps.ocs.models import OCS
+    from apps.menus.models import Menu, MenuLabel, MenuPermission
+    from apps.accounts.models import Permission
+    from apps.ai_inference.models import AIModel
+
+    print(f"\n[통계 - 기본 데이터]")
+    print(f"  - 메뉴: {Menu.objects.count()}개")
+    print(f"  - 메뉴 라벨: {MenuLabel.objects.count()}개")
+    print(f"  - 메뉴-권한 매핑: {MenuPermission.objects.count()}개")
+    print(f"  - 권한: {Permission.objects.count()}개")
+    print(f"  - 환자: {Patient.objects.filter(is_deleted=False).count()}명")
+    print(f"  - 진료: {Encounter.objects.count()}건")
+    print(f"  - OCS (RIS): {OCS.objects.filter(job_role='RIS').count()}건")
+    print(f"  - OCS (LIS): {OCS.objects.filter(job_role='LIS').count()}건")
+    print(f"  - 영상 검사: {ImagingStudy.objects.count()}건")
+    print(f"  - AI 모델: {AIModel.objects.count()}개")
+
+    print(f"\n[다음 단계]")
+    print(f"  추가 데이터 생성:")
+    print(f"    python setup_dummy_data_2_add.py")
+    print(f"")
+    print(f"  또는 전체 실행:")
+    print(f"    python setup_dummy_data.py")
 
 
 def main():
     """메인 실행 함수"""
     # 명령줄 인자 파싱
-    parser = argparse.ArgumentParser(description='Brain Tumor CDSS 더미 데이터 생성')
+    parser = argparse.ArgumentParser(description='Brain Tumor CDSS 기본 더미 데이터 생성')
     parser.add_argument('--reset', action='store_true', help='기존 데이터 삭제 후 새로 생성')
     parser.add_argument('--force', action='store_true', help='목표 수량 이상이어도 강제 추가')
     args = parser.parse_args()
 
     print("="*60)
-    print("Brain Tumor CDSS - 더미 데이터 생성")
+    print("Brain Tumor CDSS - 기본 더미 데이터 생성 (1/2)")
     print("="*60)
-
-    # 선행 조건 확인
-    if not check_prerequisites():
-        sys.exit(1)
 
     # --reset 옵션: 기존 데이터 삭제
     if args.reset:
         confirm = input("\n정말 기존 데이터를 모두 삭제하시겠습니까? (yes/no): ")
         if confirm.lower() == 'yes':
-            reset_dummy_data()
+            reset_base_data()
         else:
             print("삭제 취소됨")
             sys.exit(0)
 
     force = args.reset or args.force  # reset 시에는 force=True
+
+    # 역할 생성
+    setup_roles()
+
+    # 슈퍼유저 생성
+    setup_superuser()
+
+    # 테스트 사용자 생성
+    setup_test_users()
 
     # 메뉴/권한 시드 데이터 로드
     load_menu_permission_seed()
@@ -1357,17 +1225,8 @@ def main():
     # 검사 오더 생성 (LIS)
     create_dummy_lis_orders(20, force=force)
 
-    # 치료 계획 데이터 생성
-    create_dummy_treatment_plans(15, force=force)
-
-    # 경과 추적 데이터 생성
-    create_dummy_followups(25, force=force)
-
     # AI 모델 시드 데이터 생성
     create_ai_models()
-
-    # AI 요청 데이터 생성
-    create_dummy_ai_requests(10, force=force)
 
     # 요약 출력
     print_summary()
