@@ -334,31 +334,41 @@ def load_menu_permission_seed():
     print(f"  권한 생성: {changes['Permission']['created']}개")
 
     # ========== 메뉴 데이터 ==========
-    # 메뉴 생성 헬퍼 함수 (기존 레코드도 parent_id 업데이트)
+    # 업데이트 추적 리스트
+    menu_updates = []
+
+    # 메뉴 생성 헬퍼 함수 (기존 레코드도 parent_id, order 업데이트)
     def create_menu(menu_id, **kwargs):
         menu, created = Menu.objects.get_or_create(id=menu_id, defaults=kwargs)
         if created:
             changes['Menu']['created'] += 1
         else:
-            # 기존 레코드의 parent_id가 다르면 업데이트
+            # 기존 레코드 업데이트 (parent, order 등)
             update_fields = []
+            update_details = []
             if 'parent' in kwargs and menu.parent != kwargs['parent']:
                 menu.parent = kwargs['parent']
                 update_fields.append('parent')
             if 'parent_id' in kwargs and menu.parent_id != kwargs['parent_id']:
                 menu.parent_id = kwargs['parent_id']
                 update_fields.append('parent_id')
+            if 'order' in kwargs and menu.order != kwargs['order']:
+                old_order = menu.order
+                menu.order = kwargs['order']
+                update_fields.append('order')
+                update_details.append(f"order: {old_order} → {kwargs['order']}")
             if update_fields:
                 menu.save(update_fields=update_fields)
-                print(f"    [UPDATE] {menu.code}: parent_id → {menu.parent_id}")
+                changes['Menu']['updated'] = changes['Menu'].get('updated', 0) + 1
+                menu_updates.append({'code': menu.code, 'details': update_details or update_fields})
         return menu, created
 
     # 최상위 메뉴
     menu_admin, _ = create_menu(1, code='ADMIN', path=None, icon='settings', order=7, is_active=True)
-    menu_ai, _ = create_menu(2, code='AI_SUMMARY', path='/ai', icon='brain', order=5, is_active=True)
+    menu_ai, _ = create_menu(2, code='AI_SUMMARY', path='/ai', icon='brain', order=6, is_active=True)
     menu_dashboard, _ = create_menu(3, code='DASHBOARD', path='/dashboard', icon='home', order=1, is_active=True)
     menu_imaging, _ = create_menu(4, code='IMAGING', path=None, icon=None, group_label='영상', order=4, is_active=True)
-    menu_lab, _ = create_menu(5, code='LAB', path=None, icon=None, group_label='검사', order=6, is_active=True)
+    menu_lab, _ = create_menu(5, code='LAB', path=None, icon=None, group_label='검사', order=5, is_active=True)
     menu_order, _ = create_menu(6, code='ORDER', path=None, icon=None, group_label='검사 오더', order=3, is_active=True)
     menu_patient, _ = create_menu(7, code='PATIENT', path=None, icon=None, group_label='환자', order=2, is_active=True)
 
@@ -412,6 +422,11 @@ def load_menu_permission_seed():
     create_menu(31, code='LIS_PROCESS_STATUS', path='/ocs/lis/process-status', icon='tasks', order=4, is_active=True, parent=menu_lab)
 
     print(f"  메뉴 생성: {changes['Menu']['created']}개 (전체: {Menu.objects.count()}개)")
+    if menu_updates:
+        print(f"  메뉴 업데이트: {len(menu_updates)}개")
+        for update in menu_updates:
+            details = ', '.join(update['details']) if isinstance(update['details'][0], str) else ', '.join(update['details'])
+            print(f"    - {update['code']}: {details}")
 
     # ========== 메뉴-권한 매핑 (MenuPermission) ==========
     from apps.menus.models import MenuPermission
