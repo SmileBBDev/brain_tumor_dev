@@ -170,6 +170,8 @@ SIMPLE_JWT = {
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",   # Vite 개발 서버
     "http://127.0.0.1:5173",   # Vite 개발 서버
+    "http://localhost:5174",   # Vite 개발 서버 (대체 포트)
+    "http://127.0.0.1:5174",   # Vite 개발 서버 (대체 포트)
 
     # "https://example.com",   # 운영 프론트엔드
 ]

@@ -23,8 +23,13 @@ export default function PacsSelector({ onChange }) {
 
   useEffect(() => {
     (async () => {
-      const p = await getPatients();
-      setPatients(p);
+      try {
+        const p = await getPatients();
+        setPatients(p);
+      } catch (err) {
+        console.error("Failed to load patients:", err);
+        setPatients([]);
+      }
     })();
   }, []);
 

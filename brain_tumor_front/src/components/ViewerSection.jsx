@@ -2017,9 +2017,21 @@ export default function ViewerSection({
       const doFit = async () => {
         try {
           cornerstone.resize(el, true);
-          cornerstone.fitToWindow(el);
+
+          // 컨테이너와 이미지 크기 기반으로 scale 계산 (contain 방식)
+          const containerW = el.clientWidth;
+          const containerH = el.clientHeight;
+          const imageW = image.columns;
+          const imageH = image.rows;
+
+          // contain: 이미지 전체가 보이도록 scale 계산
+          const scaleX = containerW / imageW;
+          const scaleY = containerH / imageH;
+          const fitScale = Math.min(scaleX, scaleY);
+
           const vp2 = cornerstone.getViewport(el);
           if (vp2) {
+            vp2.scale = fitScale;
             vp2.translation = { x: 0, y: 0 };
             cornerstone.setViewport(el, vp2);
           }

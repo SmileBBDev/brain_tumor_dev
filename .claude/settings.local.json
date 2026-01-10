@@ -21,7 +21,8 @@
       "Bash(python manage.py check:*)",
       "Bash(powershell -Command \"Stop-Process -Id 28556 -Force\")",
       "Bash(pip install:*)",
-      "Bash(npm audit)"
+      "Bash(npm audit)",
+      "Bash(wc:*)"
     ]
   }
 }

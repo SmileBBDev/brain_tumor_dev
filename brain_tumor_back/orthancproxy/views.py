@@ -16,7 +16,8 @@ from pydicom.uid import generate_uid
 import requests
 from django.conf import settings
 from django.http import HttpResponse
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 
@@ -118,6 +119,7 @@ def _auto_cleanup_if_empty(patient_id=None, study_id=None):
 
 
 @api_view(["GET"])
+@permission_classes([AllowAny])
 def list_patients(request):
     try:
         ids: List[str] = _get("/patients")
@@ -150,6 +152,7 @@ def list_patients(request):
 
 
 @api_view(["GET"])
+@permission_classes([AllowAny])
 def list_studies(request):
     pid = request.query_params.get("patient_id")
     if not pid:
@@ -190,6 +193,7 @@ def list_studies(request):
 
 
 @api_view(["GET"])
+@permission_classes([AllowAny])
 def list_series(request):
     sid = request.query_params.get("study_id")
     if not sid:
@@ -231,6 +235,7 @@ def list_series(request):
 
 
 @api_view(["GET"])
+@permission_classes([AllowAny])
 def list_instances(request):
     sid = request.query_params.get("series_id")
     if not sid:
@@ -304,6 +309,7 @@ def list_instances(request):
 
 
 @api_view(["GET"])
+@permission_classes([AllowAny])
 def get_instance_file(request, instance_id: str):
     try:
         r = requests.get(f"{ORTHANC}/instances/{instance_id}/file", timeout=20)

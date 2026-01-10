@@ -12,6 +12,7 @@ import { getOCS, startOCS, saveOCSResult, confirmOCS } from '@/services/ocs.api'
 import type { OCSDetail, RISWorkerResult } from '@/types/ocs';
 import { OCS_STATUS_LABELS } from '@/types/ocs';
 import AIAnalysisPanel from './components/AIAnalysisPanel';
+import DicomViewerPopup from '@/components/DicomViewerPopup';
 import './RISStudyDetailPage.css';
 
 // 검사 결과 항목 타입
@@ -69,6 +70,9 @@ export default function RISStudyDetailPage() {
   // 파일 업로드
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // DICOM 뷰어 팝업
+  const [viewerOpen, setViewerOpen] = useState(false);
 
   // OCS 상세 조회
   useEffect(() => {
@@ -274,9 +278,9 @@ export default function RISStudyDetailPage() {
     alert('PDF 출력 기능은 준비 중입니다.');
   };
 
-  // DICOM Viewer 열기 (목업)
+  // DICOM Viewer 열기
   const handleOpenViewer = () => {
-    alert('DICOM Viewer 연동은 준비 중입니다.');
+    setViewerOpen(true);
   };
 
   if (loading) {
@@ -750,6 +754,9 @@ export default function RISStudyDetailPage() {
           </div>
         )}
       </div>
+
+      {/* DICOM 영상 조회 팝업 */}
+      <DicomViewerPopup open={viewerOpen} onClose={() => setViewerOpen(false)} />
     </div>
   );
 }
