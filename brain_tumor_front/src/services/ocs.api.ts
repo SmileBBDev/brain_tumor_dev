@@ -245,24 +245,28 @@ export interface CreateExternalLISRequest extends LISExternalSourceData {
 export interface CreateExternalLISResponse {
   message: string;
   ocs_id: string;  // extr_0001 형식
-  file: {
+  file?: {
     name: string;
     size: number;
     content_type: string;
     uploaded_at: string;
     uploaded_by: number;
-  };
+  } | null;
   external_source: LISUploadResponse['external_source'];
   ocs: OCSDetail;
 }
 
-// 외부 기관 LIS 데이터 생성 (새 OCS 생성 + 파일 업로드)
+// 외부 기관 LIS 데이터 생성 (새 OCS 생성 + 파일 업로드 선택)
 export const createExternalLIS = async (
-  file: File,
+  file: File | null,
   data: CreateExternalLISRequest
 ): Promise<CreateExternalLISResponse> => {
   const formData = new FormData();
-  formData.append('file', file);
+
+  // 파일이 있으면 추가
+  if (file) {
+    formData.append('file', file);
+  }
 
   // 모든 데이터 추가
   Object.entries(data).forEach(([key, value]) => {
@@ -380,24 +384,28 @@ export interface CreateExternalRISRequest extends RISExternalSourceData {
 export interface CreateExternalRISResponse {
   message: string;
   ocs_id: string;  // risx_0001 형식
-  file: {
+  file?: {
     name: string;
     size: number;
     content_type: string;
     uploaded_at: string;
     uploaded_by: number;
-  };
+  } | null;
   external_source: RISUploadResponse['external_source'];
   ocs: OCSDetail;
 }
 
-// 외부 기관 RIS 데이터 생성 (새 OCS 생성 + 파일 업로드)
+// 외부 기관 RIS 데이터 생성 (새 OCS 생성 + 파일 업로드 선택)
 export const createExternalRIS = async (
-  file: File,
+  file: File | null,
   data: CreateExternalRISRequest
 ): Promise<CreateExternalRISResponse> => {
   const formData = new FormData();
-  formData.append('file', file);
+
+  // 파일이 있으면 추가
+  if (file) {
+    formData.append('file', file);
+  }
 
   // 모든 데이터 추가
   Object.entries(data).forEach(([key, value]) => {

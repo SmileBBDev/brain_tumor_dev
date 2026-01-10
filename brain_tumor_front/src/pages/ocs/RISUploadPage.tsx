@@ -144,7 +144,8 @@ export default function RISUploadPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // 새 외부 검사 등록 모드 - 환자 선택/생성
-  const [patientMode, setPatientMode] = useState<PatientMode>('existing');
+  // 기본값: 새 환자 등록
+  const [patientMode, setPatientMode] = useState<PatientMode>('new');
   const [patients, setPatients] = useState<PatientOption[]>([]);
   const [selectedPatientId, setSelectedPatientId] = useState<number | null>(null);
   const [patientSearch, setPatientSearch] = useState('');
@@ -368,29 +369,36 @@ export default function RISUploadPage() {
     is_verified: qualityInfo.isVerified ? 'true' : 'false',
   });
 
-  // 실제 업로드
+  // 실제 업로드/등록
   const handleUpload = async () => {
-    if (!selectedFile) return;
-
     // 모드별 검증
     if (uploadMode === 'new') {
       if (patientMode === 'existing' && !selectedPatientId) {
-        addLog(selectedFile.name, selectedFile.size, 'error', '환자를 선택해주세요.');
+        addLog('등록', 0, 'error', '환자를 선택해주세요.');
         return;
       }
       if (patientMode === 'new' && (!newPatientName || !newPatientBirthDate)) {
-        addLog(selectedFile.name, selectedFile.size, 'error', '환자 이름과 생년월일을 입력해주세요.');
+        addLog('등록', 0, 'error', '환자 이름과 생년월일을 입력해주세요.');
         return;
       }
     }
 
     if (uploadMode === 'existing' && !selectedOcsId) {
-      addLog(selectedFile.name, selectedFile.size, 'error', 'OCS를 선택해주세요.');
+      addLog('등록', 0, 'error', 'OCS를 선택해주세요.');
+      return;
+    }
+
+    // 기존 OCS 모드에서 파일이 없으면 에러
+    if (uploadMode === 'existing' && !selectedFile) {
+      addLog('등록', 0, 'error', '업로드할 파일을 선택해주세요.');
       return;
     }
 
     setUploadStatus('uploading');
     setProgressPercent(0);
+
+    const fileName = selectedFile?.name || '등록';
+    const fileSize = selectedFile?.size || 0;
 
     try {
       let patientId = selectedPatientId;
@@ -414,8 +422,8 @@ export default function RISUploadPage() {
 
         // 생성된 환자 정보 로그
         addLog(
-          selectedFile.name,
-          selectedFile.size,
+          fileName,
+          fileSize,
           'success',
           `외부 환자 등록 완료: ${patientResponse.patient.patient_number} (${patientResponse.patient.name})`
         );
@@ -432,7 +440,7 @@ export default function RISUploadPage() {
       let resultOcsId: string;
 
       if (uploadMode === 'new') {
-        // 새 외부 검사 등록
+        // 새 외부 영상 등록 (파일은 선택사항)
         const requestData: CreateExternalRISRequest = {
           patient_id: patientId!,
           job_type: jobType,
@@ -442,8 +450,8 @@ export default function RISUploadPage() {
         response = await createExternalRIS(selectedFile, requestData);
         resultOcsId = response.ocs_id;
       } else {
-        // 기존 OCS에 파일 추가
-        response = await uploadRISFile(selectedOcsId!, selectedFile, externalData);
+        // 기존 OCS에 파일 추가 (파일 필수)
+        response = await uploadRISFile(selectedOcsId!, selectedFile!, externalData);
         resultOcsId = selectedOcs?.ocs_id || String(selectedOcsId);
       }
 
@@ -452,10 +460,10 @@ export default function RISUploadPage() {
 
       // 성공 로그
       const message = uploadMode === 'new'
-        ? `외부 영상 결과 등록 완료 (${resultOcsId})`
+        ? `외부 영상 결과 등록 완료 (${resultOcsId})${selectedFile ? ' - 파일 첨부됨' : ''}`
         : `파일 업로드 완료 (${resultOcsId})`;
 
-      addLog(selectedFile.name, selectedFile.size, 'success', message, resultOcsId);
+      addLog(fileName, fileSize, 'success', message, resultOcsId);
 
       // 폼 초기화
       resetForm();
@@ -464,7 +472,14 @@ export default function RISUploadPage() {
       setUploadStatus('error');
       setIsCreatingPatient(false);
       const errorMessage = error.response?.data?.error || '파일 처리 중 오류가 발생했습니다.';
-      addLog(selectedFile.name, selectedFile.size, 'error', errorMessage);
+      const fileName = selectedFile?.name || '등록';
+      const fileSize = selectedFile?.size || 0;
+      addLog(fileName, fileSize, 'error', errorMessage);
+
+      // 3초 후 idle 상태로 복귀하여 다시 시도 가능하게 함
+      setTimeout(() => {
+        setUploadStatus('idle');
+      }, 3000);
     }
   };
 
@@ -495,7 +510,7 @@ export default function RISUploadPage() {
     setSelectedPatientId(null);
     setSelectedOcsId(null);
     setSelectedOcs(null);
-    setPatientMode('existing');
+    setPatientMode('new');  // 기본값: 새 환자 등록
     // 추가 정보는 유지
   };
 
@@ -520,9 +535,9 @@ export default function RISUploadPage() {
     });
   };
 
-  // 업로드 버튼 활성화 조건
+  // 업로드 버튼 활성화 조건 (파일 없이도 정보 입력 시 활성화)
   const isNewPatientValid = newPatientName && newPatientBirthDate;
-  const isUploadEnabled = selectedFile && (
+  const isUploadEnabled = (
     (uploadMode === 'new' && (
       (patientMode === 'existing' && selectedPatientId) ||
       (patientMode === 'new' && isNewPatientValid)
@@ -802,28 +817,29 @@ export default function RISUploadPage() {
           )}
         </div>
 
-        {selectedFile && uploadStatus === 'idle' && (
-          <div className="upload-actions">
-            <button
-              className="upload-btn"
-              onClick={handleUpload}
-              disabled={!isUploadEnabled}
-            >
-              업로드 시작
-            </button>
-            <button className="cancel-btn" onClick={handleCancel}>
-              취소
-            </button>
-          </div>
-        )}
-
-        {uploadStatus === 'success' && (
-          <div className="upload-actions">
+        {/* 업로드 버튼 - 항상 표시 */}
+        <div className="upload-actions">
+          {uploadStatus === 'success' ? (
             <button className="upload-btn" onClick={() => fileInputRef.current?.click()}>
               다른 파일 업로드
             </button>
-          </div>
-        )}
+          ) : (
+            <>
+              <button
+                className="upload-btn"
+                onClick={handleUpload}
+                disabled={!isUploadEnabled || uploadStatus !== 'idle'}
+              >
+                {uploadStatus === 'uploading' || uploadStatus === 'parsing' ? '처리 중...' : '업로드 시작'}
+              </button>
+              {selectedFile && (
+                <button className="cancel-btn" onClick={handleCancel} disabled={uploadStatus !== 'idle'}>
+                  취소
+                </button>
+              )}
+            </>
+          )}
+        </div>
       </section>
 
       {/* 추가 정보 입력 (선택적) */}

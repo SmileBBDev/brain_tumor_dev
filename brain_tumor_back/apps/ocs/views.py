@@ -631,30 +631,25 @@ class OCSViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_404_NOT_FOUND
             )
 
-        # 파일 검증
+        # 파일 검증 (선택사항 - 파일 없이도 외부 검사 등록 가능)
         uploaded_file = request.FILES.get('file')
-        if not uploaded_file:
-            return Response(
-                {'error': '파일이 필요합니다.'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        if uploaded_file:
+            # 파일 확장자 검증
+            allowed_extensions = ['.csv', '.hl7', '.json', '.xml']
+            file_ext = '.' + uploaded_file.name.split('.')[-1].lower()
+            if file_ext not in allowed_extensions:
+                return Response(
+                    {'error': f'지원하지 않는 파일 형식입니다. (지원: {", ".join(allowed_extensions)})'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
 
-        # 파일 확장자 검증
-        allowed_extensions = ['.csv', '.hl7', '.json', '.xml']
-        file_ext = '.' + uploaded_file.name.split('.')[-1].lower()
-        if file_ext not in allowed_extensions:
-            return Response(
-                {'error': f'지원하지 않는 파일 형식입니다. (지원: {", ".join(allowed_extensions)})'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        # 파일 크기 검증 (10MB)
-        max_size = 10 * 1024 * 1024
-        if uploaded_file.size > max_size:
-            return Response(
-                {'error': '파일 크기가 10MB를 초과합니다.'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            # 파일 크기 검증 (10MB)
+            max_size = 10 * 1024 * 1024
+            if uploaded_file.size > max_size:
+                return Response(
+                    {'error': '파일 크기가 10MB를 초과합니다.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
 
         # 외부용 OCS ID 생성 (extr_0001 형식)
         external_ocs_id = self._generate_external_ocs_id()
@@ -683,20 +678,22 @@ class OCSViewSet(viewsets.ModelViewSet):
             },
         }
 
-        # 파일 정보
-        file_info = {
-            "name": uploaded_file.name,
-            "size": uploaded_file.size,
-            "content_type": uploaded_file.content_type,
-            "uploaded_at": timezone.now().isoformat(),
-            "uploaded_by": request.user.id,
-        }
+        # 파일 정보 (파일이 있는 경우에만)
+        file_info = None
+        if uploaded_file:
+            file_info = {
+                "name": uploaded_file.name,
+                "size": uploaded_file.size,
+                "content_type": uploaded_file.content_type,
+                "uploaded_at": timezone.now().isoformat(),
+                "uploaded_by": request.user.id,
+            }
 
         # attachments 구성
         attachments = {
-            "files": [file_info],
+            "files": [file_info] if file_info else [],
             "external_source": external_source,
-            "total_size": uploaded_file.size,
+            "total_size": uploaded_file.size if uploaded_file else 0,
             "last_modified": timezone.now().isoformat(),
             "_custom": {}
         }
@@ -726,7 +723,7 @@ class OCSViewSet(viewsets.ModelViewSet):
                 "_template": "external",
                 "_version": "1.0",
                 "source": "external_upload",
-                "original_filename": uploaded_file.name,
+                "original_filename": uploaded_file.name if uploaded_file else None,
                 "_custom": {}
             },
             accepted_at=timezone.now(),
@@ -735,12 +732,13 @@ class OCSViewSet(viewsets.ModelViewSet):
         )
 
         # 이력 기록
+        history_reason = f'외부 기관 LIS 데이터 업로드: {uploaded_file.name}' if uploaded_file else '외부 기관 LIS 데이터 등록 (파일 없음)'
         OCSHistory.objects.create(
             ocs=ocs,
             action=OCSHistory.Action.CREATED,
             actor=request.user,
             to_status=OCS.OcsStatus.RESULT_READY,
-            reason=f'외부 기관 LIS 데이터 업로드: {uploaded_file.name}',
+            reason=history_reason,
             ip_address=self._get_client_ip(request)
         )
 
@@ -922,30 +920,25 @@ class OCSViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_404_NOT_FOUND
             )
 
-        # 파일 검증
+        # 파일 검증 (선택사항 - 파일 없이도 외부 영상 등록 가능)
         uploaded_file = request.FILES.get('file')
-        if not uploaded_file:
-            return Response(
-                {'error': '파일이 필요합니다.'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        if uploaded_file:
+            # 파일 확장자 검증
+            allowed_extensions = ['.dcm', '.dicom', '.jpg', '.jpeg', '.png', '.pdf', '.zip']
+            file_ext = '.' + uploaded_file.name.split('.')[-1].lower()
+            if file_ext not in allowed_extensions:
+                return Response(
+                    {'error': f'지원하지 않는 파일 형식입니다. (지원: {", ".join(allowed_extensions)})'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
 
-        # 파일 확장자 검증
-        allowed_extensions = ['.dcm', '.dicom', '.jpg', '.jpeg', '.png', '.pdf', '.zip']
-        file_ext = '.' + uploaded_file.name.split('.')[-1].lower()
-        if file_ext not in allowed_extensions:
-            return Response(
-                {'error': f'지원하지 않는 파일 형식입니다. (지원: {", ".join(allowed_extensions)})'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        # 파일 크기 검증 (100MB)
-        max_size = 100 * 1024 * 1024
-        if uploaded_file.size > max_size:
-            return Response(
-                {'error': '파일 크기가 100MB를 초과합니다.'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            # 파일 크기 검증 (100MB)
+            max_size = 100 * 1024 * 1024
+            if uploaded_file.size > max_size:
+                return Response(
+                    {'error': '파일 크기가 100MB를 초과합니다.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
 
         # 외부용 RIS OCS ID 생성 (risx_0001 형식)
         external_ocs_id = self._generate_external_ris_id()
@@ -974,20 +967,22 @@ class OCSViewSet(viewsets.ModelViewSet):
             },
         }
 
-        # 파일 정보
-        file_info = {
-            "name": uploaded_file.name,
-            "size": uploaded_file.size,
-            "content_type": uploaded_file.content_type,
-            "uploaded_at": timezone.now().isoformat(),
-            "uploaded_by": request.user.id,
-        }
+        # 파일 정보 (파일이 있는 경우에만)
+        file_info = None
+        if uploaded_file:
+            file_info = {
+                "name": uploaded_file.name,
+                "size": uploaded_file.size,
+                "content_type": uploaded_file.content_type,
+                "uploaded_at": timezone.now().isoformat(),
+                "uploaded_by": request.user.id,
+            }
 
         # attachments 구성
         attachments = {
-            "files": [file_info],
+            "files": [file_info] if file_info else [],
             "external_source": external_source,
-            "total_size": uploaded_file.size,
+            "total_size": uploaded_file.size if uploaded_file else 0,
             "last_modified": timezone.now().isoformat(),
             "_custom": {}
         }
@@ -1017,7 +1012,7 @@ class OCSViewSet(viewsets.ModelViewSet):
                 "_template": "external",
                 "_version": "1.0",
                 "source": "external_upload",
-                "original_filename": uploaded_file.name,
+                "original_filename": uploaded_file.name if uploaded_file else None,
                 "_custom": {}
             },
             accepted_at=timezone.now(),
@@ -1026,12 +1021,13 @@ class OCSViewSet(viewsets.ModelViewSet):
         )
 
         # 이력 기록
+        history_reason = f'외부 기관 RIS 데이터 업로드: {uploaded_file.name}' if uploaded_file else '외부 기관 RIS 데이터 등록 (파일 없음)'
         OCSHistory.objects.create(
             ocs=ocs,
             action=OCSHistory.Action.CREATED,
             actor=request.user,
             to_status=OCS.OcsStatus.RESULT_READY,
-            reason=f'외부 기관 RIS 데이터 업로드: {uploaded_file.name}',
+            reason=history_reason,
             ip_address=self._get_client_ip(request)
         )
 
