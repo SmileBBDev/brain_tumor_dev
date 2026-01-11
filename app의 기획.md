@@ -3,6 +3,7 @@
 ## 프로젝트 개요
 
 **작성일**: 2026-01-07
+**수정일**: 2026-01-11
 **프로젝트명**: Brain Tumor Clinical Decision Support System (CDSS)
 **목적**: 뇌종양 진단 및 치료를 위한 임상 의사결정 지원 시스템
 
@@ -534,71 +535,58 @@ ORDERED → ACCEPTED → IN_PROGRESS → RESULT_READY → CONFIRMED/CANCELLED
 
 
 
-### 3.2 Django 앱 구조
+### 3.2 Django 앱 구조 ✅ **현재 구현 상태 (2026-01-11)**
 
 ```
 brain_tumor_back/
 ├── apps/
-│   ├── accounts/          # 기존 인증/권한 (재사용)
-│   ├── audit/             # 기존 감사 로그 (재사용)
-│   ├── authorization/     # 기존 권한 (재사용)
-│   ├── menus/             # 기존 메뉴 (재사용)
+│   ├── accounts/          # ✅ 인증/권한 (재사용)
+│   ├── audit/             # ✅ 감사 로그 (재사용)
+│   ├── authorization/     # ✅ 권한 (재사용)
+│   ├── menus/             # ✅ 메뉴 (재사용)
+│   ├── common/            # ✅ 공통 유틸
 │   │
-│   ├── patients/          # 신규: 환자 관리 [0107_12:28]
+│   ├── patients/          # ✅ 환자 관리 (완료)
 │   │   ├── models.py
 │   │   ├── serializers.py
-│   │   ├── services.py
 │   │   ├── views.py
-│   │   ├── urls.py
-│   │   └── tests.py
+│   │   └── urls.py
 │   │
-│   ├── encounters/        # 신규: 진료 관리
+│   ├── encounters/        # ✅ 진료 관리 (완료)
 │   │   ├── models.py
 │   │   ├── serializers.py
-│   │   ├── services.py
 │   │   ├── views.py
-│   │   ├── urls.py
-│   │   └── tests.py
+│   │   └── urls.py
 │   │
-│   ├── imaging/           # 신규: 영상 검사 관리
-│   │   ├── models.py
+│   ├── ocs/               # ✅ OCS 오더 통합 관리 (완료)
+│   │   ├── models.py      # OCS, OCSHistory
 │   │   ├── serializers.py
-│   │   ├── services.py
 │   │   ├── views.py
-│   │   ├── urls.py
-│   │   └── tests.py
+│   │   └── urls.py
 │   │
-│   ├── ai_analysis/       # 신규: AI 분석 관리
-│   │   ├── models.py
+│   ├── imaging/           # ✅ 영상 검사 관리 (OCS 통합 완료)
+│   │   ├── models.py      # ImagingStudy (OCS FK)
 │   │   ├── serializers.py
-│   │   ├── services.py
 │   │   ├── views.py
-│   │   ├── urls.py
-│   │   └── tests.py
+│   │   └── urls.py
 │   │
-│   ├── treatment/         # 신규: 치료 관리
-│   │   ├── models.py
+│   ├── ai_inference/      # ✅ AI 추론 관리 (API 완료)
+│   │   ├── models.py      # AIModel, AIInferenceRequest, AIInferenceResult, AIInferenceLog
 │   │   ├── serializers.py
-│   │   ├── services.py
 │   │   ├── views.py
-│   │   ├── urls.py
-│   │   └── tests.py
+│   │   └── urls.py
 │   │
-│   ├── followup/          # 신규: 경과 추적
-│   │   ├── models.py
+│   ├── treatment/         # ✅ 치료 관리 (완료)
+│   │   ├── models.py      # TreatmentPlan, TreatmentSession
 │   │   ├── serializers.py
-│   │   ├── services.py
 │   │   ├── views.py
-│   │   ├── urls.py
-│   │   └── tests.py
+│   │   └── urls.py
 │   │
-│   └── ocs/               # 신규: 오더 통합 관리 (Order Communication System)
-│       ├── models.py
+│   └── followup/          # ✅ 경과 추적 (완료)
+│       ├── models.py      # FollowUp
 │       ├── serializers.py
-│       ├── services.py
 │       ├── views.py
-│       ├── urls.py
-│       └── tests.py
+│       └── urls.py
 ```
 
 ---
@@ -1189,24 +1177,26 @@ AI 분석
 - [ ] AI_REQUEST, AI_JOB, AI_JOB_LOG 모델
 - [ ] Redis Queue + Worker 기본 구현
 
-### Phase 4: AI 분석 관리 (1주)
-- [ ] ai_analysis 앱 생성 및 모델 정의
-- [ ] **AIAnalysisJob과 Order 연결 (OCS 통합)**
-- [ ] AI 작업 생성/조회 API 구현
-- [ ] AI 결과 저장 API 구현 (Mock 데이터)
-- [ ] AI 결과 검토 API 구현
-- [ ] 프론트엔드 AI 분석 화면
+### Phase 4: AI 분석 관리 ✅ **API 완료 (2026-01-11)**
+- [x] ai_inference 앱 생성 및 모델 정의
+- [x] AIModel, AIInferenceRequest, AIInferenceResult, AIInferenceLog 모델
+- [x] AI 모델 목록/상세 API 구현
+- [x] AI 추론 요청 생성/조회 API 구현
+- [x] 데이터 검증 API 구현 (required_keys 확인)
+- [x] 환자별 사용 가능 모델 조회 API
+- [x] AI 결과 검토 API 구현
+- [ ] 프론트엔드 AI 분석 화면 (진행 예정)
+- [ ] Redis Queue + Worker (추후 구현)
 
-### Phase 5: 치료 및 경과 관리 + OCS 고도화 (1주)
-- [ ] treatment 앱 생성 및 모델 정의
-- [ ] followup 앱 생성 및 모델 정의
-- [ ] **TreatmentPlan과 Order 연결 (OCS 통합)**
-- [ ] 치료 계획/세션 API 구현
-- [ ] 경과 추적 API 구현
-- [ ] 프론트엔드 치료/경과 화면
-- [ ] **OCS 첨부파일 기능 추가**
-- [ ] **부서별 고급 워크리스트 필터 및 통계**
-- [ ] **오더 타임라인 시각화 개선**
+### Phase 5: 치료 및 경과 관리 + OCS 고도화 ✅ **완료 (2026-01-09)**
+- [x] treatment 앱 생성 및 모델 정의
+- [x] followup 앱 생성 및 모델 정의
+- [x] 치료 계획/세션 API 구현
+- [x] 경과 추적 API 구현
+- [ ] 프론트엔드 치료/경과 화면 (진행 예정)
+- [ ] **OCS 첨부파일 기능 추가** (추후)
+- [ ] **부서별 고급 워크리스트 필터 및 통계** (추후)
+- [ ] **오더 타임라인 시각화 개선** (추후)
 
 ### Phase 6: 통합 및 최적화 (1주)
 - [ ] 전체 워크플로우 통합 테스트 (OCS 포함)

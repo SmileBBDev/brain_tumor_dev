@@ -4,14 +4,20 @@ import { EP } from "./endpoints";
 
 export async function uploadPatientFolder({
   patientId,
+  patientName,
   studyDescription,
+  studyInstanceUID,
+  ocsId,
   files,
   seriesPaths,
 }) {
   const fd = new FormData();
 
   fd.append("patient_id", patientId);
+  fd.append("patient_name", patientName || patientId);  // 환자 이름 추가
   fd.append("study_description", studyDescription || "");
+  if (studyInstanceUID) fd.append("study_instance_uid", studyInstanceUID);
+  if (ocsId) fd.append("ocs_id", String(ocsId));
 
   for (const f of files) fd.append("files", f);
   for (const sp of seriesPaths) fd.append("series_path", sp);

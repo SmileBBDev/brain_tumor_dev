@@ -42,3 +42,50 @@
   border-color: #4da3ff;
   box-shadow: 0 0 0 1px rgba(77,163,255,0.5);
 }
+
+/* OCS 연동 정보 박스 */
+.ocsLinkBox {
+  background: rgba(100, 170, 255, 0.08);
+  border: 1px solid rgba(100, 170, 255, 0.20);
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin-bottom: 12px;
+}
+
+.ocsLinkRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+}
+
+.ocsLinkLabel {
+  color: rgba(255, 255, 255, 0.60);
+}
+
+.ocsLinkValue {
+  color: rgba(255, 255, 255, 0.95);
+  font-weight: 600;
+}
+
+/* Orthanc ID 표시 */
+.idDisplay {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 8px;
+  padding: 4px 0 0 140px;
+  font-size: 11px;
+}
+
+.idLabel {
+  color: rgba(255, 255, 255, 0.50);
+}
+
+.idValue {
+  font-family: 'Consolas', 'Monaco', monospace;
+  color: rgba(100, 200, 255, 0.85);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 200px;
+}

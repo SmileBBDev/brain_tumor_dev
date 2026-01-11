@@ -77,6 +77,12 @@
   opacity: 0.65;
 }
 
+.input.mono {
+  font-family: 'Consolas', 'Monaco', monospace;
+  font-size: 12px;
+  color: rgba(100, 200, 255, 0.90);
+}
+
 .file {
   width: 100%;
   padding: 12px;
@@ -158,4 +164,57 @@
   background: rgba(255, 90, 90, 0.12);
   border: 1px solid rgba(255, 90, 90, 0.22);
   color: rgba(255, 140, 140, 0.95);
+}
+
+/* OCS 연동 정보 박스 */
+.ocsInfoBox {
+  background: rgba(100, 170, 255, 0.08);
+  border: 1px solid rgba(100, 170, 255, 0.20);
+  border-radius: 10px;
+  padding: 12px;
+  margin-bottom: 14px;
+}
+
+.ocsInfoRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0;
+  font-size: 12px;
+}
+
+.ocsInfoRow:not(:last-child) {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.ocsLabel {
+  color: rgba(255, 255, 255, 0.60);
+  font-weight: 600;
+}
+
+.ocsValue {
+  color: rgba(255, 255, 255, 0.95);
+  font-weight: 700;
+  text-align: right;
+}
+
+.ocsValue.mono {
+  font-family: 'Consolas', 'Monaco', monospace;
+  font-size: 11px;
+  color: rgba(100, 200, 255, 0.90);
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ocsInfoRow.hint {
+  border-bottom: none;
+  padding-top: 8px;
+}
+
+.ocsHint {
+  font-size: 11px;
+  color: rgba(255, 200, 100, 0.80);
+  font-style: italic;
 }

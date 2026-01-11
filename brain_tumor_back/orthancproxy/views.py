@@ -324,18 +324,37 @@ def get_instance_file(request, instance_id: str):
 
 
 # -------------------------------------------------------------
-# 6) 폴더 업로드 → 통합 Study / Series 생성 (✅ StudyDescription 입력 반영)
+# 6) 폴더 업로드 → 통합 Study / Series 생성
+#    - OCS 연동: study_instance_uid, ocs_id 파라미터 지원
+#    - StudyInstanceUID 형식: 1.2.410.200001.{ocs_id}.{timestamp}
 # -------------------------------------------------------------
 @api_view(["POST"])
 def upload_patient(request):
     patient_id = request.data.get("patient_id") or request.data.get("patientId")
 
-    # ✅ Study Description 추가 (프론트에서 study_description으로 전송)
+    # Patient Name (환자 이름) - 없으면 patient_id 사용
+    patient_name = (
+        request.data.get("patient_name")
+        or request.data.get("patientName")
+        or patient_id
+        or ""
+    ).strip()
+
+    # Study Description (프론트에서 study_description으로 전송)
     study_description = (
         request.data.get("study_description")
         or request.data.get("studyDescription")
         or ""
     ).strip()
+
+    # OCS 연동 파라미터: study_instance_uid, ocs_id
+    study_instance_uid = (
+        request.data.get("study_instance_uid")
+        or request.data.get("studyInstanceUID")
+        or ""
+    ).strip()
+
+    ocs_id = request.data.get("ocs_id") or request.data.get("ocsId") or ""
 
     files = request.FILES.getlist("files")
     series_paths = request.data.getlist("series_path") or request.data.getlist("seriesPath")
@@ -359,7 +378,13 @@ def upload_patient(request):
         dlog("upload_patient bad_request", data)
         return Response(data, status=400)
 
-    study_uid = generate_uid()
+    # StudyInstanceUID: 프론트에서 전달받거나, 없으면 자동 생성
+    # 형식: 1.2.410.200001.{ocs_id}.{timestamp} 또는 pydicom generate_uid()
+    if study_instance_uid:
+        study_uid = study_instance_uid
+    else:
+        study_uid = generate_uid()
+
     study_id = str(uuid.uuid4())
 
     series_uid_map = {}
@@ -383,7 +408,7 @@ def upload_patient(request):
 
             # Patient
             ds.PatientID = patient_id
-            ds.PatientName = patient_id
+            ds.PatientName = patient_name  # 실제 환자 이름 사용
 
             # Study (통합)
             ds.StudyInstanceUID = study_uid
@@ -432,7 +457,8 @@ def upload_patient(request):
         "patientId": patient_id,
         "studyUid": study_uid,
         "studyId": study_id,
-        "studyDescription": final_study_desc,  # ✅ 응답에도 포함
+        "studyDescription": final_study_desc,
+        "ocsId": ocs_id if ocs_id else None,  # OCS 연동 정보
         "uploaded": uploaded,
         "failedFiles": errors,
         "orthancSeriesIds": list(uploaded_series),

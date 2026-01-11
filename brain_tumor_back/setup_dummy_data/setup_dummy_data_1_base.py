@@ -215,17 +215,18 @@ def setup_test_users():
     User = get_user_model()
 
     # (login_id, password, name, role_code, is_staff)
+    # 비밀번호 규칙: {login_id}001 (예: admin → admin001, doctor1 → doctor1001)
     test_users = [
         ('admin', 'admin001', '병원관리자', 'ADMIN', True),
-        ('doctor1', 'doctor001', '김철수 의사', 'DOCTOR', False),
-        ('doctor2', 'doctor002', '이영희 의사', 'DOCTOR', False),
-        ('doctor3', 'doctor003', '박민수 의사', 'DOCTOR', False),
-        ('doctor4', 'doctor004', '최지은 의사', 'DOCTOR', False),
-        ('doctor5', 'doctor005', '정현우 의사', 'DOCTOR', False),
-        ('nurse1', 'nurse001', '간호사', 'NURSE', False),
-        ('patient1', 'patient001', '환자', 'PATIENT', False),
-        ('ris1', 'ris001', '영상과', 'RIS', False),
-        ('lis1', 'lis001', '검사과', 'LIS', False),
+        ('doctor1', 'doctor1001', '김철수 의사', 'DOCTOR', False),
+        ('doctor2', 'doctor2001', '이영희 의사', 'DOCTOR', False),
+        ('doctor3', 'doctor3001', '박민수 의사', 'DOCTOR', False),
+        ('doctor4', 'doctor4001', '최지은 의사', 'DOCTOR', False),
+        ('doctor5', 'doctor5001', '정현우 의사', 'DOCTOR', False),
+        ('nurse1', 'nurse1001', '간호사', 'NURSE', False),
+        ('patient1', 'patient1001', '환자', 'PATIENT', False),
+        ('ris1', 'ris1001', '영상과', 'RIS', False),
+        ('lis1', 'lis1001', '검사과', 'LIS', False),
     ]
 
     created_count = 0

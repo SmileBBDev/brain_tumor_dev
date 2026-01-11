@@ -1,7 +1,7 @@
 # 프로젝트 현황 (Project Status)
 
-**최종 업데이트**: 2026-01-09
-**현재 버전**: Phase 3 OCS 통합 진행중
+**최종 업데이트**: 2026-01-11
+**현재 버전**: Phase 3 OCS 통합 완료, Phase 4 준비중
 
 ---
 
@@ -10,12 +10,14 @@
 | 모듈 | 상태 | 완료율 | 비고 |
 |------|------|--------|------|
 | **인증/권한 시스템** | ✅ 완료 | 100% | JWT, Role 기반, WebSocket 실시간 업데이트 |
-| **환자 관리** | ✅ 완료 | 100% | CRUD, 검색, 페이지네이션 |
-| **진료 관리** | ✅ 완료 | 100% | CRUD, 고급 필터링, 통계 |
-| **OCS (오더 통합 관리)** | 🚧 진행중 | 75% | 단일 테이블 설계 완료, 에러 수정 필요 |
-| **영상 관리 (Imaging)** | 🚧 OCS 통합 진행중 | 80% | OCS 통합 구조 완료, OCS 에러 해결 후 테스트 필요 |
-| **검사실 (LIS)** | 🚧 진행중 | 50% | OCS job_role='LIS'로 관리, GENETIC/PROTEIN 추가 |
-| **AI 추론** | 🚧 모델 정의 완료 | 30% | ai_inference 앱 생성, 모델 3개(M1/MG/MM) 정의 |
+| **환자 관리 (patients)** | ✅ 완료 | 100% | CRUD, 검색, 페이지네이션 |
+| **진료 관리 (encounters)** | ✅ 완료 | 100% | CRUD, 고급 필터링, 통계 |
+| **OCS (오더 통합 관리)** | ✅ 완료 | 100% | 단일 테이블 설계, API/마이그레이션 완료 |
+| **영상 관리 (imaging)** | ✅ 완료 | 100% | OCS 통합 완료, ImagingStudy-OCS FK 연결 |
+| **검사실 (LIS)** | ✅ 완료 | 100% | OCS job_role='LIS', GENETIC/PROTEIN 지원 |
+| **AI 추론 (ai_inference)** | ✅ 완료 | 100% | 모델 3개(M1/MG/MM), API 완료, 결과 검토 |
+| **치료 관리 (treatment)** | ✅ 완료 | 100% | 치료 계획/세션 CRUD |
+| **경과 추적 (followup)** | ✅ 완료 | 100% | 경과 기록 CRUD |
 | **관리자** | 🚧 부분 구현 | 60% | 사용자/권한/감사로그 일부 구현 |
 
 ---
@@ -104,8 +106,8 @@
 
 ---
 
-### 4. OCS (오더 통합 관리) 🚧 진행중
-**예상 완료일**: 2026-01-09
+### 4. OCS (오더 통합 관리) ✅
+**완료일**: 2026-01-11
 **담당**: Phase 3 구현
 
 #### 핵심 설계 특징
@@ -113,6 +115,12 @@
 - ✅ **JSON 기반 확장성**: `doctor_request`, `worker_result`, `attachments` JSON 필드
 - ✅ **job_role 구분**: RIS, LIS, TREATMENT, CONSULT 등 역할별 분리
 - ✅ **상태 워크플로우**: ORDERED → ACCEPTED → IN_PROGRESS → RESULT_READY → CONFIRMED
+- ✅ **마이그레이션 적용 완료**: 5개 마이그레이션 모두 적용
+- ✅ **API 테스트 완료**: 목록/상세/필터링/상태변경 모두 정상 동작
+
+#### 현재 데이터
+- OCS 레코드: 54건 (RIS 33건, LIS 21건)
+- OCSHistory 레코드: 8건
 
 #### 데이터 구조
 ```
@@ -151,14 +159,19 @@ OCSHistory (변경 이력)
 
 ---
 
-### 5. 영상 관리 (Imaging) 🚧 OCS 통합 진행중
-**예상 완료일**: 2026-01-09 (OCS 완료 후)
+### 5. 영상 관리 (Imaging) ✅
+**완료일**: 2026-01-11
 **담당**: Phase 3 OCS 통합
 
 #### ⚠️ 중요 변경사항 (2026-01-08)
 - **ImagingStudy**: DICOM 메타데이터만 유지, 오더 정보는 OCS에서 관리
 - **ImagingReport 삭제**: OCS.worker_result JSON으로 통합
 - **API 하위 호환성 유지**: 기존 `/api/imaging/` 엔드포인트 그대로 사용
+
+#### OCS 통합 완료 (2026-01-11)
+- ✅ ImagingStudy → OCS 1:1 FK 연결 정상 작동
+- ✅ 33건의 ImagingStudy 레코드 (모두 OCS와 연결됨)
+- ✅ 판독 정보 OCS.worker_result에서 정상 조회
 
 #### 현재 구조
 ```
@@ -218,6 +231,80 @@ ImagingStudy (DICOM 메타데이터)
 
 ---
 
+### 6. 검사실 (LIS) ✅
+**완료일**: 2026-01-11
+**담당**: Phase 3 OCS 통합
+
+#### 주요 기능
+- ✅ OCS job_role='LIS'로 통합 관리
+- ✅ 21건의 LIS 오더 정상 동작
+- ✅ BLOOD, GENETIC, PROTEIN, URINE, CSF, BIOPSY 등 다양한 검사 유형 지원
+- ✅ gene_mutations, protein_markers, RNA_seq 필드 지원
+
+#### job_type 목록
+- CBC, BMP, CMP, LFT, RFT, Lipid Panel, Thyroid Panel
+- Coagulation, Urinalysis, Tumor Markers
+- GENETIC, PROTEIN (AI 추론용)
+
+---
+
+### 7. AI 추론 (ai_inference) ✅
+**완료일**: 2026-01-11
+**담당**: Phase 3-4 구현
+
+#### 완료된 기능
+- ✅ `apps/ai_inference/` 앱 생성 및 URL 등록 (`/api/ai/`)
+- ✅ AIModel 모델: M1(MRI), MG(Genetic), MM(Multimodal) 3개 정의
+- ✅ AIInferenceRequest 모델: 추론 요청 관리
+- ✅ AIInferenceResult 모델: 추론 결과 및 검토
+- ✅ AIInferenceLog 모델: 추론 과정 로깅
+- ✅ 마이그레이션 적용 완료
+- ✅ API Views/Serializers 구현 완료
+- ✅ 데이터 검증 API (`/api/ai/requests/validate/`)
+- ✅ 환자별 사용 가능 모델 조회 (`/api/ai/patients/{id}/available-models/`)
+
+#### 현재 데이터
+- AIModel: 3건 (M1, MG, MM)
+- AIInferenceRequest: 10건
+- AIInferenceResult: 1건
+
+#### API 엔드포인트
+- `GET /api/ai/models/` - 모델 목록
+- `GET /api/ai/requests/` - 추론 요청 목록
+- `GET /api/ai/requests/{id}/` - 요청 상세 (결과 포함)
+- `POST /api/ai/requests/validate/` - 데이터 검증
+- `GET /api/ai/results/` - 결과 목록
+- `GET /api/ai/patients/{id}/available-models/` - 환자별 사용 가능 모델
+
+#### 남은 작업 (Phase 4+)
+- [ ] AI 추론 요청 프론트엔드 페이지
+- [ ] Redis Queue + Worker 기본 구현
+- [ ] 실제 AI 모델 연동
+
+---
+
+### 8. 치료 관리 (treatment) ✅
+**완료일**: 2026-01-09
+**담당**: Phase 3 구현
+
+#### 주요 기능
+- ✅ 치료 계획 CRUD (TreatmentPlan)
+- ✅ 치료 세션 CRUD (TreatmentSession)
+- ✅ 치료 유형: surgery, radiation, chemotherapy, observation
+
+---
+
+### 9. 경과 추적 (followup) ✅
+**완료일**: 2026-01-09
+**담당**: Phase 3 구현
+
+#### 주요 기능
+- ✅ 경과 기록 CRUD (FollowUp)
+- ✅ 환자별 경과 조회
+- ✅ KPS Score 기록
+
+---
+
 ## 🚧 부분 구현된 모듈
 
 ### 1. 관리자 (Admin)
@@ -234,46 +321,6 @@ ImagingStudy (DICOM 메타데이터)
 - ❌ 역할 관리 (ADMIN_ROLE) - Coming Soon
 - ❌ 사용자 생성/수정 UI 개선
 - ❌ 권한 매트릭스 시각화
-
----
-
-## 📋 계획된 모듈
-
-### 1. 검사실 (LIS - Laboratory Information System)
-**상태**: 미구현
-**우선순위**: 중
-
-#### 계획된 기능
-- OCS job_role='LIS'로 통합 관리
-- 검사 결과 업로드 (worker_result JSON)
-- 검사 결과 조회
-
-#### 메뉴 구조 (이미 등록됨)
-- LAB (검사)
-  - LAB_RESULT_VIEW (검사 결과 조회) - `/lab`
-  - LAB_RESULT_UPLOAD (검사 결과 업로드) - `/lab/upload`
-
----
-
-### 2. AI 추론 (ai_inference)
-**상태**: 🚧 모델 정의 완료
-**우선순위**: 중
-
-#### 완료된 기능 (2026-01-09)
-- ✅ `apps/ai_inference/` 앱 생성
-- ✅ AIModel 모델: M1(MRI), MG(Genetic), MM(Multimodal) 정의
-- ✅ AIInferenceRequest 모델: 추론 요청 관리
-- ✅ AIInferenceResult 모델: 추론 결과 및 검토
-- ✅ AIInferenceLog 모델: 추론 과정 로깅
-- ✅ 마이그레이션 적용 완료
-- ✅ 시드 데이터 추가 (`setup_dummy_data.py`)
-
-#### 남은 작업
-- [ ] AI API Views/Serializers 구현
-- [ ] AI URL 라우팅 설정
-- [ ] AI 추론 요청 프론트엔드 페이지
-- [ ] OCS 데이터 검증 로직 (required_keys 확인)
-- [ ] Redis Queue + Worker 기본 구현 (추후)
 
 ---
 
@@ -372,15 +419,18 @@ brain_tumor_back/
 │   ├── urls.py                       # URL 라우팅
 │   └── asgi.py                       # WebSocket 설정
 ├── apps/
-│   ├── accounts/                     # 사용자 관리
-│   ├── authorization/                # 인증/권한
-│   ├── menus/                        # 메뉴 관리
-│   ├── audit/                        # 감사 로그
+│   ├── accounts/                     # 사용자 관리 ✅
+│   ├── authorization/                # 인증/권한 ✅
+│   ├── menus/                        # 메뉴 관리 ✅
+│   ├── audit/                        # 감사 로그 ✅
 │   ├── common/                       # 공통 유틸
 │   ├── patients/                     # 환자 관리 ✅
 │   ├── encounters/                   # 진료 관리 ✅
 │   ├── ocs/                          # OCS 오더 통합 관리 ✅
-│   └── imaging/                      # 영상 관리 (OCS 통합) ✅
+│   ├── imaging/                      # 영상 관리 (OCS 통합) ✅
+│   ├── ai_inference/                 # AI 추론 관리 ✅ (신규)
+│   ├── treatment/                    # 치료 관리 ✅ (신규)
+│   └── followup/                     # 경과 추적 ✅ (신규)
 ├── dummy_data/                       # 더미 데이터 생성 스크립트
 │   ├── create_dummy_patients.py      # 환자 데이터
 │   ├── create_dummy_encounters.py    # 진료 데이터
@@ -461,57 +511,57 @@ brain_tumor_front/
    - 모든 사용자가 모든 메뉴 접근 가능
    - 필요시 권한 체크 재활성화 필요
 
-2. **마이그레이션 미적용**
-   - OCS 통합 마이그레이션 (`0004_ocs_integration.py`) 실행 필요
-   - `python manage.py migrate` 실행 필요
-
 ### 해결된 이슈
 1. ✅ **영상 목록 404 에러** (2026-01-07 해결)
 2. ✅ **사이드바 메뉴 활성화 중복** (2026-01-07 해결)
 3. ✅ **ImagingReport import 에러** (2026-01-08 해결)
+4. ✅ **OCS 마이그레이션 미적용** (2026-01-11 해결) - 5개 마이그레이션 모두 적용 완료
+5. ✅ **Imaging-OCS 통합 에러** (2026-01-11 해결) - FK 연결 및 API 정상 동작
 
 ---
 
 ## 🚀 다음 할 일 (TODO)
 
-### 단기 (2026-01-09 - 즉시 필요)
-1. [ ] **OCS 에러 수정 (최우선)**
-   - [ ] OCS 모델/Serializer/View 에러 디버깅
-   - [ ] OCS API 엔드포인트 테스트
-   - [ ] OCS 마이그레이션 적용 및 확인
+### 완료됨 ✅ (2026-01-11)
+1. ✅ **OCS 마이그레이션 적용 및 테스트**
+   - ✅ OCS 모델/Serializer/View 정상 동작
+   - ✅ OCS API 엔드포인트 테스트 완료
+   - ✅ 5개 마이그레이션 모두 적용
 
-2. [ ] **Imaging-OCS 통합 테스트**
-   - [ ] ImagingStudy-OCS FK 연결 테스트
-   - [ ] ImagingReport → OCS.worker_result 매핑 테스트
-   - [ ] 프론트엔드 연동 테스트
+2. ✅ **Imaging-OCS 통합 테스트**
+   - ✅ ImagingStudy-OCS FK 연결 정상
+   - ✅ OCS.worker_result 판독 정보 조회 정상
+   - ✅ API 하위 호환성 유지
 
-3. [ ] **마이그레이션 적용**
-   - [ ] `python manage.py migrate` 실행
-   - [ ] 데이터 마이그레이션 확인
+3. ✅ **ai_inference 앱 API 구현**
+   - ✅ Views/Serializers 구현 완료
+   - ✅ 데이터 검증 API
+   - ✅ 환자별 사용 가능 모델 조회
 
-### 중기
-1. [ ] **LIS 기능 추가**
-   - OCS job_role='LIS' 활용
-   - LIS 워크리스트 UI
+### 단기 (Phase 4)
+1. [ ] **AI 추론 프론트엔드**
+   - [ ] AI 추론 요청 페이지
+   - [ ] 데이터 충족 여부 UI 표시
+   - [ ] 결과 검토 페이지
 
-2. [ ] **ai_inference 앱 구현** (Phase 4)
-   - AI_REQUEST, AI_JOB, AI_JOB_LOG 모델
-   - Redis Queue + Worker 기본
-   - OCS와 FK 연결
+2. [ ] **권한 시스템 재활성화**
+   - [ ] 메뉴별 권한 체크
+   - [ ] 역할별 접근 제어
 
-3. [ ] 권한 시스템 재활성화
-   - 메뉴별 권한 체크
-   - 역할별 접근 제어
+### 중기 (Phase 4-5)
+1. [ ] **영상 뷰어 고도화**
+   - [ ] Orthanc PACS 연동
+   - [ ] DICOM 뷰어 (Cornerstone.js)
+   - [ ] OHIF Viewer 통합
 
-### 장기
-1. [ ] 영상 관리 Phase 4-5
-   - Orthanc PACS 연동
-   - DICOM 뷰어 (Cornerstone.js)
-   - OHIF Viewer 통합
+2. [ ] **AI 추론 워커**
+   - [ ] Redis Queue + Worker 구현
+   - [ ] 실제 AI 모델 연동
 
-2. [ ] AI 추론 고도화
-   - 영상 분석 AI
-   - 의사 검토/승인 워크플로우
+### 장기 (Phase 5+)
+1. [ ] AI Overlay 및 Heatmap
+2. [ ] Multi-Modality Fusion
+3. [ ] 3D Visualization
 
 ---
 
@@ -522,4 +572,4 @@ brain_tumor_front/
 ---
 
 **작성자**: Claude
-**최종 업데이트**: 2026-01-09
+**최종 업데이트**: 2026-01-11

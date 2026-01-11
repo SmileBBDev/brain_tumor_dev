@@ -55,15 +55,25 @@ python -m setup_dummy_data 실행 시 순서:
 
 ## 테스트 계정
 
+### 비밀번호 생성 규칙
+
+> **규칙: `{login_id}001`**
+>
+> 예시: `admin` → `admin001`, `doctor1` → `doctor1001`, `ris1` → `ris1001`
+
 | ID | 비밀번호 | 역할 |
 |-----|----------|------|
 | system | system001 | 시스템 관리자 |
 | admin | admin001 | 병원 관리자 |
-| doctor1~5 | doctor001~005 | 의사 (5명) |
-| nurse1 | nurse001 | 간호사 |
-| patient1 | patient001 | 환자 |
-| ris1 | ris001 | 영상과 |
-| lis1 | lis001 | 검사과 |
+| doctor1 | doctor1001 | 의사 |
+| doctor2 | doctor2001 | 의사 |
+| doctor3 | doctor3001 | 의사 |
+| doctor4 | doctor4001 | 의사 |
+| doctor5 | doctor5001 | 의사 |
+| nurse1 | nurse1001 | 간호사 |
+| patient1 | patient1001 | 환자 |
+| ris1 | ris1001 | 영상과 |
+| lis1 | lis1001 | 검사과 |
 
 ---
 

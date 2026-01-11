@@ -5,7 +5,7 @@ import { getPatients, getStudies, getSeries } from "../api/orthancApi";
 
 const asText = (v) => (v == null ? "" : String(v));
 
-export default function PacsSelector({ onChange }) {
+export default function PacsSelector({ onChange, ocsInfo }) {
   const [patients, setPatients] = useState([]);
   const [studies, setStudies] = useState([]);
   const [seriesList, setSeriesList] = useState([]);
@@ -155,6 +155,16 @@ export default function PacsSelector({ onChange }) {
         <div className="selHint">{busy ? "Loading..." : "Patient → Study → Series"}</div>
       </div>
 
+      {/* OCS 연동 정보 표시 */}
+      {ocsInfo && (
+        <div className="ocsLinkBox">
+          <div className="ocsLinkRow">
+            <span className="ocsLinkLabel">MySQL 환자</span>
+            <span className="ocsLinkValue">{ocsInfo.patientName} ({ocsInfo.patientNumber})</span>
+          </div>
+        </div>
+      )}
+
       <div className="selGrid">
         <div className="row">
           <label className="label">Patient</label>
@@ -171,6 +181,12 @@ export default function PacsSelector({ onChange }) {
               </option>
             ))}
           </select>
+          {patientId && (
+            <div className="idDisplay">
+              <span className="idLabel">Orthanc ID:</span>
+              <span className="idValue">{patientId}</span>
+            </div>
+          )}
         </div>
 
         <div className="row">
@@ -188,6 +204,12 @@ export default function PacsSelector({ onChange }) {
               </option>
             ))}
           </select>
+          {studyId && (
+            <div className="idDisplay">
+              <span className="idLabel">Orthanc ID:</span>
+              <span className="idValue">{studyId}</span>
+            </div>
+          )}
         </div>
 
         <div className="row">

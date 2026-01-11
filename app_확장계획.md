@@ -1,37 +1,55 @@
 # Brain Tumor CDSS - 의료 영상 Viewer/Reading 확장 계획
 
 **작성일**: 2026-01-07
-**수정일**: 2026-01-09
-**현재 Phase**: Phase 2 완료, Phase 3 OCS 통합 진행중
+**수정일**: 2026-01-11
+**현재 Phase**: Phase 3 OCS 통합 완료, Phase 4 AI 프론트엔드 준비중
 
 ---
 
-## 1. 현재 구현 상태 (Phase 2)
+## 1. 현재 구현 상태 (Phase 3 완료 - 2026-01-11)
 
-### 1.1 구현 완료된 기능
-- ✅ **ImagingStudy 모델**: 영상 검사 메타데이터 관리
-  - Modality (CT/MRI/PET/X-RAY), Body Part, Status 관리
-  - Study UID, Series Count, Instance Count 저장
-- ✅ **ImagingReport 모델**: 판독문 작성 및 서명
-  - Findings, Impression, Tumor Detection
-  - Tumor Location/Size (JSON 저장)
-- ✅ **기본 CRUD API**: 검사 생성, 조회, 수정, 삭제
-- ✅ **판독 워크플로우**: Draft → Signed 상태 관리
-- ✅ **RIS 워크리스트**: 검사 대기 목록, 판독 대기 목록
-- ✅ **프론트엔드**:
-  - ImagingListPage (목록, 필터, 검색)
-  - ImagingReportModal (판독문 작성/조회/서명)
-  - ImagingWorklistPage (워크리스트)
-  - RIS Dashboard (통계 카드)
+### 1.1 백엔드 앱 구조 ✅
+```
+apps/
+├── accounts/          # ✅ 인증/권한
+├── audit/             # ✅ 감사 로그
+├── authorization/     # ✅ 권한
+├── menus/             # ✅ 메뉴
+├── common/            # ✅ 공통 유틸
+├── patients/          # ✅ 환자 관리
+├── encounters/        # ✅ 진료 관리
+├── ocs/               # ✅ OCS 오더 통합 관리
+├── imaging/           # ✅ 영상 검사 관리 (OCS 통합)
+├── ai_inference/      # ✅ AI 추론 관리 (API 완료)
+├── treatment/         # ✅ 치료 관리
+└── followup/          # ✅ 경과 추적
+```
 
-### 1.2 현재 제한사항
+### 1.2 구현 완료된 기능
+- ✅ **OCS 통합**: 단일 테이블 설계, job_role로 RIS/LIS/TREATMENT/CONSULT 구분
+- ✅ **ImagingStudy**: OCS FK 연결, 메타데이터 관리
+- ✅ **ImagingReport**: OCS.worker_result JSON으로 통합
+- ✅ **AI Inference**: 3개 모델(M1/MG/MM), 추론 요청/결과/검토 API
+- ✅ **LIS**: GENETIC, PROTEIN 포함 다양한 검사 유형 지원
+- ✅ **Treatment/FollowUp**: 치료 계획 및 경과 추적
+
+### 1.3 현재 데이터 현황
+| 테이블 | 레코드 수 |
+|--------|----------|
+| OCS | 54건 (RIS 33건, LIS 21건) |
+| OCSHistory | 8건 |
+| ImagingStudy | 33건 |
+| AIModel | 3건 (M1, MG, MM) |
+| AIInferenceRequest | 10건 |
+| AIInferenceResult | 1건 |
+
+### 1.4 현재 제한사항
 - ❌ **DICOM 파일 저장 없음**: 메타데이터만 DB에 저장
 - ❌ **실제 영상 뷰어 없음**: 영상을 볼 수 없음
 - ❌ **Orthanc/PACS 연동 없음**: 외부 DICOM 서버 미연동
 - ❌ **영상 조작 도구 없음**: Zoom, Pan, Window/Level 없음
-- ❌ **Annotation 기능 없음**: ROI, Arrow, Text 등 없음
-- ❌ **Series 단위 관리 없음**: Study만 관리, Series는 count만 저장
-- ❌ **Instance 단위 관리 없음**: 개별 DICOM 파일 추적 불가
+- ❌ **AI 추론 프론트엔드 없음**: API만 완료, UI 구현 필요
+- ❌ **Redis Queue/Worker 없음**: AI 추론 비동기 처리 미구현
 
 ---
 
@@ -488,26 +506,34 @@ AI Analysis → Segmentation Mask (NIfTI)
 
 ## 9. 다음 단계
 
-### 9.1 완료 (2026-01-09) ✅
-1. **OCS 에러 수정 완료**
+### 9.1 완료 (2026-01-11) ✅
+1. **OCS 완료**
    - OCS 모델/Serializer/View 정상 동작
    - OCS API 엔드포인트 테스트 완료
-   - 마이그레이션 적용 및 더미 데이터 생성
+   - 5개 마이그레이션 적용 완료
+   - 54건 더미 데이터 (RIS 33건, LIS 21건)
 
 2. **Imaging-OCS 통합 완료**
-   - ImagingStudy-OCS FK 연결 동작
+   - ImagingStudy-OCS FK 연결 정상 동작
    - OCS.worker_result JSON 매핑 완료
+   - 33건 ImagingStudy 레코드
 
-3. **LIS 기능 강화 완료**
+3. **AI Inference API 완료**
+   - ai_inference 앱 생성 및 URL 등록
+   - AIModel, AIInferenceRequest, AIInferenceResult, AIInferenceLog 모델
+   - 모델 목록/상세, 추론 요청, 데이터 검증, 결과 검토 API
+   - 환자별 사용 가능 모델 조회 API
+
+4. **LIS 기능 완료**
    - GENETIC, PROTEIN 검사 유형 지원
-   - gene_mutations, protein_markers 필드 추가
+   - gene_mutations, protein_markers, RNA_seq 필드
 
-4. **권한 수정 완료**
-   - LIS/RIS 담당자 confirm 권한 추가
+5. **Treatment/FollowUp 완료**
+   - treatment, followup 앱 구현
 
-### 9.2 단기
-1. **Phase 4 ai_inference 앱**: AI 추론 기능 별도 앱으로 구현
-2. **Phase 2.5 구현**: 환자별 영상 히스토리 조회 페이지
+### 9.2 단기 (Phase 4)
+1. **AI 추론 프론트엔드**: 추론 요청/결과 검토 페이지
+2. **권한 시스템 재활성화**: 메뉴별 권한 체크
 3. **Orthanc PACS 준비**: Phase 4-5를 위한 서버 구축 계획
 
 ---
@@ -552,5 +578,5 @@ OCS 상태 변경 (ORDERED → ACCEPTED → IN_PROGRESS → RESULT_READY → CON
 ---
 
 **작성자**: Claude
-**문서 버전**: 1.2
-**마지막 업데이트**: 2026-01-09
+**문서 버전**: 1.3
+**마지막 업데이트**: 2026-01-11

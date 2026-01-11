@@ -111,7 +111,8 @@ npm run dev <br/>
 <h3>3단계: 백엔드 실행</h3>
 cd back_code <br/>
 python -m venv venv <br/>
-venv\Scripts\activate <br/>
+venv\Scripts\activate <br/> // 리눅스 : source .venv/bin/activate
+pip install --upgrade pip
 pip install -r requirements.txt <br/>
 daphne -b 127.0.0.1 -p 8000 config.asgi:application
 

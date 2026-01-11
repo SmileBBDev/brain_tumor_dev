@@ -72,6 +72,22 @@ export interface RISWorkerResult {
   _template: 'RIS';
   _version: string;
   _confirmed: boolean;
+
+  // Orthanc 연동 정보 (DICOM 업로드 시 자동 저장)
+  orthanc?: {
+    patient_id: string;        // Orthanc Patient ID (MySQL patient_number 기반)
+    study_id: string;          // Orthanc Study ID
+    study_uid: string;         // StudyInstanceUID (1.2.410.200001.{ocsId}.{timestamp})
+    series: {
+      orthanc_id: string;      // Orthanc Series ID
+      series_uid: string;      // SeriesInstanceUID
+      description: string;     // Series Description (폴더명)
+      instances_count: number; // Instance 수
+    }[];
+    uploaded_at: string;       // 업로드 일시
+  };
+
+  // 기존 dicom 필드 (호환성 유지)
   dicom: {
     study_uid: string;
     series: {
@@ -82,6 +98,7 @@ export interface RISWorkerResult {
     }[];
     accession_number: string;
   };
+
   impression: string;
   findings: string;
   recommendation: string;

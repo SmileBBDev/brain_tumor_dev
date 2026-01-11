@@ -17,18 +17,42 @@ interface Selection {
   overlaySeriesName?: string;
 }
 
+interface OcsPatientInfo {
+  ocsId: number;
+  patientNumber: string;
+  patientName: string;
+}
+
+// 업로드 결과 정보 (Orthanc 응답)
+export interface UploadResult {
+  patientId: string;
+  studyUid: string;
+  studyId: string;
+  studyDescription: string;
+  ocsId: number | null;
+  uploaded: number;
+  failedFiles: string[];
+  orthancSeriesIds: string[];
+}
+
 interface DicomViewerPopupProps {
   open: boolean;
   onClose: () => void;
+  ocsInfo?: OcsPatientInfo;
+  onUploadComplete?: (result: UploadResult) => void;  // 업로드 완료 콜백
 }
 
-export default function DicomViewerPopup({ open, onClose }: DicomViewerPopupProps) {
+export default function DicomViewerPopup({ open, onClose, ocsInfo, onUploadComplete }: DicomViewerPopupProps) {
   const [selection, setSelection] = useState<Selection>({});
   const [refreshKey, setRefreshKey] = useState(0);
 
-  const onUploaded = useCallback(async () => {
+  const onUploaded = useCallback(async (result?: UploadResult) => {
     setRefreshKey((k) => k + 1);
-  }, []);
+    // 업로드 완료 시 부모 컴포넌트에 알림
+    if (result && onUploadComplete) {
+      onUploadComplete(result);
+    }
+  }, [onUploadComplete]);
 
   if (!open) return null;
 
@@ -47,8 +71,8 @@ export default function DicomViewerPopup({ open, onClose }: DicomViewerPopupProp
         <div className="dicom-popup-body">
           <aside className="dicom-popup-left">
             <div className="dicom-popup-stack">
-              <UploadSection onUploaded={onUploaded} />
-              <PacsSelector key={refreshKey} onChange={setSelection} />
+              <UploadSection onUploaded={onUploaded} ocsInfo={ocsInfo} />
+              <PacsSelector key={refreshKey} onChange={setSelection} ocsInfo={ocsInfo} />
             </div>
           </aside>
 

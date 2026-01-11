@@ -46,71 +46,71 @@ export interface AIAnalysisDetail {
 }
 
 // =============================================================================
-// 목업 데이터 생성
+// 목업 데이터 생성 (TODO: 실제 AI 연동 시 제거)
 // =============================================================================
-const generateMockAIResult = (jobType: string): AIAnalysisResult => {
-  const isBrainScan = ['MRI', 'CT'].includes(jobType.toUpperCase());
-
-  return {
-    analysis_id: `AI-${Date.now()}`,
-    analysis_date: new Date().toISOString(),
-    model_version: 'BrainTumor-CDSS v2.1.0',
-    status: 'completed',
-
-    risk_level: isBrainScan ? 'medium' : 'low',
-    risk_score: isBrainScan ? 65 : 25,
-    confidence: 87,
-
-    findings: isBrainScan ? [
-      {
-        id: 'f1',
-        type: 'lesion',
-        description: '좌측 측두엽에 불규칙한 조영증강 병변 관찰',
-        location: 'Left temporal lobe',
-        severity: 'major',
-        confidence: 89,
-      },
-      {
-        id: 'f2',
-        type: 'abnormality',
-        description: '주변 부종 소견',
-        location: 'Perilesional area',
-        severity: 'minor',
-        confidence: 78,
-      },
-    ] : [
-      {
-        id: 'f1',
-        type: 'observation',
-        description: '특이 소견 없음',
-        severity: 'observation',
-        confidence: 95,
-      },
-    ],
-
-    summary: isBrainScan
-      ? '좌측 측두엽에 약 2.3cm 크기의 조영증강 병변이 관찰됩니다. 신경교종(Glioma) 가능성이 있으며, 추가 검사를 권고합니다.'
-      : '분석 결과 특이 소견이 발견되지 않았습니다.',
-
-    details: isBrainScan ? [
-      {
-        category: '병변 정보',
-        metrics: [
-          { name: '크기', value: '2.3 x 1.8', unit: 'cm' },
-          { name: '위치', value: 'Left temporal lobe' },
-          { name: '조영증강', value: '불균일' },
-        ],
-      },
-      {
-        category: '정량 분석',
-        metrics: [
-          { name: 'ADC', value: '0.85', unit: '×10⁻³ mm²/s' },
-          { name: 'rCBV', value: '2.1', unit: 'ratio' },
-        ],
-      },
-    ] : undefined,
-  };
-};
+// const generateMockAIResult = (jobType: string): AIAnalysisResult => {
+//   const isBrainScan = ['MRI', 'CT'].includes(jobType.toUpperCase());
+//
+//   return {
+//     analysis_id: `AI-${Date.now()}`,
+//     analysis_date: new Date().toISOString(),
+//     model_version: 'BrainTumor-CDSS v2.1.0',
+//     status: 'completed',
+//
+//     risk_level: isBrainScan ? 'medium' : 'low',
+//     risk_score: isBrainScan ? 65 : 25,
+//     confidence: 87,
+//
+//     findings: isBrainScan ? [
+//       {
+//         id: 'f1',
+//         type: 'lesion',
+//         description: '좌측 측두엽에 불규칙한 조영증강 병변 관찰',
+//         location: 'Left temporal lobe',
+//         severity: 'major',
+//         confidence: 89,
+//       },
+//       {
+//         id: 'f2',
+//         type: 'abnormality',
+//         description: '주변 부종 소견',
+//         location: 'Perilesional area',
+//         severity: 'minor',
+//         confidence: 78,
+//       },
+//     ] : [
+//       {
+//         id: 'f1',
+//         type: 'observation',
+//         description: '특이 소견 없음',
+//         severity: 'observation',
+//         confidence: 95,
+//       },
+//     ],
+//
+//     summary: isBrainScan
+//       ? '좌측 측두엽에 약 2.3cm 크기의 조영증강 병변이 관찰됩니다. 신경교종(Glioma) 가능성이 있으며, 추가 검사를 권고합니다.'
+//       : '분석 결과 특이 소견이 발견되지 않았습니다.',
+//
+//     details: isBrainScan ? [
+//       {
+//         category: '병변 정보',
+//         metrics: [
+//           { name: '크기', value: '2.3 x 1.8', unit: 'cm' },
+//           { name: '위치', value: 'Left temporal lobe' },
+//           { name: '조영증강', value: '불균일' },
+//         ],
+//       },
+//       {
+//         category: '정량 분석',
+//         metrics: [
+//           { name: 'ADC', value: '0.85', unit: '×10⁻³ mm²/s' },
+//           { name: 'rCBV', value: '2.1', unit: 'ratio' },
+//         ],
+//       },
+//     ] : undefined,
+//   };
+// };
 
 // =============================================================================
 // 컴포넌트
@@ -127,17 +127,20 @@ export default function AIAnalysisPanel({ ocsId, jobType, compact = false }: AIA
   const [showDetails, setShowDetails] = useState(false);
 
   useEffect(() => {
-    // 목업: 실제로는 API 호출
+    // TODO: 실제 AI 분석 API 연동 시 구현
     const fetchAIResult = async () => {
       setLoading(true);
       try {
         // TODO: 실제 API 연동
         // const data = await getAIAnalysisResult(ocsId);
 
-        // 목업 데이터 사용 (0.5초 딜레이)
-        await new Promise(resolve => setTimeout(resolve, 500));
-        const mockData = generateMockAIResult(jobType);
-        setResult(mockData);
+        // 현재는 AI 분석 결과가 없음 (API 연동 전)
+        await new Promise(resolve => setTimeout(resolve, 300));
+        setResult(null);
+
+        // 목업 데이터 사용 (주석 처리됨)
+        // const mockData = generateMockAIResult(jobType);
+        // setResult(mockData);
       } catch (error) {
         console.error('Failed to fetch AI result:', error);
       } finally {
@@ -162,8 +165,13 @@ export default function AIAnalysisPanel({ ocsId, jobType, compact = false }: AIA
   if (!result) {
     return (
       <div className={`ai-analysis-panel ${compact ? 'compact' : ''}`}>
+        <div className="panel-header">
+          <h3>AI 분석 결과</h3>
+        </div>
         <div className="empty-state">
-          <span>AI 분석 결과가 없습니다.</span>
+          <div className="empty-icon">🔬</div>
+          <span>AI 분석 기능 준비 중</span>
+          <p className="empty-desc">추후 AI 모델 연동 시 분석 결과가 표시됩니다.</p>
         </div>
       </div>
     );

@@ -12,7 +12,7 @@ import { getOCS, startOCS, saveOCSResult, confirmOCS } from '@/services/ocs.api'
 import type { OCSDetail, RISWorkerResult } from '@/types/ocs';
 import { OCS_STATUS_LABELS } from '@/types/ocs';
 import AIAnalysisPanel from './components/AIAnalysisPanel';
-import DicomViewerPopup from '@/components/DicomViewerPopup';
+import DicomViewerPopup, { type UploadResult } from '@/components/DicomViewerPopup';
 import './RISStudyDetailPage.css';
 
 // 검사 결과 항목 타입
@@ -281,6 +281,43 @@ export default function RISStudyDetailPage() {
   // DICOM Viewer 열기
   const handleOpenViewer = () => {
     setViewerOpen(true);
+  };
+
+  // DICOM 업로드 완료 시 worker_result에 Orthanc 정보 저장
+  const handleUploadComplete = async (result: UploadResult) => {
+    if (!ocsDetail) return;
+
+    try {
+      const currentResult = ocsDetail.worker_result as RISWorkerResult;
+      const updatedResult = {
+        ...currentResult,
+        _template: 'RIS',
+        _version: '1.0',
+        orthanc: {
+          patient_id: result.patientId,
+          study_id: result.studyId,
+          study_uid: result.studyUid,
+          series: result.orthancSeriesIds.map((id) => ({
+            orthanc_id: id,
+            series_uid: '',  // 나중에 API에서 조회 가능
+            description: '',
+            instances_count: 0,
+          })),
+          uploaded_at: new Date().toISOString(),
+        },
+      };
+
+      await saveOCSResult(ocsDetail.id, { worker_result: updatedResult });
+
+      // 상태 갱신
+      const updated = await getOCS(ocsDetail.id);
+      setOcsDetail(updated);
+
+      alert('DICOM 영상 정보가 저장되었습니다.');
+    } catch (error) {
+      console.error('Failed to save DICOM info:', error);
+      alert('DICOM 정보 저장에 실패했습니다.');
+    }
   };
 
   if (loading) {
@@ -756,7 +793,16 @@ export default function RISStudyDetailPage() {
       </div>
 
       {/* DICOM 영상 조회 팝업 */}
-      <DicomViewerPopup open={viewerOpen} onClose={() => setViewerOpen(false)} />
+      <DicomViewerPopup
+        open={viewerOpen}
+        onClose={() => setViewerOpen(false)}
+        ocsInfo={ocsDetail ? {
+          ocsId: ocsDetail.id,
+          patientNumber: ocsDetail.patient.patient_number,
+          patientName: ocsDetail.patient.name,
+        } : undefined}
+        onUploadComplete={handleUploadComplete}
+      />
     </div>
   );
 }

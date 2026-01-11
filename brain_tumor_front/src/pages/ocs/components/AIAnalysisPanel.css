@@ -34,6 +34,25 @@
   padding: 40px;
   color: #666;
   gap: 12px;
+  min-height: 200px;
+}
+
+.empty-icon {
+  font-size: 2.5rem;
+  opacity: 0.6;
+}
+
+.empty-state span {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #888;
+}
+
+.empty-desc {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #aaa;
+  text-align: center;
 }
 
 .spinner {
