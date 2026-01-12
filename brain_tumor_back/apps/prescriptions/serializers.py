@@ -36,9 +36,9 @@ class PrescriptionListSerializer(serializers.ModelSerializer):
     """처방전 목록용 시리얼라이저"""
     patient_name = serializers.CharField(source='patient.name', read_only=True)
     patient_number = serializers.CharField(source='patient.patient_number', read_only=True)
-    doctor_name = serializers.CharField(source='doctor.name', read_only=True)
+    doctor_name = serializers.SerializerMethodField()
     status_display = serializers.CharField(source='get_status_display', read_only=True)
-    item_count = serializers.IntegerField(read_only=True)
+    item_count = serializers.SerializerMethodField()
 
     class Meta:
         model = Prescription
@@ -48,6 +48,18 @@ class PrescriptionListSerializer(serializers.ModelSerializer):
             'diagnosis', 'item_count', 'created_at', 'issued_at'
         ]
 
+    def get_doctor_name(self, obj):
+        """doctor가 None일 경우 처리"""
+        if obj.doctor:
+            return obj.doctor.name
+        return None
+
+    def get_item_count(self, obj):
+        """item_count 처리 - annotate 또는 property 사용"""
+        if hasattr(obj, 'item_count') and isinstance(obj.item_count, int):
+            return obj.item_count
+        return obj.items.count()
+
 
 class PrescriptionDetailSerializer(serializers.ModelSerializer):
     """처방전 상세 시리얼라이저"""
@@ -55,10 +67,16 @@ class PrescriptionDetailSerializer(serializers.ModelSerializer):
     patient_number = serializers.CharField(source='patient.patient_number', read_only=True)
     patient_birth_date = serializers.DateField(source='patient.birth_date', read_only=True)
     patient_gender = serializers.CharField(source='patient.gender', read_only=True)
-    doctor_name = serializers.CharField(source='doctor.name', read_only=True)
+    doctor_name = serializers.SerializerMethodField()
     status_display = serializers.CharField(source='get_status_display', read_only=True)
     items = PrescriptionItemSerializer(many=True, read_only=True)
     is_editable = serializers.BooleanField(read_only=True)
+
+    def get_doctor_name(self, obj):
+        """doctor가 None일 경우 처리"""
+        if obj.doctor:
+            return obj.doctor.name
+        return None
 
     class Meta:
         model = Prescription

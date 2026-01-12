@@ -4,7 +4,7 @@
  */
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { searchPatients } from '@/services/patient.api';
+import { getPatient } from '@/services/patient.api';
 import { getOCSByPatient } from '@/services/ocs.api';
 import { getEncounters, createEncounter } from '@/services/encounter.api';
 import { LoadingSpinner, useToast } from '@/components/common';
@@ -49,10 +49,8 @@ export default function ClinicPage() {
     setLoading(true);
     try {
       // 환자 정보 조회
-      const patients = await searchPatients({ id: patientId });
-      if (patients.length > 0) {
-        setPatient(patients[0]);
-      }
+      const patientData = await getPatient(patientId);
+      setPatient(patientData);
 
       // OCS 목록 조회
       const ocsData = await getOCSByPatient(patientId);
@@ -74,7 +72,8 @@ export default function ClinicPage() {
     } finally {
       setLoading(false);
     }
-  }, [toast]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);  // toast 제거 - 안정적인 참조
 
   useEffect(() => {
     if (patientIdParam) {
@@ -105,7 +104,8 @@ export default function ClinicPage() {
       console.error('Failed to start encounter:', err);
       toast.error('진료 시작에 실패했습니다.');
     }
-  }, [patient, toast]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [patient]);
 
   // 나이 계산
   const calculateAge = (birthDate: string) => {

@@ -185,7 +185,7 @@ class ImagingStudyViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'], url_path='patient-history')
     def patient_history(self, request):
-        """환자별 영상 히스토리 조회"""
+        """환자별 영상 히스토리 조회 (쿼리 파라미터 방식)"""
         patient_id = request.query_params.get('patient_id')
         if not patient_id:
             return Response(
@@ -203,6 +203,25 @@ class ImagingStudyViewSet(viewsets.ModelViewSet):
             return self.get_paginated_response(serializer.data)
 
         serializer = ImagingStudyListSerializer(queryset, many=True)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['get'], url_path='patient/(?P<patient_id>\\d+)')
+    def by_patient(self, request, patient_id=None):
+        """
+        특정 환자의 영상 검사 목록 조회 (URL 경로 방식)
+
+        Path Parameters:
+            - patient_id: 환자 ID
+
+        Returns:
+            영상 검사 목록 (최신순 정렬, 배열 직접 반환)
+        """
+        queryset = self.get_queryset().filter(
+            patient_id=patient_id
+        ).order_by('-created_at')
+
+        serializer = ImagingStudyListSerializer(queryset, many=True)
+        # 배열 직접 반환 (프론트엔드 호환성)
         return Response(serializer.data)
 
 

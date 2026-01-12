@@ -69,7 +69,8 @@ export default function DiagnosisPrescriptionCard({
 
     const fetchDraftPrescriptions = async () => {
       try {
-        const prescriptions = await getPrescriptionsByPatient(patientId);
+        const response = await getPrescriptionsByPatient(patientId);
+        const prescriptions = Array.isArray(response) ? response : response?.results || [];
         setDraftPrescriptions(prescriptions.filter((p) => p.status === 'DRAFT'));
       } catch (err) {
         console.error('작성 중 처방 조회 실패:', err);
@@ -173,7 +174,8 @@ export default function DiagnosisPrescriptionCard({
       onPrescriptionCreated?.();
 
       // 작성 중 목록 새로고침
-      const prescriptions = await getPrescriptionsByPatient(patientId);
+      const response = await getPrescriptionsByPatient(patientId);
+      const prescriptions = Array.isArray(response) ? response : response?.results || [];
       setDraftPrescriptions(prescriptions.filter((p) => p.status === 'DRAFT'));
     } catch (err) {
       console.error('처방 생성 실패:', err);

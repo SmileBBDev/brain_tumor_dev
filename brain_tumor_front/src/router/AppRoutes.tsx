@@ -7,7 +7,7 @@ import type { MenuNode } from '@/types/menu';
 import FullScreenLoader from '@/pages/common/FullScreenLoader';
 
 // Lazy loaded pages
-const OrderCreatePage = lazy(() => import('@/pages/orders/OrderCreate'));
+const OCSCreatePage = lazy(() => import('@/pages/ocs/OCSCreatePage'));
 const OCSResultReportPage = lazy(() => import('@/pages/ocs/OCSResultReportPage'));
 
 // 접근 가능한 메뉴만 flatten (라우트 등록용 - breadcrumbOnly 포함)
@@ -82,12 +82,12 @@ export default function AppRoutes() {
         {/* 홈 */}
         <Route index element={<Navigate to={homePath} replace />} />
 
-        {/* 오더 생성 페이지 (메뉴에 없지만 직접 접근 필요) */}
+        {/* OCS 생성 페이지 (메뉴에 없지만 직접 접근 필요) */}
         <Route
-          path="/orders/create"
+          path="/ocs/create"
           element={
             <ProtectedRoute>
-              <OrderCreatePage />
+              <OCSCreatePage />
             </ProtectedRoute>
           }
         />

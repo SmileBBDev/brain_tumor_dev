@@ -60,6 +60,11 @@ class Encounter(models.Model):
     admission_date = models.DateTimeField(
         verbose_name='입원/진료 일시'
     )
+    scheduled_time = models.TimeField(
+        null=True,
+        blank=True,
+        verbose_name='예약 시간'
+    )
     discharge_date = models.DateTimeField(
         null=True,
         blank=True,

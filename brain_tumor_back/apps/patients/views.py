@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.pagination import PageNumberPagination
 from django.core.exceptions import ObjectDoesNotExist
+from django.utils import timezone
 
 from .models import Patient
 from .serializers import (
@@ -270,3 +271,86 @@ def create_external_patient(request):
             {'error': f'환자 등록 중 오류가 발생했습니다: {str(e)}'},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def patient_summary(request, patient_id):
+    """
+    환자 요약서 데이터 조회 (PDF 생성용)
+
+    Returns:
+        - patient: 기본정보 (이름, 나이, 성별, 연락처, 주소)
+        - encounters: 최근 진료이력 (최근 10건)
+        - ocs_history: OCS (RIS/LIS) 검사이력 (최근 10건)
+        - ai_inferences: AI 추론이력 (최근 5건)
+        - treatment_plans: 치료계획 (최근 5건)
+        - prescriptions: 처방이력 (최근 10건)
+        - generated_at: 생성 시각
+    """
+    try:
+        patient = PatientService.get_patient_by_id(patient_id)
+    except ObjectDoesNotExist:
+        return Response(
+            {'error': '환자를 찾을 수 없습니다.'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+    # 기본 정보
+    patient_data = PatientDetailSerializer(patient).data
+
+    # 진료 이력 (최근 10건)
+    from apps.encounters.models import Encounter
+    from apps.encounters.serializers import EncounterListSerializer
+    encounters = Encounter.objects.filter(
+        patient=patient, is_deleted=False
+    ).order_by('-admission_date')[:10]
+    encounter_data = EncounterListSerializer(encounters, many=True).data
+
+    # OCS 이력 (최근 10건)
+    from apps.ocs.models import OCS
+    from apps.ocs.serializers import OCSListSerializer
+    ocs_list = OCS.objects.filter(
+        patient=patient, is_deleted=False
+    ).order_by('-created_at')[:10]
+    ocs_data = OCSListSerializer(ocs_list, many=True).data
+
+    # AI 추론 이력 (최근 5건)
+    from apps.ai_inference.models import AIInferenceRequest
+    from apps.ai_inference.serializers import AIInferenceRequestListSerializer
+    ai_requests = AIInferenceRequest.objects.filter(
+        patient=patient
+    ).order_by('-created_at')[:5]
+    ai_data = AIInferenceRequestListSerializer(ai_requests, many=True).data
+
+    # 치료 계획 (최근 5건)
+    try:
+        from apps.treatment.models import TreatmentPlan
+        from apps.treatment.serializers import TreatmentPlanListSerializer
+        treatment_plans = TreatmentPlan.objects.filter(
+            patient=patient, is_deleted=False
+        ).order_by('-created_at')[:5]
+        treatment_data = TreatmentPlanListSerializer(treatment_plans, many=True).data
+    except Exception:
+        treatment_data = []
+
+    # 처방 이력 (최근 10건)
+    try:
+        from apps.prescriptions.models import Prescription
+        from apps.prescriptions.serializers import PrescriptionListSerializer
+        prescriptions = Prescription.objects.filter(
+            patient=patient
+        ).order_by('-prescribed_at')[:10]
+        prescription_data = PrescriptionListSerializer(prescriptions, many=True).data
+    except Exception:
+        prescription_data = []
+
+    return Response({
+        'patient': patient_data,
+        'encounters': encounter_data,
+        'ocs_history': ocs_data,
+        'ai_inferences': ai_data,
+        'treatment_plans': treatment_data,
+        'prescriptions': prescription_data,
+        'generated_at': timezone.now().isoformat()
+    })

@@ -1,6 +1,10 @@
 export { default as OCSListTable } from './OCSListTable';
 export { default as OCSDetailModal } from './OCSDetailModal';
-export { default as DoctorOrderPage } from './DoctorOrderPage';
+export { default as OCSCreatePage } from './OCSCreatePage';
+export { default as OCSStatusPage } from './OCSStatusPage';
+export { default as OCSManagePage } from './OCSManagePage';
+// 하위 호환성을 위한 별칭
+export { default as DoctorOrderPage } from './OCSManagePage';
 export { default as RISWorklistPage } from './RISWorklistPage';
 export { default as RISStudyDetailPage } from './RISStudyDetailPage';
 export { default as LISWorklistPage } from './LISWorklistPage';

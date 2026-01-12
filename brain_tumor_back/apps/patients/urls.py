@@ -10,6 +10,9 @@ urlpatterns = [
     # 환자 상세, 수정, 삭제
     path('<int:patient_id>/', views.patient_detail, name='patient-detail'),
 
+    # 환자 요약서 (PDF 생성용)
+    path('<int:patient_id>/summary/', views.patient_summary, name='patient-summary'),
+
     # 환자 검색 (자동완성용)
     path('search/', views.patient_search, name='patient-search'),
 

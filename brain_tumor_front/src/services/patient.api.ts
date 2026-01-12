@@ -87,3 +87,52 @@ export const createExternalPatient = async (
   );
   return response.data;
 };
+
+// =============================================================================
+// 환자 요약 API
+// =============================================================================
+
+// 환자 요약 응답 타입
+export interface PatientSummary {
+  patient: Patient;
+  encounters: Array<{
+    id: number;
+    admission_date: string;
+    encounter_type: string;
+    encounter_type_display?: string;
+    attending_doctor_name?: string;
+    status: string;
+    status_display?: string;
+    chief_complaint?: string;
+  }>;
+  ocs_history: Array<{
+    id: number;
+    created_at: string;
+    job_type: string;
+    job_role: string;
+    ocs_status: string;
+    ocs_status_display?: string;
+  }>;
+  ai_inferences: Array<{
+    id: number;
+    requested_at: string;
+    model_code: string;
+    model_name?: string;
+    status: string;
+    status_display?: string;
+  }>;
+  prescriptions: Array<{
+    id: number;
+    prescribed_at: string;
+    status: string;
+  }>;
+  generated_at: string;
+}
+
+/**
+ * 환자 요약서 데이터 조회 (PDF 생성용)
+ */
+export const getPatientSummary = async (patientId: number): Promise<PatientSummary> => {
+  const response = await api.get<PatientSummary>(`/patients/${patientId}/summary/`);
+  return response.data;
+};

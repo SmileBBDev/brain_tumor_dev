@@ -1,32 +1,46 @@
 /**
  * 과거 처방전 카드
- * - 환자의 이전 처방 기록 표시
+ * - SYSTEMMANAGER: 모든 환자 처방 표시
+ * - 그 외: 선택된 환자의 처방만 표시
  * - GET /api/prescriptions/?patient_id= 연동
  */
 import { useState, useEffect } from 'react';
-import { getPrescriptionsByPatient } from '@/services/prescription.api';
+import { getPrescriptionsByPatient, getPrescriptions } from '@/services/prescription.api';
+import { useAuth } from '@/pages/auth/AuthProvider';
 import type { PrescriptionListItem } from '@/types/prescription';
 import { STATUS_LABELS } from '@/types/prescription';
 
 interface PastPrescriptionCardProps {
-  patientId: number;
+  patientId?: number;
 }
 
 export default function PastPrescriptionCard({
   patientId,
 }: PastPrescriptionCardProps) {
+  const { role } = useAuth();
+  const isSystemManager = role === 'SYSTEMMANAGER';
+
   const [prescriptions, setPrescriptions] = useState<PrescriptionListItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!patientId) return;
+    // SYSTEMMANAGER가 아닌 경우 patientId가 필수
+    if (!isSystemManager && !patientId) return;
 
     const fetchPrescriptions = async () => {
       setLoading(true);
       setError(null);
       try {
-        const data = await getPrescriptionsByPatient(patientId);
+        let response;
+        if (isSystemManager && !patientId) {
+          // SYSTEMMANAGER: 모든 처방 조회
+          response = await getPrescriptions();
+        } else {
+          // 특정 환자의 처방 조회
+          response = await getPrescriptionsByPatient(patientId!);
+        }
+        const data = Array.isArray(response) ? response : response?.results || [];
         setPrescriptions(data);
       } catch (err) {
         console.error('처방 목록 조회 실패:', err);
@@ -37,7 +51,7 @@ export default function PastPrescriptionCard({
     };
 
     fetchPrescriptions();
-  }, [patientId]);
+  }, [patientId, isSystemManager]);
 
   // 상태별 스타일 클래스
   const getStatusClass = (status: string) => {
@@ -60,12 +74,15 @@ export default function PastPrescriptionCard({
     return dateStr?.slice(0, 10) || '-';
   };
 
+  // 전체 보기 모드 여부 (SYSTEMMANAGER이고 patientId가 없는 경우)
+  const showAllPatients = isSystemManager && !patientId;
+
   return (
     <div className="clinic-card">
       <div className="clinic-card-header">
         <h3>
           <span className="card-icon">💊</span>
-          과거 처방전
+          {showAllPatients ? '전체 처방전' : '과거 처방전'}
           {prescriptions.length > 0 && (
             <span className="prescription-count">({prescriptions.length})</span>
           )}
@@ -88,6 +105,9 @@ export default function PastPrescriptionCard({
                 <div className="list-item-content">
                   <div className="list-item-title">
                     <span className="rx-id">{rx.prescription_id}</span>
+                    {showAllPatients && rx.patient_name && (
+                      <span className="rx-patient">{rx.patient_name}</span>
+                    )}
                     {rx.diagnosis && (
                       <span className="rx-diagnosis">{rx.diagnosis}</span>
                     )}
@@ -155,6 +175,12 @@ export default function PastPrescriptionCard({
           font-family: monospace;
           font-size: 12px;
           color: var(--primary, #1976d2);
+          margin-right: 8px;
+        }
+        .rx-patient {
+          font-size: 13px;
+          font-weight: 500;
+          color: var(--text-primary, #1a1a1a);
           margin-right: 8px;
         }
         .rx-diagnosis {

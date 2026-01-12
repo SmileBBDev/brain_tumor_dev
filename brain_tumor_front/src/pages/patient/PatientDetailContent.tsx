@@ -2,7 +2,7 @@ import { useSearchParams, useParams } from 'react-router-dom';
 import SummaryTab from './tabs/SummaryTab';
 import ImagingTab from './tabs/ImagingTab';
 import LabResultTab from './tabs/LabResultTab';
-import AiSummaryTab from './tabs/AiSummaryTab';
+import ExaminationTab from './tabs/ExaminationTab';
 import TreatmentTab from './tabs/TreatmentTab';
 import FollowUpTab from './tabs/FollowUpTab';
 
@@ -15,16 +15,17 @@ export default function PatientDetailContent({ role }: Props) {
   const isNurse = role === 'NURSE';
   const isSystemManager = role === 'SYSTEMMANAGER';
   const canViewTreatment = isDoctor || isNurse || isSystemManager;
+  const canViewExamination = isDoctor || isNurse || isSystemManager;
 
   const { patientId } = useParams();
   const [params] = useSearchParams();
   const tab = params.get('tab') ?? 'summary';
 
   if (tab === 'summary') return <SummaryTab role={role} patientId={patientId ? Number(patientId) : undefined} />;
-  if (tab === 'imaging') return <ImagingTab role={role} />;
+  if (tab === 'imaging') return <ImagingTab role={role} patientId={patientId ? Number(patientId) : undefined} />;
   if (tab === 'lab') return <LabResultTab role={role} />;
-  if (tab === 'ai')
-    return isDoctor || isSystemManager ? <AiSummaryTab role={role} /> : null;
+  if (tab === 'examination')
+    return canViewExamination ? <ExaminationTab role={role} patientId={patientId ? Number(patientId) : undefined} /> : null;
   if (tab === 'treatment')
     return canViewTreatment ? <TreatmentTab role={role} /> : null;
   if (tab === 'followup')

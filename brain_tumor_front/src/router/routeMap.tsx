@@ -8,8 +8,6 @@ const ImagingListPage = lazy(() => import('@/pages/imaging/ImagingListPage'));
 const PatientImagingHistoryPage = lazy(() => import('@/pages/imaging/PatientImagingHistoryPage'));
 const AISummaryPage = lazy(() => import('@/pages/ai/AISummaryPage'));
 const RISWorklistPage = lazy(() => import('@/pages/ris/RISWorklistPage'));
-const OrderListPage = lazy(() => import('@/pages/orders/OrderListPage'));
-const OrderCreatePage = lazy(() => import('@/pages/orders/OrderCreate'));
 const MenuPermissionPage = lazy(() => import('@/pages/admin/MenuPermissionPage'));
 const UserList = lazy(() => import('@/pages/admin/usersManagement/UserList'));
 const AuditLog = lazy(() => import('@/pages/admin/AuditLog'));
@@ -17,8 +15,10 @@ const SystemMonitorPage = lazy(() => import('@/pages/admin/SystemMonitorPage'));
 const UserDetailPage = lazy(() => import('@/pages/admin/usersManagement/UserDetailPage'));
 const RoleControlPage = lazy(() => import('@/pages/admin/roleManagement/RoleControlPage'));
 
-// OCS 페이지들 (barrel export에서 lazy import로 변경)
-const DoctorOrderPage = lazy(() => import('@/pages/ocs/DoctorOrderPage'));
+// OCS 페이지들 (통합됨)
+const OCSCreatePage = lazy(() => import('@/pages/ocs/OCSCreatePage'));
+const OCSStatusPage = lazy(() => import('@/pages/ocs/OCSStatusPage'));
+const OCSManagePage = lazy(() => import('@/pages/ocs/OCSManagePage'));
 const OCSRISWorklistPage = lazy(() => import('@/pages/ocs/RISWorklistPage'));
 const RISStudyDetailPage = lazy(() => import('@/pages/ocs/RISStudyDetailPage'));
 const LISWorklistPage = lazy(() => import('@/pages/ocs/LISWorklistPage'));
@@ -65,10 +65,10 @@ export const routeMap: Record<string, ComponentType> = {
   PATIENT_CARE: ClinicPage,
   ENCOUNTER_LIST: EncounterListPage,
 
-  // === ORDER 그룹 ===
-  ORDER_LIST: OrderListPage,
-  ORDER_CREATE: OrderCreatePage,
-  OCS_ORDER: DoctorOrderPage,
+  // === OCS 그룹 ===
+  OCS_STATUS: OCSStatusPage,       // OCS 현황 (간호사/관리자용)
+  OCS_CREATE: OCSCreatePage,       // OCS 생성
+  OCS_MANAGE: OCSManagePage,       // OCS 관리 (의사용)
 
   // === IMAGING 그룹 ===
   IMAGE_VIEWER: ImagingListPage,

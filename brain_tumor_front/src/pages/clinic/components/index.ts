@@ -3,7 +3,7 @@
 // 컬럼 1: 진료 입력
 export { default as TodaySymptomCard } from './TodaySymptomCard';
 export { default as DiagnosisPrescriptionCard } from './DiagnosisPrescriptionCard';
-export { default as OrderCard } from './OrderCard';
+export { default as OCSCard, OrderCard } from './OCSCard';
 
 // 컬럼 2: 과거 기록
 export { default as PastRecordCard } from './PastRecordCard';

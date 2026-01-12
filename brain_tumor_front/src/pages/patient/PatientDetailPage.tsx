@@ -2,6 +2,7 @@ import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider';
 import PatientDetailTabs from './PatientDetailTabs';
 import PatientDetailContent from './PatientDetailContent';
+import PatientSummaryModal from './components/PatientSummaryModal';
 import { useEffect, useState } from 'react';
 import { getPatient } from '@/services/patient.api';
 import type { Patient } from '@/types/patient';
@@ -13,18 +14,21 @@ export default function PatientDetailPage() {
   const [params, setParams] = useSearchParams();
   const navigate = useNavigate();
 
-  // 의사만 검사 오더 생성 가능
-  const canCreateOrder = role === 'DOCTOR' || role === 'SYSTEMMANAGER';
+  // 의사/시스템관리자만 OCS 생성 및 진료 가능
+  const canCreateOCS = role === 'DOCTOR' || role === 'SYSTEMMANAGER';
+  const canStartCare = role === 'DOCTOR' || role === 'SYSTEMMANAGER';
 
   const [patient, setPatient] = useState<Patient | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isSummaryModalOpen, setIsSummaryModalOpen] = useState(false);
 
+  // 탭 파라미터가 없으면 기본값 설정 (최초 1회만)
+  const currentTab = params.get('tab');
   useEffect(() => {
-    // 탭 파라미터가 없으면 기본값 설정
-    if (!params.get('tab')) {
+    if (!currentTab) {
       setParams({ tab: 'summary' }, { replace: true });
     }
-  }, []);
+  }, [currentTab, setParams]);
 
   useEffect(() => {
     const fetchPatient = async () => {
@@ -85,13 +89,23 @@ export default function PatientDetailPage() {
       {/* Header 영역 - 환자 기본 정보 */}
       <section className="page-header">
         <div className="header-right">
-          <button className="btn">환자 요약</button>
-          {canCreateOrder && (
+          <button className="btn" onClick={() => setIsSummaryModalOpen(true)}>
+            환자 요약
+          </button>
+          {canCreateOCS && (
+            <button
+              className="btn"
+              onClick={() => navigate(`/ocs/create?patientId=${patientId}`)}
+            >
+              OCS 생성
+            </button>
+          )}
+          {canStartCare && (
             <button
               className="btn btn-primary"
-              onClick={() => navigate(`/orders/create?patientId=${patientId}`)}
+              onClick={() => navigate(`/patientsCare?patientId=${patientId}`)}
             >
-              검사 오더 생성
+              진료하기
             </button>
           )}
         </div>
@@ -119,6 +133,13 @@ export default function PatientDetailPage() {
 
       <PatientDetailTabs role={role} />
       <PatientDetailContent role={role} />
+
+      {/* 환자 요약 모달 */}
+      <PatientSummaryModal
+        isOpen={isSummaryModalOpen}
+        onClose={() => setIsSummaryModalOpen(false)}
+        patientId={Number(patientId)}
+      />
     </div>
   );
 }

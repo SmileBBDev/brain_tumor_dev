@@ -559,7 +559,7 @@ def load_menu_permission_seed():
             'ADMIN', 'ADMIN_USER', 'ADMIN_USER_DETAIL', 'ADMIN_ROLE', 'ADMIN_MENU_PERMISSION', 'ADMIN_AUDIT_LOG'
         ],
         'DOCTOR': ['DASHBOARD', 'PATIENT_LIST', 'PATIENT_DETAIL', 'PATIENT_CARE', 'ENCOUNTER_LIST', 'ORDER_LIST', 'OCS_ORDER', 'IMAGE_VIEWER', 'RIS_WORKLIST', 'LAB_RESULT_VIEW', 'AI_SUMMARY', 'AI_REQUEST_LIST', 'AI_REQUEST_CREATE', 'AI_REQUEST_DETAIL'],
-        'NURSE': ['DASHBOARD', 'PATIENT_LIST', 'PATIENT_DETAIL', 'PATIENT_CARE', 'ENCOUNTER_LIST', 'ORDER_LIST', 'IMAGE_VIEWER', 'LAB_RESULT_VIEW', 'NURSE_RECEPTION'],
+        'NURSE': ['DASHBOARD', 'PATIENT_LIST', 'PATIENT_DETAIL', 'ENCOUNTER_LIST', 'ORDER_LIST', 'IMAGE_VIEWER', 'LAB_RESULT_VIEW', 'NURSE_RECEPTION'],  # PATIENT_CARE 제거 (DOCTOR, SYSTEMMANAGER만)
         'RIS': ['DASHBOARD', 'IMAGE_VIEWER', 'RIS_WORKLIST', 'OCS_RIS', 'OCS_RIS_DETAIL', 'RIS_DASHBOARD', 'RIS_RESULT_UPLOAD'],
         'LIS': ['DASHBOARD', 'LAB_RESULT_VIEW', 'LAB_RESULT_UPLOAD', 'OCS_LIS', 'OCS_LIS_DETAIL', 'LIS_PROCESS_STATUS'],
     }
@@ -755,10 +755,14 @@ def create_dummy_encounters(target_count=20, force=False):
 
     # 오늘 예약 진료 3건 생성 (금일 예약 환자 목록 테스트용)
     print("\n[3-1단계] 오늘 예약 진료 생성...")
+    from datetime import time as dt_time
     today_scheduled_count = Encounter.objects.filter(
         admission_date__date=timezone.now().date(),
         status='scheduled'
     ).count()
+
+    # 예약 시간 목록
+    scheduled_times = [dt_time(9, 0), dt_time(10, 30), dt_time(14, 0), dt_time(15, 30), dt_time(16, 0)]
 
     if today_scheduled_count < 3:
         for i in range(3 - today_scheduled_count):
@@ -767,6 +771,7 @@ def create_dummy_encounters(target_count=20, force=False):
                     patient=random.choice(patients),
                     attending_doctor=random.choice(doctors),
                     admission_date=timezone.now(),
+                    scheduled_time=scheduled_times[i % len(scheduled_times)],
                     status='scheduled',
                     encounter_type='outpatient',
                     department=random.choice(departments),
