@@ -522,6 +522,30 @@ export default function ExaminationTab({
             )}
           </section>
 
+          {/* AI 추론 요청 섹션 */}
+          <section className="exam-section ai-request-card">
+            <div className="section-header">
+              <h4>
+                <span className="card-icon">🤖</span>
+                AI 추론 요청
+              </h4>
+              <button
+                className="btn btn-sm btn-primary"
+                onClick={() => navigate(`/ai/requests/create?patientId=${patientId}`)}
+              >
+                AI 추론 요청
+              </button>
+            </div>
+            <div className="ai-model-info">
+              <p className="info-text">환자의 검사 데이터를 기반으로 AI 분석을 요청합니다.</p>
+              <div className="model-badges">
+                <span className="model-badge" title="MRI 4-Channel (T1, T2, T1C, FLAIR)">M1 - MRI 분석</span>
+                <span className="model-badge" title="Genetic Analysis (RNA_seq)">MG - 유전자 분석</span>
+                <span className="model-badge" title="Multimodal (MRI + 유전 + 단백질)">MM - 멀티모달</span>
+              </div>
+            </div>
+          </section>
+
           {/* 검사 결과 (LIS) */}
           <section className="exam-section result-card">
             <h4>
@@ -994,6 +1018,38 @@ export default function ExaminationTab({
         }
         .more-link:hover {
           text-decoration: underline;
+        }
+
+        /* AI Request Card */
+        .ai-request-card {
+          background: linear-gradient(135deg, #f5f7ff 0%, #fff 100%);
+          border: 1px solid #e3e8ff;
+        }
+
+        .ai-model-info {
+          padding: 12px 0;
+        }
+
+        .ai-model-info .info-text {
+          font-size: 13px;
+          color: #666;
+          margin-bottom: 12px;
+        }
+
+        .model-badges {
+          display: flex;
+          gap: 8px;
+          flex-wrap: wrap;
+        }
+
+        .model-badge {
+          display: inline-block;
+          padding: 4px 12px;
+          background: #e3f2fd;
+          color: #1565c0;
+          border-radius: 16px;
+          font-size: 12px;
+          cursor: help;
         }
 
         @media (max-width: 768px) {
