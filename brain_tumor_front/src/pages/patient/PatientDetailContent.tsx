@@ -1,4 +1,4 @@
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useParams } from 'react-router-dom';
 import SummaryTab from './tabs/SummaryTab';
 import ImagingTab from './tabs/ImagingTab';
 import LabResultTab from './tabs/LabResultTab';
@@ -16,10 +16,11 @@ export default function PatientDetailContent({ role }: Props) {
   const isSystemManager = role === 'SYSTEMMANAGER';
   const canViewTreatment = isDoctor || isNurse || isSystemManager;
 
+  const { patientId } = useParams();
   const [params] = useSearchParams();
   const tab = params.get('tab') ?? 'summary';
 
-  if (tab === 'summary') return <SummaryTab role={role} />;
+  if (tab === 'summary') return <SummaryTab role={role} patientId={patientId ? Number(patientId) : undefined} />;
   if (tab === 'imaging') return <ImagingTab role={role} />;
   if (tab === 'lab') return <LabResultTab role={role} />;
   if (tab === 'ai')

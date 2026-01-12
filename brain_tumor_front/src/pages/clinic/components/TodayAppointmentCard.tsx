@@ -1,11 +1,11 @@
 /**
  * 금일 예약 환자 카드
  * - 오늘 예약된 환자 목록 표시
- * - GET /api/encounters/?status=scheduled 사용
+ * - GET /api/encounters/today/ 우선 사용 (fallback: 기존 필터)
  */
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getEncounters } from '@/services/encounter.api';
+import { getEncounters, getTodayEncounters } from '@/services/encounter.api';
 import type { Encounter } from '@/types/encounter';
 
 export default function TodayAppointmentCard() {
@@ -22,13 +22,27 @@ export default function TodayAppointmentCard() {
   useEffect(() => {
     const fetchAppointments = async () => {
       try {
-        const data = await getEncounters({
+        // 1차: /encounters/today/ 엔드포인트 시도
+        try {
+          const response = await getTodayEncounters();
+          // API가 {count, date, results} 형식으로 반환
+          const data = Array.isArray(response) ? response : (response as any)?.results || [];
+          setAppointments(data);
+          return;
+        } catch {
+          // fallback: 기존 필터 방식 사용
+        }
+
+        // 2차: 기존 필터 방식 (scheduled + 오늘 날짜)
+        const response = await getEncounters({
           status: 'scheduled',
           encounter_date: today,
         });
-        setAppointments(data.results || []);
+        const data = Array.isArray(response) ? response : response?.results || [];
+        setAppointments(data);
       } catch (err) {
         console.error('Failed to fetch appointments:', err);
+        setAppointments([]);
       } finally {
         setLoading(false);
       }

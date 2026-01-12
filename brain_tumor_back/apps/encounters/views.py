@@ -236,3 +236,79 @@ class EncounterViewSet(viewsets.ModelViewSet):
             'count': len(events),
             'events': events
         })
+
+    @action(detail=False, methods=['get'])
+    def today(self, request):
+        """
+        금일 예약된 진료 목록 조회
+
+        Query Parameters:
+            - attending_doctor: 담당 의사 ID (선택)
+            - department: 진료과 (선택)
+            - status: 상태 필터 (선택, 기본값: scheduled)
+
+        Returns:
+            금일 예약된 진료 목록 (시간순 정렬)
+        """
+        today = timezone.now().date()
+        queryset = self.get_queryset().filter(
+            admission_date__date=today
+        )
+
+        # 상태 필터 (기본: scheduled만 조회, 'all'이면 전체)
+        status_filter = request.query_params.get('status', 'scheduled')
+        if status_filter and status_filter != 'all':
+            queryset = queryset.filter(status=status_filter)
+
+        # 담당 의사 필터
+        attending_doctor = request.query_params.get('attending_doctor')
+        if attending_doctor:
+            queryset = queryset.filter(attending_doctor_id=attending_doctor)
+
+        # 진료과 필터
+        department = request.query_params.get('department')
+        if department:
+            queryset = queryset.filter(department=department)
+
+        # 시간순 정렬
+        queryset = queryset.order_by('admission_date')
+
+        serializer = EncounterListSerializer(queryset, many=True)
+        # 배열 직접 반환 (프론트엔드 호환성)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['get'], url_path='patient/(?P<patient_id>\\d+)')
+    def by_patient(self, request, patient_id=None):
+        """
+        특정 환자의 진료 이력 조회
+
+        Path Parameters:
+            - patient_id: 환자 ID
+
+        Query Parameters:
+            - limit: 조회 개수 제한 (기본값: 전체)
+            - status: 상태 필터 (선택)
+
+        Returns:
+            환자의 진료 이력 목록 (최신순 정렬)
+        """
+        queryset = self.get_queryset().filter(
+            patient_id=patient_id
+        ).order_by('-admission_date')
+
+        # 상태 필터
+        status_filter = request.query_params.get('status')
+        if status_filter:
+            queryset = queryset.filter(status=status_filter)
+
+        # 개수 제한
+        limit = request.query_params.get('limit')
+        if limit:
+            try:
+                queryset = queryset[:int(limit)]
+            except ValueError:
+                pass
+
+        serializer = EncounterListSerializer(queryset, many=True)
+        # 배열 직접 반환 (프론트엔드 호환성)
+        return Response(serializer.data)

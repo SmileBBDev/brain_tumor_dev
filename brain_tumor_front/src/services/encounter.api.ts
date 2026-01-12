@@ -73,3 +73,25 @@ export const getEncounterStatistics = async (): Promise<EncounterStatistics> => 
   const response = await api.get<EncounterStatistics>('/encounters/statistics/');
   return response.data;
 };
+
+// 유틸리티: 배열 또는 {results: []} 형식 응답을 배열로 변환
+type ListResponse<T> = T[] | { results: T[]; count?: number };
+const normalizeListResponse = <T>(data: ListResponse<T>): T[] => {
+  return Array.isArray(data) ? data : data?.results || [];
+};
+
+/**
+ * 금일 예약 진료 목록 조회
+ */
+export const getTodayEncounters = async (): Promise<Encounter[]> => {
+  const response = await api.get<ListResponse<Encounter>>('/encounters/today/');
+  return normalizeListResponse(response.data);
+};
+
+/**
+ * 환자별 진료 이력 조회
+ */
+export const getPatientEncounters = async (patientId: number): Promise<Encounter[]> => {
+  const response = await api.get<ListResponse<Encounter>>(`/encounters/patient/${patientId}/`);
+  return normalizeListResponse(response.data);
+};

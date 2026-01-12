@@ -71,7 +71,7 @@ export default function PatientListTable( {role, patients, onEdit, onDelete} : P
                   {(role === 'DOCTOR' || isSystemManager) && (
                     <button
                       className="btn small primary"
-                      onClick={() => navigate(`/patients/care?patientId=${p.id}`)}
+                      onClick={() => navigate(`/patientsCare?patientId=${p.id}`)}
                     >
                       진료
                     </button>

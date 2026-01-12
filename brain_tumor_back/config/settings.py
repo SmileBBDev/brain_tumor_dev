@@ -55,7 +55,7 @@ INSTALLED_APPS = [
     "apps.treatment",       # 치료 관리
     "apps.followup",        # 경과 추적
     "apps.prescriptions",   # 처방 관리
-    "orthancproxy",         # Orthanc 프록시
+    "apps.orthancproxy",    # Orthanc 프록시
 ]
 
 MIDDLEWARE = [

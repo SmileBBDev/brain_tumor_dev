@@ -51,6 +51,6 @@ urlpatterns = [
     ),
     
     # Orthanc 프록시
-    path("api/orthanc/", include("orthancproxy.urls")),
+    path("api/orthanc/", include("apps.orthancproxy.urls")),
 
 ]

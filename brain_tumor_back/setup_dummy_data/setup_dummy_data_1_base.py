@@ -752,6 +752,32 @@ def create_dummy_encounters(target_count=20, force=False):
             print(f"  오류: {e}")
 
     print(f"[OK] 진료 생성: {created_count}건")
+
+    # 오늘 예약 진료 3건 생성 (금일 예약 환자 목록 테스트용)
+    print("\n[3-1단계] 오늘 예약 진료 생성...")
+    today_scheduled_count = Encounter.objects.filter(
+        admission_date__date=timezone.now().date(),
+        status='scheduled'
+    ).count()
+
+    if today_scheduled_count < 3:
+        for i in range(3 - today_scheduled_count):
+            try:
+                Encounter.objects.create(
+                    patient=random.choice(patients),
+                    attending_doctor=random.choice(doctors),
+                    admission_date=timezone.now(),
+                    status='scheduled',
+                    encounter_type='outpatient',
+                    department=random.choice(departments),
+                    chief_complaint=random.choice(['정기 진료', '추적 검사', '상담', '재진'])
+                )
+            except Exception as e:
+                print(f"  오류: {e}")
+        print(f"[OK] 오늘 예약 진료: {3 - today_scheduled_count}건 추가 생성")
+    else:
+        print(f"[SKIP] 오늘 예약 진료 이미 {today_scheduled_count}건 존재")
+
     print(f"  현재 전체 진료: {Encounter.objects.count()}건")
     return True
 
