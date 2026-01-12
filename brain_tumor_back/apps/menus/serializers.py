@@ -1,28 +1,29 @@
 from rest_framework import serializers
-from .models import Menu, MenuLabel, MenuRole
+from .models import Menu, MenuLabel
 from apps.authorization.serializers import RoleSerializer
 
 # 프론트에 내려줄 형태
 # MenuLabel 직렬화
 class MenuLabelSerializer(serializers.ModelSerializer):
-    role = RoleSerializer(read_only=True)  # Role 전체 객체 직렬화
+    # role = RoleSerializer(read_only=True)  # Role 전체 객체 직렬화
     class Meta:
         model = MenuLabel        
-        fields = ["role", "text"]
+        # fields = ["role", "text"]
+        fields = ["language", "text"]
 
 
 # MenuRole 직렬화
-class MenuRoleSerializer(serializers.ModelSerializer):
-    role = RoleSerializer(read_only=True)  # Role 전체 객체 직렬화
+# class MenuRoleSerializer(serializers.ModelSerializer):
+#     role = RoleSerializer(read_only=True)  # Role 전체 객체 직렬화
 
-    class Meta:
-        model = MenuRole
-        fields = ["role"]
+#     class Meta:
+#         model = MenuRole
+#         fields = ["role"]
 
 # Menu 직렬화
 class MenuSerializer(serializers.ModelSerializer):
     labels = MenuLabelSerializer(many=True)
-    roles = MenuRoleSerializer(many=True)
+    # roles = MenuRoleSerializer(many=True)
     children = serializers.SerializerMethodField()
 
     class Meta:
