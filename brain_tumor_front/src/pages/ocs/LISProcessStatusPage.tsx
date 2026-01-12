@@ -56,6 +56,7 @@ export default function LISProcessStatusPage() {
   // 상태
   const [ocsItems, setOcsItems] = useState<OCSListItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const [dateRange, setDateRange] = useState<string>('all');
 
   // 데이터 로드 (useOCSEventCallback보다 먼저 정의해야 함)
   const loadData = useCallback(async () => {
@@ -82,28 +83,56 @@ export default function LISProcessStatusPage() {
     loadData();
   }, [loadData]);
 
-  // 통계 계산
+  // 기간 필터링
+  const filteredItems = useMemo(() => {
+    if (dateRange === 'all') return ocsItems;
+
+    const now = new Date();
+    const cutoff = new Date();
+
+    switch (dateRange) {
+      case '1week':
+        cutoff.setDate(now.getDate() - 7);
+        break;
+      case '1month':
+        cutoff.setMonth(now.getMonth() - 1);
+        break;
+      case '6months':
+        cutoff.setMonth(now.getMonth() - 6);
+        break;
+    }
+
+    return ocsItems.filter(item => new Date(item.created_at) >= cutoff);
+  }, [ocsItems, dateRange]);
+
+  // 통계 계산 (6개 상태)
   const stats = useMemo(() => {
     const result = {
-      total: ocsItems.length,
-      pending: 0,
+      total: filteredItems.length,
+      ordered: 0,
+      accepted: 0,
       inProgress: 0,
-      completed: 0,
+      resultReady: 0,
+      confirmed: 0,
       cancelled: 0,
     };
 
-    ocsItems.forEach((item) => {
+    filteredItems.forEach((item) => {
       switch (item.ocs_status) {
         case 'ORDERED':
+          result.ordered++;
+          break;
         case 'ACCEPTED':
-          result.pending++;
+          result.accepted++;
           break;
         case 'IN_PROGRESS':
-        case 'RESULT_READY':
           result.inProgress++;
           break;
+        case 'RESULT_READY':
+          result.resultReady++;
+          break;
         case 'CONFIRMED':
-          result.completed++;
+          result.confirmed++;
           break;
         case 'CANCELLED':
           result.cancelled++;
@@ -112,11 +141,11 @@ export default function LISProcessStatusPage() {
     });
 
     return result;
-  }, [ocsItems]);
+  }, [filteredItems]);
 
   // 지연된 항목
   const delayedItems = useMemo(() => {
-    return ocsItems
+    return filteredItems
       .filter((item) => {
         if (item.ocs_status === 'CONFIRMED' || item.ocs_status === 'CANCELLED') {
           return false;
@@ -128,7 +157,7 @@ export default function LISProcessStatusPage() {
         return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
       })
       .slice(0, 10);
-  }, [ocsItems]);
+  }, [filteredItems]);
 
   // 진행률 퍼센트
   const getPercentage = (value: number): number => {
@@ -149,25 +178,37 @@ export default function LISProcessStatusPage() {
       <header className="page-header">
         <h2>전체 검사 현황</h2>
         <span className="subtitle">검사실 검사 진행 상황을 모니터링합니다</span>
-        <button className="refresh-btn" onClick={loadData} disabled={loading}>
-          {loading ? '로딩 중...' : '새로고침'}
-        </button>
+        <div className="header-controls">
+          <select
+            className="date-range-filter"
+            value={dateRange}
+            onChange={(e) => setDateRange(e.target.value)}
+          >
+            <option value="all">전체</option>
+            <option value="1week">최근 1주일</option>
+            <option value="1month">최근 1개월</option>
+            <option value="6months">최근 6개월</option>
+          </select>
+          <button className="refresh-btn" onClick={loadData} disabled={loading}>
+            {loading ? '로딩 중...' : '새로고침'}
+          </button>
+        </div>
       </header>
 
-      {/* 요약 카드 */}
+      {/* 요약 카드 (6개 상태) */}
       <section className="summary-cards">
-        <div className="summary-card total">
-          <span className="card-icon">📊</span>
+        <div className="summary-card ordered">
+          <span className="card-icon">📋</span>
           <div className="card-content">
-            <span className="card-label">전체 검사</span>
-            <span className="card-value">{stats.total}</span>
+            <span className="card-label">요청됨</span>
+            <span className="card-value">{stats.ordered}</span>
           </div>
         </div>
-        <div className="summary-card pending">
-          <span className="card-icon">⏳</span>
+        <div className="summary-card accepted">
+          <span className="card-icon">✋</span>
           <div className="card-content">
-            <span className="card-label">Pending</span>
-            <span className="card-value">{stats.pending}</span>
+            <span className="card-label">접수됨</span>
+            <span className="card-value">{stats.accepted}</span>
           </div>
         </div>
         <div className="summary-card in-progress">
@@ -177,11 +218,25 @@ export default function LISProcessStatusPage() {
             <span className="card-value">{stats.inProgress}</span>
           </div>
         </div>
-        <div className="summary-card completed">
+        <div className="summary-card result-ready">
+          <span className="card-icon">📝</span>
+          <div className="card-content">
+            <span className="card-label">결과대기</span>
+            <span className="card-value">{stats.resultReady}</span>
+          </div>
+        </div>
+        <div className="summary-card confirmed">
           <span className="card-icon">✅</span>
           <div className="card-content">
-            <span className="card-label">완료</span>
-            <span className="card-value">{stats.completed}</span>
+            <span className="card-label">확정</span>
+            <span className="card-value">{stats.confirmed}</span>
+          </div>
+        </div>
+        <div className="summary-card cancelled">
+          <span className="card-icon">❌</span>
+          <div className="card-content">
+            <span className="card-label">취소</span>
+            <span className="card-value">{stats.cancelled}</span>
           </div>
         </div>
       </section>
@@ -191,11 +246,18 @@ export default function LISProcessStatusPage() {
         <h3>검사 상태 분포</h3>
         <div className="progress-chart">
           <div className="progress-bar">
-            {stats.pending > 0 && (
+            {stats.ordered > 0 && (
               <div
-                className="progress-segment pending"
-                style={{ width: `${getPercentage(stats.pending)}%` }}
-                title={`Pending: ${stats.pending}건 (${getPercentage(stats.pending)}%)`}
+                className="progress-segment ordered"
+                style={{ width: `${getPercentage(stats.ordered)}%` }}
+                title={`요청됨: ${stats.ordered}건 (${getPercentage(stats.ordered)}%)`}
+              />
+            )}
+            {stats.accepted > 0 && (
+              <div
+                className="progress-segment accepted"
+                style={{ width: `${getPercentage(stats.accepted)}%` }}
+                title={`접수됨: ${stats.accepted}건 (${getPercentage(stats.accepted)}%)`}
               />
             )}
             {stats.inProgress > 0 && (
@@ -205,11 +267,18 @@ export default function LISProcessStatusPage() {
                 title={`진행중: ${stats.inProgress}건 (${getPercentage(stats.inProgress)}%)`}
               />
             )}
-            {stats.completed > 0 && (
+            {stats.resultReady > 0 && (
               <div
-                className="progress-segment completed"
-                style={{ width: `${getPercentage(stats.completed)}%` }}
-                title={`완료: ${stats.completed}건 (${getPercentage(stats.completed)}%)`}
+                className="progress-segment result-ready"
+                style={{ width: `${getPercentage(stats.resultReady)}%` }}
+                title={`결과대기: ${stats.resultReady}건 (${getPercentage(stats.resultReady)}%)`}
+              />
+            )}
+            {stats.confirmed > 0 && (
+              <div
+                className="progress-segment confirmed"
+                style={{ width: `${getPercentage(stats.confirmed)}%` }}
+                title={`확정: ${stats.confirmed}건 (${getPercentage(stats.confirmed)}%)`}
               />
             )}
             {stats.cancelled > 0 && (
@@ -222,23 +291,29 @@ export default function LISProcessStatusPage() {
           </div>
           <div className="progress-legend">
             <div className="legend-item">
-              <span className="legend-color pending" />
-              <span>Pending ({stats.pending}건, {getPercentage(stats.pending)}%)</span>
+              <span className="legend-color ordered" />
+              <span>요청됨 ({stats.ordered}건, {getPercentage(stats.ordered)}%)</span>
+            </div>
+            <div className="legend-item">
+              <span className="legend-color accepted" />
+              <span>접수됨 ({stats.accepted}건, {getPercentage(stats.accepted)}%)</span>
             </div>
             <div className="legend-item">
               <span className="legend-color in-progress" />
               <span>진행중 ({stats.inProgress}건, {getPercentage(stats.inProgress)}%)</span>
             </div>
             <div className="legend-item">
-              <span className="legend-color completed" />
-              <span>완료 ({stats.completed}건, {getPercentage(stats.completed)}%)</span>
+              <span className="legend-color result-ready" />
+              <span>결과대기 ({stats.resultReady}건, {getPercentage(stats.resultReady)}%)</span>
             </div>
-            {stats.cancelled > 0 && (
-              <div className="legend-item">
-                <span className="legend-color cancelled" />
-                <span>취소 ({stats.cancelled}건, {getPercentage(stats.cancelled)}%)</span>
-              </div>
-            )}
+            <div className="legend-item">
+              <span className="legend-color confirmed" />
+              <span>확정 ({stats.confirmed}건, {getPercentage(stats.confirmed)}%)</span>
+            </div>
+            <div className="legend-item">
+              <span className="legend-color cancelled" />
+              <span>취소 ({stats.cancelled}건, {getPercentage(stats.cancelled)}%)</span>
+            </div>
           </div>
         </div>
       </section>

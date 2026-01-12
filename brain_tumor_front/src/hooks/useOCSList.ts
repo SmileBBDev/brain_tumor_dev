@@ -55,11 +55,14 @@ export interface UseOCSListReturn {
   // 액션
   refresh: () => void;
 
-  // 상태별 카운트
+  // 상태별 카운트 (6개 상태)
   statusCounts: {
-    pending: number;
+    ordered: number;
+    accepted: number;
     inProgress: number;
-    completed: number;
+    resultReady: number;
+    confirmed: number;
+    cancelled: number;
   };
 }
 
@@ -212,15 +215,14 @@ export function useOCSList(
     setRefreshKey((prev) => prev + 1);
   }, []);
 
-  // 상태별 카운트 계산
+  // 상태별 카운트 계산 (6개 상태)
   const statusCounts = useMemo(() => ({
-    pending: ocsList.filter((o) => o.ocs_status === 'ORDERED').length,
-    inProgress: ocsList.filter((o) =>
-      ['ACCEPTED', 'IN_PROGRESS'].includes(o.ocs_status)
-    ).length,
-    completed: ocsList.filter((o) =>
-      ['RESULT_READY', 'CONFIRMED'].includes(o.ocs_status)
-    ).length,
+    ordered: ocsList.filter((o) => o.ocs_status === 'ORDERED').length,
+    accepted: ocsList.filter((o) => o.ocs_status === 'ACCEPTED').length,
+    inProgress: ocsList.filter((o) => o.ocs_status === 'IN_PROGRESS').length,
+    resultReady: ocsList.filter((o) => o.ocs_status === 'RESULT_READY').length,
+    confirmed: ocsList.filter((o) => o.ocs_status === 'CONFIRMED').length,
+    cancelled: ocsList.filter((o) => o.ocs_status === 'CANCELLED').length,
   }), [ocsList]);
 
   const totalPages = Math.ceil(totalCount / pageSize);

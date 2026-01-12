@@ -110,19 +110,31 @@ export default function RISWorklistPage() {
         <span className="subtitle">담당 영상 검사 목록을 확인하고 판독을 진행합니다</span>
       </header>
 
-      {/* 요약 카드 */}
+      {/* 요약 카드 (6개 상태) */}
       <section className="summary-cards">
-        <div className="summary-card pending">
-          <span className="count">{statusCounts.pending}</span>
-          <span className="label">대기 중</span>
+        <div className="summary-card ordered">
+          <span className="count">{statusCounts.ordered}</span>
+          <span className="label">요청됨</span>
         </div>
-        <div className="summary-card reading">
+        <div className="summary-card accepted">
+          <span className="count">{statusCounts.accepted}</span>
+          <span className="label">접수됨</span>
+        </div>
+        <div className="summary-card in-progress">
           <span className="count">{statusCounts.inProgress}</span>
-          <span className="label">판독 중</span>
+          <span className="label">판독중</span>
         </div>
-        <div className="summary-card completed">
-          <span className="count">{statusCounts.completed}</span>
-          <span className="label">완료</span>
+        <div className="summary-card result-ready">
+          <span className="count">{statusCounts.resultReady}</span>
+          <span className="label">결과대기</span>
+        </div>
+        <div className="summary-card confirmed">
+          <span className="count">{statusCounts.confirmed}</span>
+          <span className="label">확정</span>
+        </div>
+        <div className="summary-card cancelled">
+          <span className="count">{statusCounts.cancelled}</span>
+          <span className="label">취소</span>
         </div>
       </section>
 

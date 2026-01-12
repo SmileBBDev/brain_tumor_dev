@@ -1,7 +1,7 @@
 # NeuroNova CDSS - 프로젝트 통합 문서
 
 > **프로젝트**: Brain Tumor Clinical Decision Support System
-> **최종 업데이트**: 2026-01-11
+> **최종 업데이트**: 2026-01-12
 > **현재 Phase**: Phase 4 준비중 (AI 추론 프론트엔드)
 
 ---
@@ -42,7 +42,8 @@ apps/
 ├── imaging/       ✅ 영상 검사 (OCS 연동)
 ├── ai_inference/  ✅ AI 추론 (API 완료)
 ├── treatment/     ✅ 치료 관리
-└── followup/      ✅ 경과 추적
+├── followup/      ✅ 경과 추적
+└── orthancproxy/  ✅ Orthanc PACS 프록시
 ```
 
 ### 2.2 프론트엔드 구조
@@ -143,14 +144,68 @@ POST /api/ai/results/{id}/review/           결과 검토
 
 ---
 
-## 5. 라우팅 & 메뉴 시스템
+## 5. Orthanc Proxy (DICOM 관리)
 
-### 5.1 핵심 원칙
+### 5.1 개요
+Orthanc PACS 서버와의 통신을 프록시하여 DICOM 영상 관리 기능 제공
+
+**기술 스택**: Django REST Framework + pydicom + requests
+
+### 5.2 핵심 기능
+
+| 기능 | 설명 |
+|------|------|
+| **DICOM 계층 조회** | Patient → Study → Series → Instance 계층 탐색 |
+| **폴더 기반 업로드** | 여러 DICOM 파일 일괄 업로드, series_path로 Series 그룹화 |
+| **자동 정리** | 빈 Series/Study/Patient 자동 삭제 |
+| **DICOM 태그 수정** | PatientID, StudyInstanceUID, SeriesInstanceUID 자동 설정 |
+
+### 5.3 설정
+```python
+# settings.py
+ORTHANC_BASE_URL = "http://localhost:8042"
+ORTHANC_DEBUG_LOG = True  # 선택
+```
+
+### 5.4 응답 구조 예시
+
+**환자 목록**:
+```json
+{
+  "orthancId": "abc123...",
+  "patientId": "P2026-0001",
+  "patientName": "홍길동",
+  "studiesCount": 3
+}
+```
+
+**Instance 메타데이터**:
+```json
+{
+  "orthancId": "instance-id",
+  "instanceNumber": "1",
+  "sopInstanceUID": "1.2.840.xxx",
+  "rows": "512", "columns": "512",
+  "sliceThickness": "1.0",
+  "sliceLocation": "-50.0"
+}
+```
+
+### 5.5 주의사항
+- Orthanc 서버 필수 (localhost:8042)
+- 일부 API는 AllowAny 권한 (프로덕션 수정 필요)
+- API 호출 타임아웃: 10-30초
+
+---
+
+## 6. 라우팅 & 메뉴 시스템
+
+### 6.1 핵심 원칙
 ```
 menu.code === permission.code === routeMap 키
 ```
 
-### 5.2 메뉴 유형
+### 6.2 메뉴 유형
 
 | 유형 | 조건 | 용도 |
 |------|------|------|
@@ -158,7 +213,7 @@ menu.code === permission.code === routeMap 키
 | **화면 메뉴** | `path 있음, breadcrumb_only = 0` | 사이드바 표시 + 클릭 이동 |
 | **숨김 메뉴** | `breadcrumb_only = 1` | 사이드바 미표시 (상세 페이지용) |
 
-### 5.3 현재 메뉴 구조
+### 6.3 현재 메뉴 구조
 ```
 DASHBOARD
 PATIENT (그룹)
@@ -189,7 +244,7 @@ NURSE_RECEPTION
 ADMIN (그룹)
 ```
 
-### 5.4 새 메뉴 추가 절차
+### 6.4 새 메뉴 추가 절차
 
 **Step 1: DB**
 ```sql
@@ -231,7 +286,7 @@ export const routeMap: Record<string, ComponentType> = {
 
 ---
 
-## 6. 역할별 권한
+## 7. 역할별 권한
 
 | 역할 | 접근 가능 |
 |------|----------|
@@ -244,7 +299,7 @@ export const routeMap: Record<string, ComponentType> = {
 
 ---
 
-## 7. 개발 Phase
+## 8. 개발 Phase
 
 ### Phase 1-3: 완료 ✅
 - 환자/진료 관리
@@ -269,7 +324,7 @@ export const routeMap: Record<string, ComponentType> = {
 
 ---
 
-## 8. 주요 API 엔드포인트
+## 9. 주요 API 엔드포인트
 
 ### 인증
 ```
@@ -315,15 +370,29 @@ GET /api/ai/results/
 POST /api/ai/results/{id}/review/
 ```
 
+### Orthanc Proxy (DICOM)
+```
+GET  /api/orthanc/patients/              전체 환자 목록
+GET  /api/orthanc/studies/               환자별 Study 목록 (?patient_id=)
+GET  /api/orthanc/series/                Study별 Series 목록 (?study_id=)
+GET  /api/orthanc/instances/             Series별 Instance 목록 (?series_id=)
+GET  /api/orthanc/instances/{id}/file/   DICOM 파일 다운로드
+POST /api/orthanc/upload-patient/        DICOM 폴더 업로드
+DELETE /api/orthanc/patients/{id}/       환자 삭제
+DELETE /api/orthanc/studies/{id}/        Study 삭제
+DELETE /api/orthanc/series/{id}/         Series 삭제
+DELETE /api/orthanc/instances/{id}/      Instance 삭제
+```
+
 ---
 
-## 9. 데이터 현황 (2026-01-11)
+## 10. 데이터 현황 (2026-01-12)
 
 | 테이블 | 레코드 수 |
 |--------|----------|
 | Patient | 30 |
 | Encounter | 20 |
-| OCS | 54 (RIS 33, LIS 21) |
+| OCS | 63 (RIS 33, LIS 30) |
 | ImagingStudy | 33 |
 | AIModel | 3 (M1, MG, MM) |
 | AIInferenceRequest | 10 |
@@ -331,7 +400,7 @@ POST /api/ai/results/{id}/review/
 
 ---
 
-## 10. 알려진 이슈
+## 11. 알려진 이슈
 
 ### 현재
 - **권한 체크 비활성화** (의도적): `apps/menus/services.py`에서 모든 메뉴 반환
@@ -344,7 +413,7 @@ POST /api/ai/results/{id}/review/
 
 ---
 
-## 11. 참고 문서
+## 12. 참고 문서
 
 | 문서 | 용도 |
 |------|------|

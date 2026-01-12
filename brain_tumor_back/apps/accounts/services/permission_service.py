@@ -7,7 +7,7 @@ from channels.layers import get_channel_layer
 # 이벤트 발행 로직 (Channels를 통한 WebSocket 알림)
 def notify_permission_changed(user_id):
     channel_layer = get_channel_layer()
-    
+
     async_to_sync(channel_layer.group_send)(
         f"user_{user_id}",
         {
@@ -21,6 +21,6 @@ def get_user_permission(user):
     permission = RolePermission.objects.filter(
         role_id__in = role_ids
     ).values_list("permission__code", flat=True)
-    
+
     return list(permission)
     

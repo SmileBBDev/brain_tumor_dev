@@ -21,58 +21,94 @@
   font-size: 14px;
 }
 
-/* 요약 카드 */
+/* 요약 카드 (6개 상태) */
 .lis-worklist .summary-cards {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
   gap: 16px;
   margin-bottom: 24px;
 }
 
 .lis-worklist .summary-card {
-  flex: 1;
-  padding: 20px;
+  padding: 16px;
   border-radius: 12px;
   text-align: center;
   border: 1px solid #e5e7eb;
+  background: white;
 }
 
 .lis-worklist .summary-card .count {
   display: block;
-  font-size: 32px;
+  font-size: 1.5rem;
   font-weight: 700;
   margin-bottom: 4px;
 }
 
 .lis-worklist .summary-card .label {
-  font-size: 14px;
+  font-size: 0.85rem;
   color: #6b7280;
 }
 
-.lis-worklist .summary-card.pending {
-  background: #fef3c7;
-  border-color: #fcd34d;
+/* 6개 상태별 카드 스타일 */
+.lis-worklist .summary-card.ordered {
+  border-left: 4px solid #e67e22;
 }
 
-.lis-worklist .summary-card.pending .count {
-  color: #d97706;
+.lis-worklist .summary-card.ordered .count {
+  color: #e67e22;
 }
 
-.lis-worklist .summary-card.reading {
-  background: #dbeafe;
-  border-color: #93c5fd;
+.lis-worklist .summary-card.accepted {
+  border-left: 4px solid #f39c12;
 }
 
-.lis-worklist .summary-card.reading .count {
-  color: #2563eb;
+.lis-worklist .summary-card.accepted .count {
+  color: #f39c12;
 }
 
-.lis-worklist .summary-card.completed {
-  background: #d1fae5;
-  border-color: #6ee7b7;
+.lis-worklist .summary-card.in-progress {
+  border-left: 4px solid #3498db;
 }
 
-.lis-worklist .summary-card.completed .count {
-  color: #059669;
+.lis-worklist .summary-card.in-progress .count {
+  color: #3498db;
+}
+
+.lis-worklist .summary-card.result-ready {
+  border-left: 4px solid #9b59b6;
+}
+
+.lis-worklist .summary-card.result-ready .count {
+  color: #9b59b6;
+}
+
+.lis-worklist .summary-card.confirmed {
+  border-left: 4px solid #27ae60;
+}
+
+.lis-worklist .summary-card.confirmed .count {
+  color: #27ae60;
+}
+
+.lis-worklist .summary-card.cancelled {
+  border-left: 4px solid #95a5a6;
+}
+
+.lis-worklist .summary-card.cancelled .count {
+  color: #95a5a6;
+}
+
+/* 반응형 카드 */
+@media (max-width: 1400px) {
+  .lis-worklist .summary-cards {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 900px) {
+  .lis-worklist .summary-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 /* 필터 바 */

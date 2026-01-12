@@ -1,4 +1,5 @@
 # Brain Tumor CDSS - DB 설정 가이드
+DB지우고 'python -m setup_dummy_data'했어
 
 __pycache__를 삭제후 python -m setup_dummy_data --reset -y
 

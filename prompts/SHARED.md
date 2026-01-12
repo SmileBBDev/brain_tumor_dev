@@ -6,6 +6,11 @@ brain_tumor_dev/
 ├── brain_tumor_back/    # Django 백엔드 (A 담당)
 ├── brain_tumor_front/   # React 프론트엔드 (B 담당)
 └── prompts/             # 에이전트 프롬프트
+    ├── SHARED.md        # 공용 정보 (이 파일)
+    ├── AGENT_A.md       # A 작업 지시
+    ├── AGENT_B.md       # B 작업 지시
+    ├── PROJECT_DOCS.md  # 프로젝트 아키텍처
+    └── TODO_BACKLOG.md  # 미완료 작업
 ```
 
 ## 비밀번호 규칙
@@ -13,33 +18,47 @@ brain_tumor_dev/
 - system → system001
 - doctor1 → doctor1001
 - nurse1 → nurse1001
+- ris1 → ris1001
+- lis1 → lis1001
 
 ## DB 초기화
 ```bash
 cd brain_tumor_back
-python -m setup_dummy_data --reset -y
+python setup_dummy_data/setup_dummy_data_1_base.py --reset
 ```
-- DB 없으면 자동 생성
-- 마이그레이션 자동 실행
-- 기존 데이터 삭제 후 재생성
 
-## API 응답 규칙
-- 목록 API: 배열 직접 반환 `[{...}, {...}]`
-- 프론트엔드: 방어적 처리 `Array.isArray(data) ? data : data?.results || []`
+## 용어 통일 (2026-01-12)
+- 담당자 → **작업자**
+- 처방의사/의사 → **요청의사**
 
-## 역할 (Role)
-| 코드 | 설명 |
-|------|------|
-| SYSTEMMANAGER | 시스템 관리자 (전체 권한) |
-| ADMIN | 병원 관리자 |
-| DOCTOR | 의사 |
-| NURSE | 간호사 |
-| RIS | 영상과 |
-| LIS | 검사과 |
-| PATIENT | 환자 |
+## OCS 상태 흐름
+```
+ORDERED → ACCEPTED → IN_PROGRESS → RESULT_READY → CONFIRMED
+                                              └→ CANCELLED
+```
 
 ## 주요 경로
-- `/patients` - 환자 목록
-- `/patients/:id` - 환자 상세 (읽기 전용)
-- `/patientsCare` - 진료 화면 (DOCTOR, SYSTEMMANAGER만)
-- `/encounters` - 진료 예약
+| 경로 | 설명 |
+|------|------|
+| `/patients` | 환자 목록 |
+| `/patients/:id` | 환자 상세 (읽기 전용) |
+| `/patientsCare` | 진료 화면 (DOCTOR, SYSTEMMANAGER) |
+| `/ocs/ris` | RIS Worklist |
+| `/ocs/ris/process-status` | RIS 전체 현황 |
+| `/ocs/lis` | LIS Worklist |
+| `/ocs/lis/process-status` | LIS 전체 현황 |
+
+## 역할 (Role)
+| 코드 | 설명 | 주요 메뉴 |
+|------|------|----------|
+| SYSTEMMANAGER | 시스템 관리자 | 전체 |
+| ADMIN | 병원 관리자 | 관리 메뉴 |
+| DOCTOR | 의사 | 환자, 진료, OCS 생성 |
+| NURSE | 간호사 | 환자, 접수 |
+| RIS | 영상과 | RIS Worklist |
+| LIS | 검사과 | LIS Worklist |
+| PATIENT | 환자 | 환자 포털 |
+
+## API 규칙
+- 목록 API: 페이지네이션 `{ count, results: [...] }`
+- 프론트엔드 방어적 처리: `Array.isArray(data) ? data : data?.results || []`

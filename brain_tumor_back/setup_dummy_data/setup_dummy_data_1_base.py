@@ -1143,7 +1143,7 @@ def create_dummy_imaging_with_ocs(num_orders=30, force=False):
     return True
 
 
-def create_dummy_lis_orders(num_orders=20, force=False):
+def create_dummy_lis_orders(num_orders=30, force=False):
     """더미 LIS (검사) 오더 생성"""
     print(f"\n[5단계] 검사 오더 데이터 생성 - LIS (목표: {num_orders}건)...")
 
@@ -1196,8 +1196,18 @@ def create_dummy_lis_orders(num_orders=20, force=False):
         encounter = random.choice(encounters) if encounters else None
         test_type = random.choice(test_types)
 
-        days_ago = random.randint(0, 60)
-        ocs_status = random.choice(ocs_statuses)
+        # 날짜 분포: 1주일 ~ 6개월 (180일)
+        days_ago = random.randint(0, 180)
+
+        # 상태 결정: 오래된 데이터일수록 CONFIRMED 확률 높음
+        if days_ago > 90:  # 3개월 이상
+            ocs_status = random.choice(['CONFIRMED', 'CONFIRMED', 'CONFIRMED', 'CANCELLED'])
+        elif days_ago > 30:  # 1개월 이상
+            ocs_status = random.choice(['RESULT_READY', 'CONFIRMED', 'CONFIRMED'])
+        elif days_ago > 7:  # 1주일 이상
+            ocs_status = random.choice(['IN_PROGRESS', 'RESULT_READY', 'CONFIRMED'])
+        else:  # 최근 1주일
+            ocs_status = random.choice(ocs_statuses)
 
         # 작업자 (ACCEPTED 이후에만)
         worker = None
@@ -1283,6 +1293,31 @@ def create_dummy_lis_orders(num_orders=20, force=False):
                 "_custom": {}
             }
 
+        # 타임스탬프 계산
+        base_time = timezone.now() - timedelta(days=days_ago)
+        timestamps = {
+            'accepted_at': None,
+            'in_progress_at': None,
+            'result_ready_at': None,
+            'confirmed_at': None,
+            'cancelled_at': None,
+        }
+
+        if ocs_status in ['ACCEPTED', 'IN_PROGRESS', 'RESULT_READY', 'CONFIRMED']:
+            timestamps['accepted_at'] = base_time + timedelta(hours=random.randint(1, 4))
+
+        if ocs_status in ['IN_PROGRESS', 'RESULT_READY', 'CONFIRMED']:
+            timestamps['in_progress_at'] = base_time + timedelta(hours=random.randint(4, 12))
+
+        if ocs_status in ['RESULT_READY', 'CONFIRMED']:
+            timestamps['result_ready_at'] = base_time + timedelta(hours=random.randint(12, 48))
+
+        if ocs_status == 'CONFIRMED':
+            timestamps['confirmed_at'] = base_time + timedelta(hours=random.randint(48, 72))
+
+        if ocs_status == 'CANCELLED':
+            timestamps['cancelled_at'] = base_time + timedelta(hours=random.randint(1, 24))
+
         try:
             with transaction.atomic():
                 # OCS 생성
@@ -1298,7 +1333,14 @@ def create_dummy_lis_orders(num_orders=20, force=False):
                     doctor_request=doctor_request,
                     worker_result=worker_result,
                     ocs_result=True if ocs_status == 'CONFIRMED' else None,
+                    accepted_at=timestamps['accepted_at'],
+                    in_progress_at=timestamps['in_progress_at'],
+                    result_ready_at=timestamps['result_ready_at'],
+                    confirmed_at=timestamps['confirmed_at'],
+                    cancelled_at=timestamps['cancelled_at'],
                 )
+                # created_at은 auto_now_add이므로 별도 업데이트
+                OCS.objects.filter(pk=ocs.pk).update(created_at=base_time)
                 created_count += 1
 
         except Exception as e:
@@ -1756,8 +1798,8 @@ def main():
     # 영상 검사 데이터 생성 (OCS 통합)
     create_dummy_imaging_with_ocs(30, force=force)
 
-    # 검사 오더 생성 (LIS)
-    create_dummy_lis_orders(20, force=force)
+    # 검사 오더 생성 (LIS) - 30건 (다양한 날짜 분포)
+    create_dummy_lis_orders(30, force=force)
 
     # AI 모델 시드 데이터 생성
     create_ai_models()

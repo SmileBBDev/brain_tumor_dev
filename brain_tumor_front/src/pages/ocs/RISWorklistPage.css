@@ -20,16 +20,16 @@
   font-size: 0.9rem;
 }
 
-/* 요약 카드 */
+/* 요약 카드 (6개 상태) */
 .summary-cards {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
   gap: 16px;
   margin-bottom: 20px;
 }
 
 .summary-card {
-  flex: 1;
-  padding: 20px;
+  padding: 16px;
   border-radius: 8px;
   text-align: center;
   background: white;
@@ -38,38 +38,76 @@
 
 .summary-card .count {
   display: block;
-  font-size: 2rem;
+  font-size: 1.5rem;
   font-weight: 700;
   margin-bottom: 4px;
 }
 
 .summary-card .label {
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   color: #666;
 }
 
-.summary-card.pending {
-  border-left: 4px solid #ff9800;
+/* 6개 상태별 카드 스타일 */
+.summary-card.ordered {
+  border-left: 4px solid #e67e22;
 }
 
-.summary-card.pending .count {
-  color: #ff9800;
+.summary-card.ordered .count {
+  color: #e67e22;
 }
 
-.summary-card.reading {
-  border-left: 4px solid #2196f3;
+.summary-card.accepted {
+  border-left: 4px solid #f39c12;
 }
 
-.summary-card.reading .count {
-  color: #2196f3;
+.summary-card.accepted .count {
+  color: #f39c12;
 }
 
-.summary-card.completed {
-  border-left: 4px solid #4caf50;
+.summary-card.in-progress {
+  border-left: 4px solid #3498db;
 }
 
-.summary-card.completed .count {
-  color: #4caf50;
+.summary-card.in-progress .count {
+  color: #3498db;
+}
+
+.summary-card.result-ready {
+  border-left: 4px solid #9b59b6;
+}
+
+.summary-card.result-ready .count {
+  color: #9b59b6;
+}
+
+.summary-card.confirmed {
+  border-left: 4px solid #27ae60;
+}
+
+.summary-card.confirmed .count {
+  color: #27ae60;
+}
+
+.summary-card.cancelled {
+  border-left: 4px solid #95a5a6;
+}
+
+.summary-card.cancelled .count {
+  color: #95a5a6;
+}
+
+/* 반응형 카드 */
+@media (max-width: 1400px) {
+  .summary-cards {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 900px) {
+  .summary-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 /* 필터 바 */
