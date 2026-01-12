@@ -589,13 +589,13 @@ def load_menu_permission_seed():
     create_menu(30, code='RIS_DASHBOARD', path='/ocs/ris/process-status', icon='chart-bar', order=4, is_active=True, parent=menu_imaging)
 
     # RIS Result Upload 메뉴 (IMAGING 그룹)
-    create_menu(32, code='RIS_RESULT_UPLOAD', path='/ris/upload', breadcrumb_only=True, order=5, is_active=True, parent=menu_imaging)
+    create_menu(32, code='RIS_RESULT_UPLOAD', path='/ris/upload', icon='upload', order=5, is_active=True, parent=menu_imaging)
 
     # LIS Process Status 메뉴 (LAB 그룹)
     create_menu(31, code='LIS_PROCESS_STATUS', path='/ocs/lis/process-status', icon='tasks', order=4, is_active=True, parent=menu_lab)
 
     # LIS Result Upload 메뉴 (LAB 그룹)
-    create_menu(16, code='LAB_RESULT_UPLOAD', path='/lab/upload', breadcrumb_only=True, order=5, is_active=True, parent=menu_lab)
+    create_menu(16, code='LAB_RESULT_UPLOAD', path='/lab/upload', icon='upload', order=5, is_active=True, parent=menu_lab)
 
     # AI 추론 요청 메뉴 (AI_SUMMARY 하위)
     menu_ai_request, _ = create_menu(33, code='AI_REQUEST_LIST', path='/ai/requests', icon='list', order=1, is_active=True, parent=menu_ai)
@@ -720,11 +720,11 @@ def load_menu_permission_seed():
             'DASHBOARD', 'PATIENT', 'PATIENT_LIST', 'PATIENT_DETAIL', 'PATIENT_CARE', 'ENCOUNTER_LIST',
             'OCS', 'OCS_STATUS', 'OCS_CREATE', 'OCS_MANAGE',
             'OCS_RIS', 'OCS_RIS_DETAIL', 'OCS_LIS', 'OCS_LIS_DETAIL',
-            'IMAGING', 'IMAGE_VIEWER', 'RIS_WORKLIST',
-            'LAB', 'LAB_RESULT_VIEW', 'LAB_RESULT_UPLOAD',
+            'IMAGING', 'IMAGE_VIEWER', 'RIS_WORKLIST', 'RIS_DASHBOARD', 'RIS_RESULT_UPLOAD',
+            'LAB', 'LAB_RESULT_VIEW', 'LAB_RESULT_UPLOAD', 'LIS_PROCESS_STATUS',
             'AI_SUMMARY', 'AI_REQUEST_LIST', 'AI_REQUEST_CREATE', 'AI_REQUEST_DETAIL',
             'NURSE_RECEPTION',
-            'ADMIN', 'ADMIN_USER', 'ADMIN_USER_DETAIL', 'ADMIN_ROLE', 'ADMIN_MENU_PERMISSION', 'ADMIN_AUDIT_LOG'
+            'ADMIN', 'ADMIN_USER', 'ADMIN_USER_DETAIL', 'ADMIN_ROLE', 'ADMIN_MENU_PERMISSION', 'ADMIN_AUDIT_LOG', 'ADMIN_SYSTEM_MONITOR'
         ],
         'DOCTOR': ['DASHBOARD', 'PATIENT_LIST', 'PATIENT_DETAIL', 'PATIENT_CARE', 'ENCOUNTER_LIST', 'OCS_STATUS', 'OCS_CREATE', 'OCS_MANAGE', 'IMAGE_VIEWER', 'RIS_WORKLIST', 'LAB_RESULT_VIEW', 'AI_SUMMARY', 'AI_REQUEST_LIST', 'AI_REQUEST_CREATE', 'AI_REQUEST_DETAIL'],
         'NURSE': ['DASHBOARD', 'PATIENT_LIST', 'PATIENT_DETAIL', 'ENCOUNTER_LIST', 'OCS_STATUS', 'IMAGE_VIEWER', 'LAB_RESULT_VIEW', 'NURSE_RECEPTION'],  # PATIENT_CARE 제거 (DOCTOR, SYSTEMMANAGER만)
