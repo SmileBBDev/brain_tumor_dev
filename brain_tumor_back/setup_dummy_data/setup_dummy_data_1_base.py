@@ -295,6 +295,7 @@ def load_menu_permission_seed():
         ('PATIENT_LIST', '환자 목록', '환자 목록 화면'),
         ('PATIENT_DETAIL', '환자 상세', '환자 상세 화면'),
         ('PATIENT_CARE', '환자 진료', '환자 진료 화면 접근'),
+        ('ENCOUNTER_LIST', '진료 예약', '진료 예약/목록 화면'),
         ('ORDER', '검사 오더', '검사 오더 메뉴'),
         ('ORDER_LIST', '오더 목록', '검사 오더 목록 화면'),
         ('ORDER_CREATE', '오더 생성', '검사 오더 생성 화면'),
@@ -401,6 +402,7 @@ def load_menu_permission_seed():
     create_menu(20, code='PATIENT_LIST', path='/patients', order=1, is_active=True, parent=menu_patient)
     create_menu(21, code='PATIENT_DETAIL', path='/patients/:patientId', breadcrumb_only=True, order=1, is_active=True, parent_id=20)
     create_menu(22, code='PATIENT_CARE', path='/patients/care', order=2, is_active=True, parent=menu_patient)
+    create_menu(36, code='ENCOUNTER_LIST', path='/encounters', order=3, is_active=True, parent=menu_patient)
 
     # OCS 메뉴 (역할 기반 그룹 분리)
     # OCS_ORDER: ORDER 그룹 (의사용 오더)
@@ -475,6 +477,7 @@ def load_menu_permission_seed():
         (20, 'DEFAULT', '환자 목록'),
         (21, 'DEFAULT', '환자 상세'),
         (22, 'DEFAULT', '환자 진료'),
+        (36, 'DEFAULT', '진료 예약'),
         # ORDER
         (6, 'DEFAULT', '검사 오더'),
         (6, 'DOCTOR', '검사 오더'),
@@ -546,7 +549,7 @@ def load_menu_permission_seed():
     role_permissions = {
         'SYSTEMMANAGER': list(permission_map.keys()),  # 모든 권한
         'ADMIN': [
-            'DASHBOARD', 'PATIENT', 'PATIENT_LIST', 'PATIENT_DETAIL', 'PATIENT_CARE',
+            'DASHBOARD', 'PATIENT', 'PATIENT_LIST', 'PATIENT_DETAIL', 'PATIENT_CARE', 'ENCOUNTER_LIST',
             'ORDER', 'ORDER_LIST', 'ORDER_CREATE', 'OCS_ORDER',
             'OCS_RIS', 'OCS_RIS_DETAIL', 'OCS_LIS', 'OCS_LIS_DETAIL',
             'IMAGING', 'IMAGE_VIEWER', 'RIS_WORKLIST',
@@ -555,8 +558,8 @@ def load_menu_permission_seed():
             'NURSE_RECEPTION',
             'ADMIN', 'ADMIN_USER', 'ADMIN_USER_DETAIL', 'ADMIN_ROLE', 'ADMIN_MENU_PERMISSION', 'ADMIN_AUDIT_LOG'
         ],
-        'DOCTOR': ['DASHBOARD', 'PATIENT_LIST', 'PATIENT_DETAIL', 'PATIENT_CARE', 'ORDER_LIST', 'OCS_ORDER', 'IMAGE_VIEWER', 'RIS_WORKLIST', 'LAB_RESULT_VIEW', 'AI_SUMMARY', 'AI_REQUEST_LIST', 'AI_REQUEST_CREATE', 'AI_REQUEST_DETAIL'],
-        'NURSE': ['DASHBOARD', 'PATIENT_LIST', 'PATIENT_DETAIL', 'PATIENT_CARE', 'ORDER_LIST', 'IMAGE_VIEWER', 'LAB_RESULT_VIEW', 'NURSE_RECEPTION'],
+        'DOCTOR': ['DASHBOARD', 'PATIENT_LIST', 'PATIENT_DETAIL', 'PATIENT_CARE', 'ENCOUNTER_LIST', 'ORDER_LIST', 'OCS_ORDER', 'IMAGE_VIEWER', 'RIS_WORKLIST', 'LAB_RESULT_VIEW', 'AI_SUMMARY', 'AI_REQUEST_LIST', 'AI_REQUEST_CREATE', 'AI_REQUEST_DETAIL'],
+        'NURSE': ['DASHBOARD', 'PATIENT_LIST', 'PATIENT_DETAIL', 'PATIENT_CARE', 'ENCOUNTER_LIST', 'ORDER_LIST', 'IMAGE_VIEWER', 'LAB_RESULT_VIEW', 'NURSE_RECEPTION'],
         'RIS': ['DASHBOARD', 'IMAGE_VIEWER', 'RIS_WORKLIST', 'OCS_RIS', 'OCS_RIS_DETAIL', 'RIS_DASHBOARD', 'RIS_RESULT_UPLOAD'],
         'LIS': ['DASHBOARD', 'LAB_RESULT_VIEW', 'LAB_RESULT_UPLOAD', 'OCS_LIS', 'OCS_LIS_DETAIL', 'LIS_PROCESS_STATUS'],
     }
@@ -691,7 +694,7 @@ def create_dummy_encounters(target_count=20, force=False):
         doctors = list(User.objects.all()[:1])
 
     encounter_types = ['outpatient', 'inpatient', 'emergency']
-    statuses = ['scheduled', 'in-progress', 'completed', 'cancelled']
+    statuses = ['scheduled', 'in_progress', 'completed', 'cancelled']
     departments = ['neurology', 'neurosurgery']
 
     chief_complaints = [
@@ -715,7 +718,7 @@ def create_dummy_encounters(target_count=20, force=False):
         if days_ago > 30:
             status = random.choice(['completed', 'cancelled'])
         elif days_ago > 7:
-            status = random.choice(['in-progress', 'completed'])
+            status = random.choice(['in_progress', 'completed'])
         else:
             status = random.choice(statuses)
 
@@ -1116,8 +1119,18 @@ def reset_base_data():
     from apps.ai_inference.models import AIInferenceRequest, AIInferenceResult, AIInferenceLog
     from apps.treatment.models import TreatmentPlan, TreatmentSession
     from apps.followup.models import FollowUp
+    from apps.prescriptions.models import Prescription, PrescriptionItem
 
     # 삭제 순서: 의존성 역순
+    # 처방 삭제 (Patient 참조)
+    prescription_item_count = PrescriptionItem.objects.count()
+    PrescriptionItem.objects.all().delete()
+    print(f"  PrescriptionItem: {prescription_item_count}건 삭제")
+
+    prescription_count = Prescription.objects.count()
+    Prescription.objects.all().delete()
+    print(f"  Prescription: {prescription_count}건 삭제")
+
     # AI 로그/결과/요청 삭제 (추가 데이터지만 base 데이터에 의존)
     ai_log_count = AIInferenceLog.objects.count()
     AIInferenceLog.objects.all().delete()
@@ -1223,6 +1236,7 @@ def main():
     parser.add_argument('--reset', action='store_true', help='기존 데이터 삭제 후 새로 생성')
     parser.add_argument('--force', action='store_true', help='목표 수량 이상이어도 강제 추가')
     parser.add_argument('--menu', action='store_true', help='메뉴/권한만 업데이트 (네비게이션 바 반영)')
+    parser.add_argument('-y', '--yes', action='store_true', help='확인 없이 자동 실행 (비대화형 모드)')
     args = parser.parse_args()
 
     print("="*60)
@@ -1240,12 +1254,16 @@ def main():
 
     # --reset 옵션: 기존 데이터 삭제
     if args.reset:
-        confirm = input("\n정말 기존 데이터를 모두 삭제하시겠습니까? (yes/no): ")
-        if confirm.lower() == 'yes':
+        if args.yes:
+            # 비대화형 모드: 확인 없이 삭제
             reset_base_data()
         else:
-            print("삭제 취소됨")
-            sys.exit(0)
+            confirm = input("\n정말 기존 데이터를 모두 삭제하시겠습니까? (yes/no): ")
+            if confirm.lower() == 'yes':
+                reset_base_data()
+            else:
+                print("삭제 취소됨")
+                sys.exit(0)
 
     force = args.reset or args.force  # reset 시에는 force=True
 

@@ -92,7 +92,9 @@ export default function ClinicPage() {
       const encounter = await createEncounter({
         patient: patient.id,
         encounter_type: 'outpatient',
+        status: 'in_progress',
         chief_complaint: '',
+        // attending_doctor, department, admission_date는 백엔드에서 자동 설정됨
       });
       setActiveEncounter(encounter);
       toast.success('진료가 시작되었습니다.');

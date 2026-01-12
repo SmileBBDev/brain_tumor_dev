@@ -1,5 +1,7 @@
 # Brain Tumor CDSS - DB 설정 가이드
 
+__pycache__를 삭제후 python -m setup_dummy_data --reset -y
+
 ## 빠른 시작
 
 ```bash
@@ -14,6 +16,8 @@ python -m setup_dummy_data
 **리셋 후 재생성 (권장):**
 ```bash
 python -m setup_dummy_data --reset
+# 또는 확인 없이 자동 실행 (비대화형 모드)
+python -m setup_dummy_data --reset -y
 ```
 
 **끝!** 이제 서버를 실행하세요:
@@ -100,25 +104,31 @@ brain_tumor_back/
 
 ## 상세 설명
 
-### setup_dummy_data_1_base.py (기본 데이터)
+### setup_dummy_data_1_base.py (핵심 시스템 데이터)
+> **필수 데이터** - 앱 동작에 반드시 필요
+
 - **DB 자동 생성** (없는 경우)
 - **마이그레이션 자동 실행**
 - 역할 7개 (SYSTEMMANAGER, ADMIN, DOCTOR, NURSE, PATIENT, RIS, LIS)
 - 슈퍼유저 (system / system001)
 - 테스트 사용자 10명 (admin, doctor1~5, nurse1, patient1, ris1, lis1)
-- 메뉴/권한 시드 데이터
+- 메뉴/권한 시드 데이터 (ENCOUNTER_LIST 포함)
 - 환자 30명
-- 진료 20건
+- 진료(Encounter) 20건
 - OCS (RIS) 30건 + ImagingStudy
 - OCS (LIS) 20건
 - AI 모델 3개 (M1, MG, MM)
 
-### setup_dummy_data_2_add.py (추가 데이터)
+### setup_dummy_data_2_add.py (임상 추가 데이터)
+> **선택 데이터** - 임상 시나리오 테스트용
+
 - 치료 계획 15건 + 치료 세션
 - 경과 추적 25건
 - AI 추론 요청 10건
 
 ### setup_dummy_data_3_prescriptions.py (처방 데이터)
+> **선택 데이터** - 처방 기능 테스트용
+
 - 처방전 20건 (DRAFT, ISSUED, DISPENSED, CANCELLED 상태 분포)
 - 처방 항목 ~60건 (뇌종양 관련 약품)
   - 항암제: Temozolomide, Bevacizumab, Lomustine
@@ -139,6 +149,9 @@ python -m setup_dummy_data
 
 # 리셋 후 새로 생성 (권장)
 python -m setup_dummy_data --reset
+
+# 리셋 + 확인 없이 자동 실행 (CI/CD용)
+python -m setup_dummy_data --reset -y
 
 # 목표 수량 이상이어도 강제 추가
 python -m setup_dummy_data --force

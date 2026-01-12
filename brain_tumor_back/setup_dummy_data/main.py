@@ -267,6 +267,7 @@ def main():
     parser.add_argument('--add', action='store_true', help='추가 데이터만 생성 (2_add)')
     parser.add_argument('--prescriptions', action='store_true', help='처방 데이터만 생성 (3_prescriptions)')
     parser.add_argument('--menu', action='store_true', help='메뉴/권한만 업데이트 (네비게이션 바 반영)')
+    parser.add_argument('-y', '--yes', action='store_true', help='확인 없이 자동 실행 (비대화형 모드)')
     args = parser.parse_args()
 
     print("="*60)
@@ -289,6 +290,8 @@ def main():
             script_args.append('--reset')
         if args.force:
             script_args.append('--force')
+        if args.yes:
+            script_args.append('--yes')
         run_script(
             'setup_dummy_data_3_prescriptions.py',
             script_args,
@@ -306,6 +309,8 @@ def main():
         script_args.append('--reset')
     if args.force:
         script_args.append('--force')
+    if args.yes:
+        script_args.append('--yes')
 
     success = True
 

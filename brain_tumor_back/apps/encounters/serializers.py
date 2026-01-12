@@ -104,6 +104,11 @@ class EncounterCreateSerializer(serializers.ModelSerializer):
             'primary_diagnosis',
             'secondary_diagnoses',
         ]
+        extra_kwargs = {
+            'attending_doctor': {'required': False},
+            'department': {'required': False},
+            'admission_date': {'required': False},
+        }
 
     def validate_patient(self, value):
         """환자 유효성 검사"""
@@ -115,7 +120,7 @@ class EncounterCreateSerializer(serializers.ModelSerializer):
 
     def validate_attending_doctor(self, value):
         """담당 의사 유효성 검사"""
-        if value.role.code != 'DOCTOR':
+        if value and value.role.code != 'DOCTOR':
             raise serializers.ValidationError("의사만 담당 의사로 지정할 수 있습니다.")
         return value
 
@@ -134,6 +139,33 @@ class EncounterCreateSerializer(serializers.ModelSerializer):
                 })
 
         return data
+
+    def create(self, validated_data):
+        """진료 생성 - 자동 필드 설정"""
+        from django.utils import timezone
+
+        request = self.context.get('request')
+
+        # attending_doctor가 없으면 현재 로그인한 사용자로 설정 (의사인 경우)
+        if 'attending_doctor' not in validated_data or validated_data['attending_doctor'] is None:
+            if request and request.user and request.user.role.code == 'DOCTOR':
+                validated_data['attending_doctor'] = request.user
+            else:
+                raise serializers.ValidationError({'attending_doctor': '담당 의사를 지정해야 합니다.'})
+
+        # department가 없으면 기본값 설정
+        if 'department' not in validated_data or validated_data['department'] is None:
+            validated_data['department'] = 'neurology'  # 기본: 신경과
+
+        # admission_date가 없으면 현재 시간으로 설정
+        if 'admission_date' not in validated_data or validated_data['admission_date'] is None:
+            validated_data['admission_date'] = timezone.now()
+
+        # status가 없으면 진행중으로 설정
+        if 'status' not in validated_data or validated_data['status'] is None:
+            validated_data['status'] = 'in_progress'
+
+        return super().create(validated_data)
 
 
 class EncounterUpdateSerializer(serializers.ModelSerializer):

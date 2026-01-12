@@ -68,6 +68,14 @@ export default function PatientListTable( {role, patients, onEdit, onDelete} : P
               <td>{new Date(p.created_at).toLocaleDateString('ko-KR')}</td>
               <td>
                 <div className="action-buttons">
+                  {(role === 'DOCTOR' || isSystemManager) && (
+                    <button
+                      className="btn small primary"
+                      onClick={() => navigate(`/patients/care?patientId=${p.id}`)}
+                    >
+                      진료
+                    </button>
+                  )}
                   <button
                     className="btn small"
                     onClick={() => navigate(`/patients/${p.id}`)}
@@ -77,7 +85,7 @@ export default function PatientListTable( {role, patients, onEdit, onDelete} : P
                   {canEdit && (
                     <>
                       <button
-                        className="btn small primary"
+                        className="btn small"
                         onClick={() => onEdit(p)}
                       >
                         편집

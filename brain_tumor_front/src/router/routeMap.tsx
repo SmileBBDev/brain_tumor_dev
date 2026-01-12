@@ -33,6 +33,9 @@ const NurseReceptionPage = lazy(() => import('@/pages/nurse/NurseReceptionPage')
 const LabListPage = lazy(() => import('@/pages/lab/LabListPage'));
 const ClinicPage = lazy(() => import('@/pages/clinic/ClinicPage'));
 
+// Encounter
+const EncounterListPage = lazy(() => import('@/pages/encounter/EncounterListPage'));
+
 // AI Inference
 const AIRequestListPage = lazy(() => import('@/pages/ai-inference/AIRequestListPage'));
 const AIRequestCreatePage = lazy(() => import('@/pages/ai-inference/AIRequestCreatePage'));
@@ -60,6 +63,7 @@ export const routeMap: Record<string, ComponentType> = {
   PATIENT_LIST: PatientListPage,
   PATIENT_DETAIL: PatientDetailPage,
   PATIENT_CARE: ClinicPage,
+  ENCOUNTER_LIST: EncounterListPage,
 
   // === ORDER 그룹 ===
   ORDER_LIST: OrderListPage,

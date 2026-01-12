@@ -53,5 +53,19 @@
       "order": 1,
       "is_active": true
     }
+  },
+
+  {
+    "model": "menus.menu",
+    "pk": "ENCOUNTER_LIST",
+    "fields": {
+      "path": "/encounters",
+      "icon": null,
+      "group_label": null,
+      "breadcrumb_only": false,
+      "parent": "PATIENT",
+      "order": 3,
+      "is_active": true
+    }
   }
 ]

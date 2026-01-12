@@ -284,6 +284,7 @@ def main():
     parser = argparse.ArgumentParser(description='Brain Tumor CDSS 처방 더미 데이터 생성')
     parser.add_argument('--reset', action='store_true', help='처방 데이터만 삭제 후 새로 생성')
     parser.add_argument('--force', action='store_true', help='목표 수량 이상이어도 강제 추가')
+    parser.add_argument('-y', '--yes', action='store_true', help='확인 없이 자동 실행 (비대화형 모드)')
     args = parser.parse_args()
 
     print("="*60)
@@ -296,12 +297,15 @@ def main():
 
     # --reset 옵션: 처방 데이터만 삭제
     if args.reset:
-        confirm = input("\n처방 데이터를 삭제하시겠습니까? (yes/no): ")
-        if confirm.lower() == 'yes':
+        if args.yes:
             reset_prescription_data()
         else:
-            print("삭제 취소됨")
-            sys.exit(0)
+            confirm = input("\n처방 데이터를 삭제하시겠습니까? (yes/no): ")
+            if confirm.lower() == 'yes':
+                reset_prescription_data()
+            else:
+                print("삭제 취소됨")
+                sys.exit(0)
 
     force = args.reset or args.force  # reset 시에는 force=True
 

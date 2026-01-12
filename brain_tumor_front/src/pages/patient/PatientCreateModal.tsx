@@ -22,7 +22,6 @@ export default function PatientCreateModal({ isOpen, onClose, onSuccess }: Props
     blood_type: undefined,
     allergies: [],
     chronic_diseases: [],
-    chief_complaint: '',
   });
 
   const [allergyInput, setAllergyInput] = useState('');
@@ -123,7 +122,6 @@ export default function PatientCreateModal({ isOpen, onClose, onSuccess }: Props
       blood_type: undefined,
       allergies: [],
       chronic_diseases: [],
-      chief_complaint: '',
     });
     setAllergyInput('');
     setDiseaseInput('');
@@ -258,17 +256,6 @@ export default function PatientCreateModal({ isOpen, onClose, onSuccess }: Props
 
           <div className="form-section">
             <h3>의료 정보</h3>
-
-            <div className="form-group">
-              <label>주 호소 (환자가 말하는 증상)</label>
-              <textarea
-                name="chief_complaint"
-                value={formData.chief_complaint}
-                onChange={handleChange}
-                rows={3}
-                placeholder="예: 두통이 심해요, 어지러움증이 계속됩니다"
-              />
-            </div>
 
             <div className="form-group">
               <label>알레르기</label>
