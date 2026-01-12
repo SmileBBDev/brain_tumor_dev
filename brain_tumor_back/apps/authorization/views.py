@@ -235,30 +235,41 @@ class RoleViewSet(ModelViewSet): # - ModelViewSet을 상속하면 기본적으�
     # 역할별 메뉴 수정
     @action(detail=True, methods=["put"], url_path="menus")
     def update_menus(self, request, pk=None):
-        role = self.get_object()
-        permission_ids = request.data.get("permission_ids", [])
+        from apps.accounts.services.permission_service import notify_permission_changed
 
-        if not isinstance(permission_ids, list):
+        role = self.get_object()
+        menu_ids = request.data.get("permission_ids", [])  # 프론트에서 permission_ids로 보내지만 실제로는 menu_ids
+
+        if not isinstance(menu_ids, list):
             return Response(
                 {"detail": "permission_ids must be a list"},
                 status=400
             )
 
-        valid_permissions = Permission.objects.filter(id__in=permission_ids)
+        # RolePermission.permission은 Menu를 참조함
+        valid_menus = Menu.objects.filter(id__in=menu_ids)
 
         RolePermission.objects.filter(role=role).delete()
 
         RolePermission.objects.bulk_create([
             RolePermission(
                 role=role,
-                permission=perm
+                permission=menu  # Menu 객체
             )
-            for perm in valid_permissions
+            for menu in valid_menus
         ])
+
+        # 해당 역할을 가진 모든 사용자에게 권한 변경 알림
+        users_with_role = User.objects.filter(role=role)
+        for user in users_with_role:
+            try:
+                notify_permission_changed(user.id)
+            except Exception:
+                pass  # WebSocket 연결이 없는 사용자는 무시
 
         return Response({
             "saved_permission_ids": list(
-                valid_permissions.values_list("id", flat=True)
+                valid_menus.values_list("id", flat=True)
             )
         })
 

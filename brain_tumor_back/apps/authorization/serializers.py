@@ -10,6 +10,7 @@ from django.db.models import F
 
 from apps.audit.services import create_audit_log
 from apps.menus.models import MenuPermission
+from apps.accounts.models import RolePermission
 
 class RoleSerializer(serializers.ModelSerializer):
     class Meta:
@@ -134,22 +135,43 @@ class MeSerializer(serializers.ModelSerializer):
         프론트 hasPermission(menuCode) 에서 사용
         → Menu.code 리스트 반환
 
-        breadcrumb_only=True 메뉴도 포함해야 상세 페이지(/ocs/ris/:ocsId 등) 접근 가능
+        부모 메뉴 권한이 있으면 자식(상세 페이지 등)도 자동 포함
         """
         if not obj.role:
             return []
 
-        role_permissions = obj.role.permissions.all()
+        from apps.menus.models import Menu
 
-        return list(
-            MenuPermission.objects
-            .filter(
-                permission__in=role_permissions,
-                menu__is_active=True,
-                menu__path__isnull=False       # 실제 페이지 메뉴만 (path가 있는 메뉴)
+        # 1. RolePermission에 직접 등록된 메뉴 ID 조회
+        direct_menu_ids = set(
+            RolePermission.objects
+            .filter(role=obj.role)
+            .values_list("permission_id", flat=True)
+        )
+
+        # 2. 직접 등록된 메뉴 + 그 자식 메뉴까지 모두 포함
+        all_menu_ids = set(direct_menu_ids)
+
+        def add_children(parent_ids):
+            if not parent_ids:
+                return
+            child_ids = set(
+                Menu.objects.filter(parent_id__in=parent_ids, is_active=True)
+                .values_list("id", flat=True)
             )
-            .values_list("menu__code", flat=True)
-            .distinct()
+            new_ids = child_ids - all_menu_ids
+            all_menu_ids.update(new_ids)
+            add_children(new_ids)  # 재귀적으로 자식의 자식도 포함
+
+        add_children(direct_menu_ids)
+
+        # 3. path가 있는 메뉴의 code만 반환 (실제 페이지)
+        return list(
+            Menu.objects.filter(
+                id__in=all_menu_ids,
+                is_active=True,
+                path__isnull=False
+            ).values_list("code", flat=True)
         )
 # class MeSerializer(serializers.ModelSerializer) :
 #     permissions = serializers.SerializerMethodField()

@@ -187,42 +187,22 @@ export default function MenuPermissionPage() {
     // );
 
     // 접근 권한 메뉴 변경 저장 API 호출
-    const getLeafMenuIds = (nodes : MenuNode[]) : number[] => {
-        const leafIds : number[] = [];
-        const traverse = (node: MenuNode) => {
-            if (!node.children || node.children.length === 0) {
-            if (checkedMenuIds.includes(node.id)) {
-                leafIds.push(node.id);
-            }
-            } else {
-            node.children.forEach(traverse);
-            }
-        };
-
-        nodes.forEach(traverse);
-        return leafIds;
-    }
     const save = async () => {
         if (!selectedRole) return;
 
-        const leafMenuIds = getLeafMenuIds(menuTree);
-
-        await saveRoleMenus(selectedRole.id, leafMenuIds);
+        // 체크된 모든 메뉴 ID 저장 (백엔드에서 자식 메뉴 자동 포함)
+        await saveRoleMenus(selectedRole.id, checkedMenuIds);
         // 서버 기준 갱신
-        setOriginLeafMenuIds(leafMenuIds);
+        setOriginLeafMenuIds([...checkedMenuIds]);
 
         alert('저장 완료');
     };
 
-
-
     const normalize = (arr: number[]) =>
         [...arr].sort((a, b) => a - b);
 
-    const currentLeafMenuIds = getLeafMenuIds(menuTree);
-
     const isChanged =
-    JSON.stringify(normalize(currentLeafMenuIds)) !==
+    JSON.stringify(normalize(checkedMenuIds)) !==
     JSON.stringify(normalize(originLeafMenuIds));
 
 

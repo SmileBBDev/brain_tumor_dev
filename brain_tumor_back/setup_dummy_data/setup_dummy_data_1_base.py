@@ -708,9 +708,14 @@ def load_menu_permission_seed():
 
     print(f"  메뉴 라벨: {changes['MenuLabel']['created']}개 (전체: {MenuLabel.objects.count()}개)")
 
-    # ========== 역할별 권한 매핑 ==========
-    role_permissions = {
-        'SYSTEMMANAGER': list(permission_map.keys()),  # 모든 권한
+    # ========== 역할별 권한 매핑 (RolePermission - Menu 연결) ==========
+    from apps.accounts.models import RolePermission
+
+    # 메뉴 code → Menu 객체 매핑
+    menu_map = {menu.code: menu for menu in Menu.objects.all()}
+
+    role_menu_permissions = {
+        'SYSTEMMANAGER': list(menu_map.keys()),  # 모든 메뉴
         'ADMIN': [
             'DASHBOARD', 'PATIENT', 'PATIENT_LIST', 'PATIENT_DETAIL', 'PATIENT_CARE', 'ENCOUNTER_LIST',
             'OCS', 'OCS_STATUS', 'OCS_CREATE', 'OCS_MANAGE',
@@ -727,12 +732,20 @@ def load_menu_permission_seed():
         'LIS': ['DASHBOARD', 'LAB_RESULT_VIEW', 'LAB_RESULT_UPLOAD', 'OCS_LIS', 'OCS_LIS_DETAIL', 'LIS_PROCESS_STATUS'],
     }
 
-    for role_code, perm_codes in role_permissions.items():
+    for role_code, menu_codes in role_menu_permissions.items():
         try:
             role = Role.objects.get(code=role_code)
-            perms = [permission_map[code] for code in perm_codes if code in permission_map]
-            role.permissions.set(perms)
-            print(f"  {role_code}: {len(perms)}개 권한 설정")
+            # 기존 RolePermission 삭제 후 새로 생성
+            RolePermission.objects.filter(role=role).delete()
+            created_count = 0
+            for menu_code in menu_codes:
+                if menu_code in menu_map:
+                    RolePermission.objects.create(
+                        role=role,
+                        permission=menu_map[menu_code]  # permission 필드가 Menu를 참조
+                    )
+                    created_count += 1
+            print(f"  {role_code}: {created_count}개 메뉴 권한 설정")
         except Role.DoesNotExist:
             print(f"  경고: {role_code} 역할이 없습니다")
 

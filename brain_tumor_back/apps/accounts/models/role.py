@@ -6,16 +6,12 @@ class Role(models.Model):
     name = models.CharField(max_length=50)
     description = models.TextField(blank= True)
     is_active = models.BooleanField(default=True)
-    
+
     created_at = models.DateTimeField(auto_now_add = True)
     updated_at = models.DateTimeField(auto_now=True)
-    
-    permissions = models.ManyToManyField(
-        "accounts.Permission",  # Permission 모델 위치에 맞게 수정
-        related_name="roles",
-        blank=True
-    )
 
+    # 참고: Role-Menu 권한 매핑은 RolePermission 모델을 통해 관리됨
+    # (apps/accounts/models/role_permission.py 참조)
 
     def __str__(self) :
         return self.name

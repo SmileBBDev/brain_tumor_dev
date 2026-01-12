@@ -1,40 +1,53 @@
 from .models import Menu, MenuPermission
 from apps.accounts.services.permission_service import get_user_permission
+from apps.accounts.models import RolePermission
 
 # 특정 유저가 접근 가능한 메뉴를 반환하는 함수.
 def get_user_menus(user):
     role = user.role
-    permissions = role.permissions.all()
 
-    # 메뉴 조회 로직 
-    # 1. 권한이 있는 메뉴 ID들 (실제 페이지)
-    allowed_menu_codes = set(
-        MenuPermission.objects
-        .filter(permission__in=permissions)
-        .values_list("menu__code", flat=True)
+    # 1. RolePermission에 직접 등록된 메뉴 ID 조회
+    direct_menu_ids = set(
+        RolePermission.objects
+        .filter(role=role)
+        .values_list("permission_id", flat=True)
     )
 
-    # 2. 부모 메뉴까지 재귀적으로 포함
-    def include_parent_codes(menu_code, result):
-        try:
-            menu = Menu.objects.get(code=menu_code)
-            if menu.parent:
-                result.add(menu.parent.code)
-                include_parent_codes(menu.parent.code, result)
-        except Menu.DoesNotExist:
-            pass
+    # 2. 직접 등록된 메뉴 + 그 자식 메뉴까지 모두 포함 (상세 페이지 등)
+    all_menu_ids = set(direct_menu_ids)
 
-    visible_menu_codes = set(allowed_menu_codes)
+    def add_children(parent_ids):
+        if not parent_ids:
+            return
+        child_ids = set(
+            Menu.objects.filter(parent_id__in=parent_ids, is_active=True)
+            .values_list("id", flat=True)
+        )
+        new_ids = child_ids - all_menu_ids
+        all_menu_ids.update(new_ids)
+        add_children(new_ids)  # 재귀적으로 자식의 자식도 포함
 
-    for code in allowed_menu_codes:
-        include_parent_codes(code, visible_menu_codes)
+    add_children(direct_menu_ids)
 
+    # 3. 부모 메뉴까지 재귀적으로 포함 (사이드바 트리 구성용)
+    def add_parents(menu_ids):
+        parent_ids = set(
+            Menu.objects.filter(id__in=menu_ids, parent__isnull=False)
+            .values_list("parent_id", flat=True)
+        )
+        new_parents = parent_ids - all_menu_ids
+        if new_parents:
+            all_menu_ids.update(new_parents)
+            add_parents(new_parents)
 
-    # 3. 메뉴 조회
+    add_parents(all_menu_ids.copy())
+
+    # 4. 메뉴 조회 (breadcrumb_only 메뉴는 사이드바에서 제외)
     menus = (
         Menu.objects.filter(
             is_active=True,
-            code__in=visible_menu_codes
+            id__in=all_menu_ids,
+            breadcrumb_only=False  # 사이드바에 표시할 메뉴만
         )
         .select_related("parent")
         .prefetch_related("children", "labels")
