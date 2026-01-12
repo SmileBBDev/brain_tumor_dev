@@ -58,3 +58,21 @@ export const showQuestion = (title: string, text?: string) => {
   });
 
 };
+
+
+export const showWarning = (title: string, text?: string) => {
+  return Swal.fire({
+      icon: 'warning',
+      title,
+      text,
+      width: 424,
+      padding: '1.25rem',
+      showConfirmButton: true,
+      didOpen: () => {
+        const container = Swal.getContainer();
+        if (container) {
+          container.style.zIndex = '99999';
+        }
+      },
+    });
+};

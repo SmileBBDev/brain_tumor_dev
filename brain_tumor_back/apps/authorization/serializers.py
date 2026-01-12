@@ -1,3 +1,4 @@
+import re
 from urllib import request
 from django.contrib.auth import authenticate
 from rest_framework import serializers
@@ -22,7 +23,14 @@ class RoleSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
-        read_only_fields = ["code", "created_at", "updated_at"]
+        read_only_fields = ["created_at", "updated_at"]
+
+    def validate_code(self, value):
+        if not re.match(r'^[A-Z0-9_]+$', value):
+            raise serializers.ValidationError(
+                "역할 코드는 영문 대문자, 숫자, _ 만 사용할 수 있습니다."
+            )
+        return value
 
 # 로그인 실패 최대 허용 횟수
 MAX_LOGIN_FAIL = 5

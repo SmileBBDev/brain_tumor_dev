@@ -1,3 +1,4 @@
+from django.db.models import Q
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.response import Response
@@ -11,6 +12,7 @@ from django.utils import timezone
 from apps.accounts.models.role import Role
 from apps.accounts.models.role_permission import RolePermission
 from apps.accounts.models.user import User
+from apps.common.pagination import UserPagination
 from apps.common.utils import get_client_ip
 from apps.audit.services import create_audit_log # # Audit Log 기록 유틸
 from apps.accounts.services.permission_service import get_user_permission # 사용자 권한 조회 로직
@@ -131,5 +133,49 @@ class ChangePasswordView(APIView):
 class RoleViewSet(ModelViewSet): # - ModelViewSet을 상속하면 기본적으로 CRUD 엔드포인트가 자동으로 제공
     queryset = Role.objects.all()
     serializer_class = RoleSerializer
+    pagination_class = UserPagination
+
+    # 역할 조회
+    def get_queryset(self):
+        qs = Role.objects.all()
+
+        search = self.request.query_params.get("search")
+        status_param = self.request.query_params.get("status")
+
+        if search:
+            qs = qs.filter(
+                Q(name__icontains=search) |
+                Q(code__icontains=search)
+            )
+
+        if status_param == "ACTIVE":
+            qs = qs.filter(is_active=True)
+        elif status_param == "INACTIVE":
+            qs = qs.filter(is_active=False)
+
+        return qs
     
+    # 역할 생성시
+    # code 대문자로 넘어오지 않은 경우 대비
+    def perform_create(self, serializer):
+        serializer.save(
+            code=serializer.validated_data["code"].upper()
+        )
+
+    # 역할 수정 put 방식
+    def update(self, request, *args, **kwargs):
+        request.data.pop("code", None)
+        kwargs["partial"] = True   # PUT도 안전하게    
+        return super().update(request, *args, **kwargs)
+
+    # 역할 수정 patch 방식
+    def partial_update(self, request, *args, **kwargs):
+        request.data.pop("code", None)
+        return super().partial_update(request, *args, **kwargs)
     
+    # 역할 삭제
+    def destroy(self, request, *args, **kwargs):
+        role = self.get_object()
+        role.is_active = False
+        role.save()
+        return Response(status=status.HTTP_204_NO_CONTENT)
