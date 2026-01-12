@@ -6,6 +6,9 @@ import type {
   PatientCreateData,
   PatientUpdateData,
   PatientStatistics,
+  PatientAlert,
+  PatientAlertCreateData,
+  PatientAlertUpdateData,
 } from '@/types/patient';
 
 /**
@@ -135,4 +138,56 @@ export interface PatientSummary {
 export const getPatientSummary = async (patientId: number): Promise<PatientSummary> => {
   const response = await api.get<PatientSummary>(`/patients/${patientId}/summary/`);
   return response.data;
+};
+
+// =============================================================================
+// 환자 주의사항 (Patient Alerts) API
+// =============================================================================
+
+/**
+ * 환자의 주의사항 목록 조회
+ * GET /api/patients/{patientId}/alerts/
+ */
+export const getPatientAlerts = async (patientId: number): Promise<PatientAlert[]> => {
+  const response = await api.get<PatientAlert[]>(`/patients/${patientId}/alerts/`);
+  return response.data;
+};
+
+/**
+ * 환자 주의사항 생성
+ * POST /api/patients/{patientId}/alerts/
+ */
+export const createPatientAlert = async (
+  patientId: number,
+  data: PatientAlertCreateData
+): Promise<PatientAlert> => {
+  const response = await api.post<PatientAlert>(`/patients/${patientId}/alerts/`, data);
+  return response.data;
+};
+
+/**
+ * 환자 주의사항 수정
+ * PATCH /api/patients/{patientId}/alerts/{alertId}/
+ */
+export const updatePatientAlert = async (
+  patientId: number,
+  alertId: number,
+  data: PatientAlertUpdateData
+): Promise<PatientAlert> => {
+  const response = await api.patch<PatientAlert>(
+    `/patients/${patientId}/alerts/${alertId}/`,
+    data
+  );
+  return response.data;
+};
+
+/**
+ * 환자 주의사항 삭제
+ * DELETE /api/patients/{patientId}/alerts/{alertId}/
+ */
+export const deletePatientAlert = async (
+  patientId: number,
+  alertId: number
+): Promise<void> => {
+  await api.delete(`/patients/${patientId}/alerts/${alertId}/`);
 };

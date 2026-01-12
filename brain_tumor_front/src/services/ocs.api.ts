@@ -54,40 +54,10 @@ export const deleteOCS = async (ocsId: number): Promise<void> => {
 // 추가 조회 API
 // =============================================================================
 
-// ocs_id로 조회 (예: ocs_0001)
-export const getOCSByOcsId = async (ocsId: string): Promise<OCSDetail> => {
-  const response = await api.get<OCSDetail>('/ocs/by_ocs_id/', {
-    params: { ocs_id: ocsId },
-  });
-  return response.data;
-};
-
-// 미완료 OCS 목록
-export const getPendingOCS = async (): Promise<OCSListItem[]> => {
-  const response = await api.get<OCSListItem[]>('/ocs/pending/');
-  return response.data;
-};
-
 // 환자별 OCS 목록
 export const getOCSByPatient = async (patientId: number): Promise<OCSListItem[]> => {
   const response = await api.get<OCSListItem[]>('/ocs/by_patient/', {
     params: { patient_id: patientId },
-  });
-  return response.data;
-};
-
-// 의사별 OCS 목록
-export const getOCSByDoctor = async (doctorId: number): Promise<OCSListItem[]> => {
-  const response = await api.get<OCSListItem[]>('/ocs/by_doctor/', {
-    params: { doctor_id: doctorId },
-  });
-  return response.data;
-};
-
-// 작업자별 OCS 목록
-export const getOCSByWorker = async (workerId: number): Promise<OCSListItem[]> => {
-  const response = await api.get<OCSListItem[]>('/ocs/by_worker/', {
-    params: { worker_id: workerId },
   });
   return response.data;
 };

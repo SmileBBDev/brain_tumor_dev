@@ -55,9 +55,7 @@ class PrescriptionListSerializer(serializers.ModelSerializer):
         return None
 
     def get_item_count(self, obj):
-        """item_count 처리 - annotate 또는 property 사용"""
-        if hasattr(obj, 'item_count') and isinstance(obj.item_count, int):
-            return obj.item_count
+        """item_count - prefetch된 items 사용"""
         return obj.items.count()
 
 

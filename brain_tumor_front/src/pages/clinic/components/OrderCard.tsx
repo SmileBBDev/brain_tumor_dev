@@ -57,7 +57,7 @@ export default function OrderCard({
 
   // 새 오더 생성
   const handleNewOrder = () => {
-    navigate(`/ocs/order?patientId=${patientId}`);
+    navigate(`/ocs/create?patientId=${patientId}`);
   };
 
   // 오더 상세 보기

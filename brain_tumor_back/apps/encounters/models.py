@@ -73,6 +73,8 @@ class Encounter(models.Model):
 
     # 진료 내용
     chief_complaint = models.TextField(
+        blank=True,
+        default='',
         verbose_name='주 호소',
         help_text='환자가 호소하는 주요 증상'
     )
@@ -85,6 +87,32 @@ class Encounter(models.Model):
         default=list,
         blank=True,
         verbose_name='부 진단명'
+    )
+
+    # SOAP 노트
+    subjective = models.TextField(
+        blank=True,
+        default='',
+        verbose_name='주관적 소견 (S)',
+        help_text='환자가 호소하는 증상, 병력'
+    )
+    objective = models.TextField(
+        blank=True,
+        default='',
+        verbose_name='객관적 소견 (O)',
+        help_text='신체검사, 검사결과, 활력징후'
+    )
+    assessment = models.TextField(
+        blank=True,
+        default='',
+        verbose_name='평가 (A)',
+        help_text='진단명, 감별진단'
+    )
+    plan = models.TextField(
+        blank=True,
+        default='',
+        verbose_name='계획 (P)',
+        help_text='치료계획, 처방, 추적관찰'
     )
 
     # 메타 정보

@@ -1,11 +1,19 @@
 /**
- * 진찰 탭 (기존 AI 분석 탭 대체)
- * - 의사 소견 입력/조회
- * - AI 분석 결과 표시 (내부 항목으로)
- * - 모든 권한 읽기 가능, 의사만 수정 가능
+ * 진찰 탭 (Option C: 환자 주의사항 + 진료별 SOAP 노트)
+ * - 환자 주의사항 (알러지, 금기, 주의사항)
+ * - 진료별 SOAP 기록 표시/편집
+ * - AI 분석 결과 표시
+ * - 모든 권한 읽기 가능, 의사/시스템관리자만 수정 가능
  */
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { getPatientAIRequests, type AIInferenceRequest } from '@/services/ai.api';
+import { getPatientAlerts, createPatientAlert, updatePatientAlert, deletePatientAlert } from '@/services/patient.api';
+import { getPatientEncounters, updateEncounter } from '@/services/encounter.api';
+import type { PatientAlert, PatientAlertCreateData } from '@/types/patient';
+import type { Encounter } from '@/types/encounter';
+import PatientAlertsSection from '../components/PatientAlertsSection';
+import EncounterNoteCard, { type SOAPData } from '../components/EncounterNoteCard';
+import AlertModal from '../components/AlertModal';
 import '@/assets/style/patientListView.css';
 
 interface Props {
@@ -18,31 +26,85 @@ export default function ExaminationTab({ role, patientId }: Props) {
   const isSystemManager = role === 'SYSTEMMANAGER';
   const canEdit = isDoctor || isSystemManager;
 
-  const [aiRequests, setAIRequests] = useState<AIInferenceRequest[]>([]);
+  // 상태
   const [loading, setLoading] = useState(true);
-  const [doctorNote, setDoctorNote] = useState('');
+  const [alerts, setAlerts] = useState<PatientAlert[]>([]);
+  const [encounters, setEncounters] = useState<Encounter[]>([]);
+  const [aiRequests, setAIRequests] = useState<AIInferenceRequest[]>([]);
 
-  useEffect(() => {
+  // 모달 상태
+  const [alertModalOpen, setAlertModalOpen] = useState(false);
+  const [editingAlert, setEditingAlert] = useState<PatientAlert | null>(null);
+
+  // 데이터 로딩
+  const loadData = useCallback(async () => {
     if (!patientId) {
       setLoading(false);
       return;
     }
 
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        const data = await getPatientAIRequests(patientId);
-        const aiData = Array.isArray(data) ? data : (data as any)?.results || [];
-        setAIRequests(aiData.slice(0, 5));
-      } catch (err) {
-        console.error('Failed to fetch AI requests:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
+    setLoading(true);
+    try {
+      const [alertsData, encountersData, aiData] = await Promise.all([
+        getPatientAlerts(patientId).catch(() => []),
+        getPatientEncounters(patientId).catch(() => []),
+        getPatientAIRequests(patientId).catch(() => []),
+      ]);
 
-    fetchData();
+      setAlerts(alertsData);
+      setEncounters(encountersData);
+      const aiList = Array.isArray(aiData) ? aiData : (aiData as any)?.results || [];
+      setAIRequests(aiList.slice(0, 5));
+    } catch (err) {
+      console.error('Failed to fetch data:', err);
+    } finally {
+      setLoading(false);
+    }
   }, [patientId]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  // 주의사항 핸들러
+  const handleAddAlert = () => {
+    setEditingAlert(null);
+    setAlertModalOpen(true);
+  };
+
+  const handleEditAlert = (alert: PatientAlert) => {
+    setEditingAlert(alert);
+    setAlertModalOpen(true);
+  };
+
+  const handleDeleteAlert = async (alertId: number) => {
+    if (!patientId) return;
+    try {
+      await deletePatientAlert(patientId, alertId);
+      setAlerts((prev) => prev.filter((a) => a.id !== alertId));
+    } catch (err) {
+      console.error('Failed to delete alert:', err);
+      alert('삭제에 실패했습니다.');
+    }
+  };
+
+  const handleSaveAlert = async (data: PatientAlertCreateData, isUpdate: boolean, alertId?: number) => {
+    if (!patientId) return;
+
+    if (isUpdate && alertId) {
+      const updated = await updatePatientAlert(patientId, alertId, data);
+      setAlerts((prev) => prev.map((a) => (a.id === alertId ? updated : a)));
+    } else {
+      const created = await createPatientAlert(patientId, data);
+      setAlerts((prev) => [created, ...prev]);
+    }
+  };
+
+  // SOAP 저장 핸들러
+  const handleSaveSOAP = async (encounterId: number, data: SOAPData) => {
+    const updated = await updateEncounter(encounterId, data);
+    setEncounters((prev) => prev.map((e) => (e.id === encounterId ? updated : e)));
+  };
 
   if (loading) {
     return (
@@ -62,27 +124,30 @@ export default function ExaminationTab({ role, patientId }: Props) {
 
   return (
     <div className="examination-tab">
-      {/* 의사 소견 */}
+      {/* 환자 주의사항 */}
+      <PatientAlertsSection
+        alerts={alerts}
+        canEdit={canEdit}
+        onAddAlert={handleAddAlert}
+        onEditAlert={handleEditAlert}
+        onDeleteAlert={handleDeleteAlert}
+      />
+
+      {/* 진료별 SOAP 노트 */}
       <section className="exam-section">
-        <h3>의사 소견</h3>
-        {canEdit ? (
-          <textarea
-            className="doctor-note-input"
-            placeholder="진찰 소견을 입력하세요..."
-            rows={6}
-            value={doctorNote}
-            onChange={(e) => setDoctorNote(e.target.value)}
-          />
+        <h3>진료 기록 ({encounters.length}건)</h3>
+        {encounters.length === 0 ? (
+          <div className="empty-message">진료 기록이 없습니다.</div>
         ) : (
-          <div className="doctor-note-view">
-            {doctorNote || '등록된 소견이 없습니다.'}
-          </div>
-        )}
-        {canEdit && (
-          <div className="section-actions">
-            <button className="btn btn-primary" onClick={() => alert('저장 기능은 API 연동 후 활성화됩니다.')}>
-              소견 저장
-            </button>
+          <div className="encounters-list">
+            {encounters.map((encounter) => (
+              <EncounterNoteCard
+                key={encounter.id}
+                encounter={encounter}
+                canEdit={canEdit}
+                onSave={handleSaveSOAP}
+              />
+            ))}
           </div>
         )}
       </section>
@@ -110,7 +175,7 @@ export default function ExaminationTab({ role, patientId }: Props) {
                 </div>
                 {req.has_result && req.result && (
                   <div className="ai-result-preview">
-                    <strong>신뢰도: {(req.result.confidence_score ?? 0) * 100}%</strong>
+                    <strong>신뢰도: {((req.result.confidence_score ?? 0) * 100).toFixed(1)}%</strong>
                     {req.result.review_status && (
                       <span className={`review-badge review-${req.result.review_status}`}>
                         {req.result.review_status_display}
@@ -124,54 +189,44 @@ export default function ExaminationTab({ role, patientId }: Props) {
         )}
       </section>
 
+      {/* 주의사항 추가/편집 모달 */}
+      <AlertModal
+        isOpen={alertModalOpen}
+        alert={editingAlert}
+        onClose={() => setAlertModalOpen(false)}
+        onSave={handleSaveAlert}
+      />
+
       <style>{`
         .examination-tab {
           padding: 16px;
           display: flex;
           flex-direction: column;
-          gap: 24px;
+          gap: 20px;
         }
         .exam-section {
           background: var(--bg-primary, #fff);
           border: 1px solid var(--border-color, #e0e0e0);
           border-radius: 8px;
-          padding: 16px;
+          overflow: hidden;
         }
         .exam-section h3 {
-          margin: 0 0 12px 0;
-          font-size: 16px;
+          margin: 0;
+          padding: 12px 16px;
+          font-size: 15px;
           font-weight: 600;
           color: var(--text-primary, #1a1a1a);
+          background: var(--bg-secondary, #fafafa);
+          border-bottom: 1px solid var(--border-color, #e0e0e0);
         }
-        .doctor-note-input {
-          width: 100%;
+        .encounters-list {
           padding: 12px;
-          border: 1px solid var(--border-color, #e0e0e0);
-          border-radius: 6px;
-          font-size: 14px;
-          resize: vertical;
-          font-family: inherit;
-        }
-        .doctor-note-input:focus {
-          outline: none;
-          border-color: var(--primary, #1976d2);
-        }
-        .doctor-note-view {
-          padding: 12px;
-          background: var(--bg-secondary, #f5f5f5);
-          border-radius: 6px;
-          color: var(--text-secondary, #666);
-          min-height: 100px;
-        }
-        .section-actions {
-          margin-top: 12px;
-          display: flex;
-          justify-content: flex-end;
         }
         .ai-requests-list {
+          padding: 12px;
           display: flex;
           flex-direction: column;
-          gap: 12px;
+          gap: 10px;
         }
         .ai-request-card {
           padding: 12px;
@@ -230,6 +285,7 @@ export default function ExaminationTab({ role, patientId }: Props) {
           padding: 24px;
           text-align: center;
           color: var(--text-secondary, #666);
+          font-size: 13px;
         }
         .loading-state,
         .empty-state {

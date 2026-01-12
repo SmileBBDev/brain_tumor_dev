@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Patient
+from .models import Patient, PatientAlert
 from apps.accounts.models import User
 
 
@@ -220,3 +220,104 @@ class PatientSearchSerializer(serializers.Serializer):
             raise serializers.ValidationError("시작일은 종료일보다 이전이어야 합니다.")
 
         return data
+
+
+# ========== PatientAlert Serializers ==========
+
+class PatientAlertListSerializer(serializers.ModelSerializer):
+    """환자 주의사항 목록용 Serializer"""
+
+    alert_type_display = serializers.CharField(source='get_alert_type_display', read_only=True)
+    severity_display = serializers.CharField(source='get_severity_display', read_only=True)
+    created_by_name = serializers.CharField(source='created_by.name', read_only=True)
+
+    class Meta:
+        model = PatientAlert
+        fields = [
+            'id',
+            'patient',
+            'alert_type',
+            'alert_type_display',
+            'severity',
+            'severity_display',
+            'title',
+            'description',
+            'is_active',
+            'created_by',
+            'created_by_name',
+            'created_at',
+        ]
+        read_only_fields = ['id', 'created_by', 'created_at']
+
+
+class PatientAlertDetailSerializer(serializers.ModelSerializer):
+    """환자 주의사항 상세용 Serializer"""
+
+    alert_type_display = serializers.CharField(source='get_alert_type_display', read_only=True)
+    severity_display = serializers.CharField(source='get_severity_display', read_only=True)
+    created_by_name = serializers.CharField(source='created_by.name', read_only=True)
+    patient_name = serializers.CharField(source='patient.name', read_only=True)
+    patient_number = serializers.CharField(source='patient.patient_number', read_only=True)
+
+    class Meta:
+        model = PatientAlert
+        fields = [
+            'id',
+            'patient',
+            'patient_name',
+            'patient_number',
+            'alert_type',
+            'alert_type_display',
+            'severity',
+            'severity_display',
+            'title',
+            'description',
+            'is_active',
+            'created_by',
+            'created_by_name',
+            'created_at',
+            'updated_at',
+        ]
+        read_only_fields = ['id', 'created_by', 'created_at', 'updated_at']
+
+
+class PatientAlertCreateSerializer(serializers.ModelSerializer):
+    """환자 주의사항 생성용 Serializer"""
+
+    class Meta:
+        model = PatientAlert
+        fields = [
+            'patient',
+            'alert_type',
+            'severity',
+            'title',
+            'description',
+            'is_active',
+        ]
+
+    def validate_patient(self, value):
+        """환자 유효성 검사"""
+        if value.is_deleted:
+            raise serializers.ValidationError("삭제된 환자입니다.")
+        return value
+
+    def create(self, validated_data):
+        """주의사항 생성 (등록자 정보 자동 추가)"""
+        request = self.context.get('request')
+        if request and request.user:
+            validated_data['created_by'] = request.user
+        return super().create(validated_data)
+
+
+class PatientAlertUpdateSerializer(serializers.ModelSerializer):
+    """환자 주의사항 수정용 Serializer"""
+
+    class Meta:
+        model = PatientAlert
+        fields = [
+            'alert_type',
+            'severity',
+            'title',
+            'description',
+            'is_active',
+        ]

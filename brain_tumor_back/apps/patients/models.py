@@ -176,3 +176,78 @@ class Patient(models.Model):
     def is_active(self):
         """활성 상태 확인"""
         return self.status == 'active' and not self.is_deleted
+
+
+class PatientAlert(models.Model):
+    """환자 주의사항 모델"""
+
+    ALERT_TYPE_CHOICES = [
+        ('ALLERGY', '알레르기'),
+        ('CONTRAINDICATION', '금기사항'),
+        ('PRECAUTION', '주의사항'),
+        ('OTHER', '기타'),
+    ]
+
+    SEVERITY_CHOICES = [
+        ('HIGH', '높음'),
+        ('MEDIUM', '중간'),
+        ('LOW', '낮음'),
+    ]
+
+    patient = models.ForeignKey(
+        Patient,
+        on_delete=models.CASCADE,
+        related_name='alerts',
+        verbose_name='환자'
+    )
+    alert_type = models.CharField(
+        max_length=20,
+        choices=ALERT_TYPE_CHOICES,
+        verbose_name='주의사항 유형'
+    )
+    severity = models.CharField(
+        max_length=10,
+        choices=SEVERITY_CHOICES,
+        default='MEDIUM',
+        verbose_name='심각도'
+    )
+    title = models.CharField(
+        max_length=200,
+        verbose_name='제목'
+    )
+    description = models.TextField(
+        blank=True,
+        verbose_name='상세 설명'
+    )
+    is_active = models.BooleanField(
+        default=True,
+        verbose_name='활성 여부'
+    )
+    created_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='created_alerts',
+        verbose_name='등록자'
+    )
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name='생성일시'
+    )
+    updated_at = models.DateTimeField(
+        auto_now=True,
+        verbose_name='수정일시'
+    )
+
+    class Meta:
+        db_table = 'patient_alerts'
+        verbose_name = '환자 주의사항'
+        verbose_name_plural = '환자 주의사항 목록'
+        ordering = ['-severity', '-created_at']
+        indexes = [
+            models.Index(fields=['patient', 'alert_type']),
+            models.Index(fields=['patient', 'is_active']),
+        ]
+
+    def __str__(self):
+        return f"{self.patient.name} - {self.get_alert_type_display()}: {self.title}"

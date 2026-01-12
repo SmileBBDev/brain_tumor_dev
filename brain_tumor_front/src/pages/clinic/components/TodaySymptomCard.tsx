@@ -19,7 +19,6 @@ export default function TodaySymptomCard({
   onUpdate,
 }: TodaySymptomCardProps) {
   const [chiefComplaint, setChiefComplaint] = useState('');
-  const [symptoms, setSymptoms] = useState('');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
@@ -27,19 +26,20 @@ export default function TodaySymptomCard({
   useEffect(() => {
     if (encounter) {
       setChiefComplaint(encounter.chief_complaint || '');
-      setSymptoms(encounter.symptoms || '');
     }
   }, [encounter]);
 
   // 저장
   const handleSave = useCallback(async () => {
-    if (!encounter) return;
+    if (!encounter?.id) {
+      alert('진료 정보가 없습니다.');
+      return;
+    }
 
     setSaving(true);
     try {
       await updateEncounter(encounter.id, {
         chief_complaint: chiefComplaint,
-        symptoms,
       });
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
@@ -50,7 +50,7 @@ export default function TodaySymptomCard({
     } finally {
       setSaving(false);
     }
-  }, [encounter, chiefComplaint, symptoms, onUpdate]);
+  }, [encounter, chiefComplaint, onUpdate]);
 
   // 진료가 시작되지 않은 경우
   if (!encounter) {
@@ -86,19 +86,10 @@ export default function TodaySymptomCard({
       <div className="clinic-card-body">
         <div className="form-group">
           <label>주호소 (Chief Complaint)</label>
-          <input
-            type="text"
+          <textarea
             value={chiefComplaint}
             onChange={(e) => setChiefComplaint(e.target.value)}
-            placeholder="환자의 주된 호소 내용"
-          />
-        </div>
-        <div className="form-group">
-          <label>증상 상세</label>
-          <textarea
-            value={symptoms}
-            onChange={(e) => setSymptoms(e.target.value)}
-            placeholder="환자가 호소하는 증상을 상세히 기록하세요..."
+            placeholder="환자의 주된 호소 내용을 입력하세요..."
             rows={4}
           />
         </div>

@@ -6,13 +6,17 @@ from rest_framework.pagination import PageNumberPagination
 from django.core.exceptions import ObjectDoesNotExist
 from django.utils import timezone
 
-from .models import Patient
+from .models import Patient, PatientAlert
 from .serializers import (
     PatientListSerializer,
     PatientDetailSerializer,
     PatientCreateSerializer,
     PatientUpdateSerializer,
     PatientSearchSerializer,
+    PatientAlertListSerializer,
+    PatientAlertDetailSerializer,
+    PatientAlertCreateSerializer,
+    PatientAlertUpdateSerializer,
 )
 from .services import PatientService
 
@@ -352,5 +356,213 @@ def patient_summary(request, patient_id):
         'ai_inferences': ai_data,
         'treatment_plans': treatment_data,
         'prescriptions': prescription_data,
+        'generated_at': timezone.now().isoformat()
+    })
+
+
+# ========== PatientAlert Views ==========
+
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
+def patient_alerts_list_create(request, patient_id):
+    """
+    환자 주의사항 목록 조회 및 등록
+
+    GET: 특정 환자의 주의사항 목록 조회
+    POST: 주의사항 등록
+    """
+    try:
+        patient = PatientService.get_patient_by_id(patient_id)
+    except ObjectDoesNotExist:
+        return Response(
+            {'error': '환자를 찾을 수 없습니다.'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+    if request.method == 'GET':
+        # 활성 주의사항만 조회 (옵션)
+        include_inactive = request.query_params.get('include_inactive', 'false').lower() == 'true'
+
+        alerts = PatientAlert.objects.filter(patient=patient)
+        if not include_inactive:
+            alerts = alerts.filter(is_active=True)
+
+        alerts = alerts.order_by('-severity', '-created_at')
+        serializer = PatientAlertListSerializer(alerts, many=True)
+        return Response(serializer.data)
+
+    elif request.method == 'POST':
+        data = request.data.copy()
+        data['patient'] = patient_id
+
+        serializer = PatientAlertCreateSerializer(
+            data=data,
+            context={'request': request}
+        )
+
+        if serializer.is_valid():
+            alert = serializer.save()
+            return Response(
+                PatientAlertDetailSerializer(alert).data,
+                status=status.HTTP_201_CREATED
+            )
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['GET', 'PUT', 'DELETE'])
+@permission_classes([IsAuthenticated])
+def patient_alert_detail(request, patient_id, alert_id):
+    """
+    환자 주의사항 상세 조회, 수정, 삭제
+
+    GET: 주의사항 상세 조회
+    PUT: 주의사항 수정
+    DELETE: 주의사항 삭제
+    """
+    try:
+        patient = PatientService.get_patient_by_id(patient_id)
+        alert = PatientAlert.objects.get(id=alert_id, patient=patient)
+    except ObjectDoesNotExist:
+        return Response(
+            {'error': '주의사항을 찾을 수 없습니다.'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+    if request.method == 'GET':
+        serializer = PatientAlertDetailSerializer(alert)
+        return Response(serializer.data)
+
+    elif request.method == 'PUT':
+        serializer = PatientAlertUpdateSerializer(
+            alert,
+            data=request.data,
+            partial=True
+        )
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response(PatientAlertDetailSerializer(alert).data)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    elif request.method == 'DELETE':
+        alert.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def patient_examination_summary(request, patient_id):
+    """
+    환자 진찰 요약 데이터 조회 (ExaminationTab용)
+
+    Returns:
+        - patient: 기본정보 (이름, 나이, 성별, 혈액형, 알레르기, 기저질환)
+        - alerts: 환자 주의사항 목록 (활성만)
+        - current_encounter: 현재 진료 정보 (SOAP 포함)
+        - recent_encounters: 최근 진료이력 (최근 5건)
+        - recent_ocs: 최근 OCS 검사 (RIS/LIS 최근 5건씩)
+        - vital_signs: 최근 활력징후 (있는 경우)
+    """
+    try:
+        patient = PatientService.get_patient_by_id(patient_id)
+    except ObjectDoesNotExist:
+        return Response(
+            {'error': '환자를 찾을 수 없습니다.'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+    # 환자 기본 정보
+    patient_data = {
+        'id': patient.id,
+        'patient_number': patient.patient_number,
+        'name': patient.name,
+        'age': patient.age,
+        'gender': patient.gender,
+        'blood_type': patient.blood_type,
+        'allergies': patient.allergies or [],
+        'chronic_diseases': patient.chronic_diseases or [],
+        'chief_complaint': patient.chief_complaint or '',
+    }
+
+    # 환자 주의사항 (활성만)
+    alerts = PatientAlert.objects.filter(
+        patient=patient, is_active=True
+    ).order_by('-severity', '-created_at')
+    alerts_data = PatientAlertListSerializer(alerts, many=True).data
+
+    # 현재 진료 (진행중인 가장 최근 진료)
+    from apps.encounters.models import Encounter
+    from apps.encounters.serializers import EncounterDetailSerializer, EncounterListSerializer
+
+    current_encounter = Encounter.objects.filter(
+        patient=patient,
+        status__in=['scheduled', 'in_progress'],
+        is_deleted=False
+    ).order_by('-admission_date').first()
+
+    current_encounter_data = None
+    if current_encounter:
+        current_encounter_data = EncounterDetailSerializer(current_encounter).data
+
+    # 최근 진료이력 (최근 5건, 현재 진료 제외)
+    recent_encounters = Encounter.objects.filter(
+        patient=patient,
+        is_deleted=False
+    ).order_by('-admission_date')
+
+    if current_encounter:
+        recent_encounters = recent_encounters.exclude(id=current_encounter.id)
+
+    recent_encounters = recent_encounters[:5]
+    recent_encounters_data = EncounterListSerializer(recent_encounters, many=True).data
+
+    # 최근 OCS (RIS/LIS 각각 5건)
+    from apps.ocs.models import OCS
+    from apps.ocs.serializers import OCSListSerializer
+
+    recent_ris = OCS.objects.filter(
+        patient=patient,
+        job_role='RIS',
+        is_deleted=False
+    ).order_by('-created_at')[:5]
+
+    recent_lis = OCS.objects.filter(
+        patient=patient,
+        job_role='LIS',
+        is_deleted=False
+    ).order_by('-created_at')[:5]
+
+    ocs_data = {
+        'ris': OCSListSerializer(recent_ris, many=True).data,
+        'lis': OCSListSerializer(recent_lis, many=True).data,
+    }
+
+    # 최근 AI 추론 결과 (1건)
+    ai_summary = None
+    try:
+        from apps.ai_inference.models import AIInferenceRequest
+        latest_ai = AIInferenceRequest.objects.filter(
+            patient=patient,
+            status='completed'
+        ).order_by('-created_at').first()
+
+        if latest_ai and latest_ai.result:
+            ai_summary = {
+                'id': latest_ai.id,
+                'created_at': latest_ai.created_at,
+                'result': latest_ai.result,
+            }
+    except Exception:
+        pass
+
+    return Response({
+        'patient': patient_data,
+        'alerts': alerts_data,
+        'current_encounter': current_encounter_data,
+        'recent_encounters': recent_encounters_data,
+        'recent_ocs': ocs_data,
+        'ai_summary': ai_summary,
         'generated_at': timezone.now().isoformat()
     })

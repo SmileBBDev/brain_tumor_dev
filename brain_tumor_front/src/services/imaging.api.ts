@@ -3,7 +3,6 @@ import type {
   ImagingStudy,
   ImagingReport,
   ImagingStudyListResponse,
-  ImagingReportListResponse,
   ImagingStudySearchParams,
   ImagingStudyCreateData,
   ImagingStudyUpdateData,
@@ -97,22 +96,6 @@ export const getPatientImagingHistory = async (patientId: number, params?: { pag
 // ============================================
 
 /**
- * 판독문 목록 조회
- */
-export const getImagingReports = async (params?: { imaging_study?: number; page?: number; page_size?: number }): Promise<ImagingReportListResponse> => {
-  const response = await api.get<ImagingReportListResponse>('/imaging/reports/', { params });
-  return response.data;
-};
-
-/**
- * 판독문 상세 조회
- */
-export const getImagingReport = async (reportId: number): Promise<ImagingReport> => {
-  const response = await api.get<ImagingReport>(`/imaging/reports/${reportId}/`);
-  return response.data;
-};
-
-/**
  * 판독문 작성
  */
 export const createImagingReport = async (data: ImagingReportCreateData): Promise<ImagingReport> => {
@@ -129,13 +112,6 @@ export const updateImagingReport = async (
 ): Promise<ImagingReport> => {
   const response = await api.patch<ImagingReport>(`/imaging/reports/${reportId}/`, data);
   return response.data;
-};
-
-/**
- * 판독문 삭제
- */
-export const deleteImagingReport = async (reportId: number): Promise<void> => {
-  await api.delete(`/imaging/reports/${reportId}/`);
 };
 
 /**

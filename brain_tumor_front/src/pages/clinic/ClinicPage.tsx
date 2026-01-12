@@ -6,8 +6,9 @@ import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { getPatient } from '@/services/patient.api';
 import { getOCSByPatient } from '@/services/ocs.api';
-import { getEncounters, createEncounter } from '@/services/encounter.api';
+import { getEncounters, createEncounter, completeEncounter } from '@/services/encounter.api';
 import { LoadingSpinner, useToast } from '@/components/common';
+import { useAuth } from '@/pages/auth/AuthProvider';
 import TodaySymptomCard from './components/TodaySymptomCard';
 import DiagnosisPrescriptionCard from './components/DiagnosisPrescriptionCard';
 import OrderCard from './components/OrderCard';
@@ -33,6 +34,10 @@ export default function ClinicPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const toast = useToast();
+  const { role } = useAuth();
+
+  // 의사 역할 확인 (진료 시작 가능 여부)
+  const isDoctor = role === 'DOCTOR';
 
   // URL에서 환자 ID 추출
   const patientIdParam = searchParams.get('patientId');
@@ -63,7 +68,11 @@ export default function ClinicPage() {
       // 오늘 진행 중인 진료 찾기
       const today = new Date().toISOString().split('T')[0];
       const todayEncounter = (encounterData.results || []).find(
-        (e: Encounter) => e.encounter_date === today && e.status === 'in_progress'
+        (e: Encounter) => {
+          // admission_date에서 날짜 부분만 추출 (ISO 형식: 2024-01-01T10:00:00Z)
+          const admissionDate = e.admission_date?.split('T')[0];
+          return admissionDate === today && e.status === 'in_progress';
+        }
       );
       setActiveEncounter(todayEncounter || null);
     } catch (err) {
@@ -92,20 +101,43 @@ export default function ClinicPage() {
         patient: patient.id,
         encounter_type: 'outpatient',
         status: 'in_progress',
-        chief_complaint: '',
-        // attending_doctor, department, admission_date는 백엔드에서 자동 설정됨
+        // chief_complaint, attending_doctor, department, admission_date는 백엔드에서 자동 설정됨
       });
       setActiveEncounter(encounter);
       toast.success('진료가 시작되었습니다.');
       // 진료 목록 새로고침
       const encounterData = await getEncounters({ patient: patient.id });
       setEncounters(encounterData.results || []);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to start encounter:', err);
-      toast.error('진료 시작에 실패했습니다.');
+      console.error('Error response:', err.response?.data);
+      const errorMsg = err.response?.data?.attending_doctor?.[0]
+        || err.response?.data?.patient?.[0]
+        || err.response?.data?.detail
+        || '진료 시작에 실패했습니다.';
+      toast.error(errorMsg);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [patient]);
+
+  // 진료 종료 (안전 저장)
+  const handleEndEncounter = useCallback(async () => {
+    if (!activeEncounter || !patient) return;
+
+    try {
+      await completeEncounter(activeEncounter.id);
+      setActiveEncounter(null);
+      toast.success('진료가 완료되었습니다.');
+      // 진료 목록 새로고침
+      const encounterData = await getEncounters({ patient: patient.id });
+      setEncounters(encounterData.results || []);
+    } catch (err: any) {
+      console.error('Failed to end encounter:', err);
+      const errorMsg = err.response?.data?.detail || '진료 종료에 실패했습니다.';
+      toast.error(errorMsg);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeEncounter, patient]);
 
   // 나이 계산
   const calculateAge = (birthDate: string) => {
@@ -199,13 +231,18 @@ export default function ClinicPage() {
           </div>
         </div>
         <div className="header-actions">
-          {!activeEncounter && (
+          {!activeEncounter && isDoctor && (
             <button className="btn btn-primary" onClick={handleStartEncounter}>
               진료 시작
             </button>
           )}
-          {activeEncounter && (
-            <span className="encounter-badge active">진료 중</span>
+          {activeEncounter && isDoctor && (
+            <>
+              <span className="encounter-badge active">진료 중</span>
+              <button className="btn btn-success" onClick={handleEndEncounter}>
+                진료 종료
+              </button>
+            </>
           )}
         </div>
       </header>
@@ -254,8 +291,6 @@ export default function ClinicPage() {
           />
         </div>
       </div>
-
-      <toast.ToastContainer position="top-right" />
     </div>
   );
 }

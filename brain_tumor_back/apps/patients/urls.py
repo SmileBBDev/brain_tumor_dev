@@ -13,6 +13,13 @@ urlpatterns = [
     # 환자 요약서 (PDF 생성용)
     path('<int:patient_id>/summary/', views.patient_summary, name='patient-summary'),
 
+    # 환자 진찰 요약 (ExaminationTab용)
+    path('<int:patient_id>/examination-summary/', views.patient_examination_summary, name='patient-examination-summary'),
+
+    # 환자 주의사항
+    path('<int:patient_id>/alerts/', views.patient_alerts_list_create, name='patient-alerts-list-create'),
+    path('<int:patient_id>/alerts/<int:alert_id>/', views.patient_alert_detail, name='patient-alert-detail'),
+
     # 환자 검색 (자동완성용)
     path('search/', views.patient_search, name='patient-search'),
 

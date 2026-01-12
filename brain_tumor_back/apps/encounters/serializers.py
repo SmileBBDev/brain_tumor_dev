@@ -76,6 +76,11 @@ class EncounterDetailSerializer(serializers.ModelSerializer):
             'chief_complaint',
             'primary_diagnosis',
             'secondary_diagnoses',
+            # SOAP 필드
+            'subjective',
+            'objective',
+            'assessment',
+            'plan',
             'is_active',
             'created_at',
             'updated_at',
@@ -95,6 +100,7 @@ class EncounterCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Encounter
         fields = [
+            'id',
             'patient',
             'encounter_type',
             'status',
@@ -106,11 +112,22 @@ class EncounterCreateSerializer(serializers.ModelSerializer):
             'chief_complaint',
             'primary_diagnosis',
             'secondary_diagnoses',
+            # SOAP 필드
+            'subjective',
+            'objective',
+            'assessment',
+            'plan',
         ]
+        read_only_fields = ['id']
         extra_kwargs = {
             'attending_doctor': {'required': False},
             'department': {'required': False},
             'admission_date': {'required': False},
+            'chief_complaint': {'required': False, 'allow_blank': True},
+            'subjective': {'required': False, 'allow_blank': True},
+            'objective': {'required': False, 'allow_blank': True},
+            'assessment': {'required': False, 'allow_blank': True},
+            'plan': {'required': False, 'allow_blank': True},
         }
 
     def validate_patient(self, value):
@@ -185,6 +202,11 @@ class EncounterUpdateSerializer(serializers.ModelSerializer):
             'chief_complaint',
             'primary_diagnosis',
             'secondary_diagnoses',
+            # SOAP 필드
+            'subjective',
+            'objective',
+            'assessment',
+            'plan',
         ]
 
     def validate_attending_doctor(self, value):

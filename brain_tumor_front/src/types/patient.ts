@@ -76,3 +76,55 @@ export interface PatientStatistics {
     count: number;
   }[];
 }
+
+// ============================================
+// Patient Alert (환자 주의사항)
+// ============================================
+
+export type AlertType = 'ALLERGY' | 'CONTRAINDICATION' | 'PRECAUTION' | 'OTHER';
+
+export type AlertSeverity = 'HIGH' | 'MEDIUM' | 'LOW';
+
+export const ALERT_TYPE_LABELS: Record<AlertType, string> = {
+  ALLERGY: '알러지',
+  CONTRAINDICATION: '금기',
+  PRECAUTION: '주의',
+  OTHER: '기타',
+};
+
+export const ALERT_SEVERITY_LABELS: Record<AlertSeverity, string> = {
+  HIGH: '높음',
+  MEDIUM: '중간',
+  LOW: '낮음',
+};
+
+export interface PatientAlert {
+  id: number;
+  patient: number;
+  alert_type: AlertType;
+  alert_type_display?: string;
+  severity: AlertSeverity;
+  severity_display?: string;
+  title: string;
+  description?: string;
+  created_by?: number;
+  created_by_name?: string;
+  created_at: string;
+  updated_at?: string;
+  is_active: boolean;
+}
+
+export interface PatientAlertCreateData {
+  alert_type: AlertType;
+  severity: AlertSeverity;
+  title: string;
+  description?: string;
+}
+
+export interface PatientAlertUpdateData {
+  alert_type?: AlertType;
+  severity?: AlertSeverity;
+  title?: string;
+  description?: string;
+  is_active?: boolean;
+}

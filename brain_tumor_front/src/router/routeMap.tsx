@@ -7,7 +7,6 @@ const PatientDetailPage = lazy(() => import('@/pages/patient/PatientDetailPage')
 const ImagingListPage = lazy(() => import('@/pages/imaging/ImagingListPage'));
 const PatientImagingHistoryPage = lazy(() => import('@/pages/imaging/PatientImagingHistoryPage'));
 const AISummaryPage = lazy(() => import('@/pages/ai/AISummaryPage'));
-const RISWorklistPage = lazy(() => import('@/pages/ris/RISWorklistPage'));
 const MenuPermissionPage = lazy(() => import('@/pages/admin/MenuPermissionPage'));
 const UserList = lazy(() => import('@/pages/admin/usersManagement/UserList'));
 const AuditLog = lazy(() => import('@/pages/admin/AuditLog'));
@@ -47,11 +46,11 @@ const AIRequestDetailPage = lazy(() => import('@/pages/ai-inference/AIRequestDet
  *
  * 메뉴 그룹 구조:
  * ├── DASHBOARD
- * ├── PATIENT: PATIENT_LIST, PATIENT_DETAIL, PATIENT_CARE
- * ├── ORDER: ORDER_LIST, ORDER_CREATE, OCS_ORDER
- * ├── IMAGING: IMAGE_VIEWER, RIS_WORKLIST, OCS_RIS, OCS_RIS_DETAIL, RIS_DASHBOARD, RIS_RESULT_UPLOAD
+ * ├── PATIENT: PATIENT_LIST, PATIENT_DETAIL, PATIENT_CARE, ENCOUNTER_LIST
+ * ├── OCS: OCS_STATUS, OCS_CREATE, OCS_MANAGE
+ * ├── IMAGING: IMAGE_VIEWER, OCS_RIS, OCS_RIS_DETAIL, RIS_DASHBOARD, RIS_RESULT_UPLOAD
  * ├── LAB: LAB_RESULT_VIEW, LAB_RESULT_UPLOAD, OCS_LIS, OCS_LIS_DETAIL, LIS_PROCESS_STATUS
- * ├── AI_SUMMARY
+ * ├── AI_SUMMARY: AI_REQUEST_LIST, AI_REQUEST_CREATE, AI_REQUEST_DETAIL
  * ├── NURSE_RECEPTION
  * └── ADMIN: ADMIN_USER, ADMIN_USER_DETAIL, ADMIN_ROLE, ADMIN_MENU_PERMISSION, ADMIN_AUDIT_LOG, ADMIN_SYSTEM_MONITOR
  */
@@ -73,7 +72,6 @@ export const routeMap: Record<string, ComponentType> = {
   // === IMAGING 그룹 ===
   IMAGE_VIEWER: ImagingListPage,
   PATIENT_IMAGING_HISTORY: PatientImagingHistoryPage,
-  RIS_WORKLIST: RISWorklistPage,
   OCS_RIS: OCSRISWorklistPage,
   OCS_RIS_DETAIL: RISStudyDetailPage,
   RIS_DASHBOARD: RISDashboardPage,

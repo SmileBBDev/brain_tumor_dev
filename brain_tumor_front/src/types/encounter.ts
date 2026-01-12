@@ -34,6 +34,11 @@ export interface Encounter {
   notes?: string;
   primary_diagnosis?: string;
   secondary_diagnoses?: string[];
+  // SOAP 노트
+  subjective?: string;      // S - 주관적 증상 (환자가 호소하는 증상)
+  objective?: string;       // O - 객관적 소견 (검사 결과, 관찰 소견)
+  assessment?: string;      // A - 평가 (진단, 감별진단)
+  plan?: string;            // P - 계획 (치료 계획, 처방)
   is_active?: boolean;
   created_at?: string;
   updated_at?: string;
@@ -76,6 +81,11 @@ export interface EncounterCreateData {
   notes?: string;
   primary_diagnosis?: string;
   secondary_diagnoses?: string[];
+  // SOAP 노트
+  subjective?: string;
+  objective?: string;
+  assessment?: string;
+  plan?: string;
 }
 
 export interface EncounterUpdateData {
@@ -92,6 +102,11 @@ export interface EncounterUpdateData {
   notes?: string;
   primary_diagnosis?: string;
   secondary_diagnoses?: string[];
+  // SOAP 노트
+  subjective?: string;
+  objective?: string;
+  assessment?: string;
+  plan?: string;
 }
 
 export interface EncounterStatistics {

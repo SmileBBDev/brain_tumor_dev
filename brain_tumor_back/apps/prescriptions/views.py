@@ -3,7 +3,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.utils import timezone
-from django.db.models import Count, Max
+from django.db.models import Max
 
 from .models import Prescription, PrescriptionItem
 from .serializers import (
@@ -35,9 +35,7 @@ class PrescriptionViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         queryset = Prescription.objects.select_related(
             'patient', 'doctor', 'encounter'
-        ).prefetch_related('items').annotate(
-            item_count=Count('items')
-        )
+        ).prefetch_related('items')
 
         # 필터링
         patient_id = self.request.query_params.get('patient_id')

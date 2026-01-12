@@ -13,11 +13,11 @@ export default function EncounterListTable({ role, encounters, onEdit, onDelete 
   const isDoctor = role === 'DOCTOR';
   const isSystemManager = role === 'SYSTEMMANAGER';
   const canEdit = isDoctor || isSystemManager;
-  const canCreateOrder = isDoctor || isSystemManager;
+  const canCreateOCS = isDoctor || isSystemManager;
 
-  // 오더 생성 페이지로 이동
-  const handleCreateOrder = (encounter: Encounter) => {
-    navigate(`/orders/create?patientId=${encounter.patient}&encounterId=${encounter.id}`);
+  // OCS 생성 페이지로 이동
+  const handleCreateOCS = (encounter: Encounter) => {
+    navigate(`/ocs/create?patientId=${encounter.patient}&encounterId=${encounter.id}`);
   };
 
   // Handle undefined encounters
@@ -113,13 +113,13 @@ export default function EncounterListTable({ role, encounters, onEdit, onDelete 
               </td>
               <td>
                 <div className="action-buttons">
-                  {canCreateOrder && (e.status === 'in_progress' || e.status === 'scheduled') && (
+                  {canCreateOCS && (e.status === 'in_progress' || e.status === 'scheduled') && (
                     <button
                       className="btn small"
-                      onClick={() => handleCreateOrder(e)}
+                      onClick={() => handleCreateOCS(e)}
                       style={{ backgroundColor: '#4caf50', color: 'white' }}
                     >
-                      오더생성
+                      OCS생성
                     </button>
                   )}
                   {canEdit && (

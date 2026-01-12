@@ -259,13 +259,13 @@ def load_menu_permission_seed():
     """
     메뉴/권한 시드 데이터 로드
 
-    메뉴 그룹 구조 (Option A - 역할 기반 분리):
+    메뉴 그룹 구조:
     ├── DASHBOARD
-    ├── PATIENT: PATIENT_LIST, PATIENT_DETAIL, PATIENT_CARE
-    ├── ORDER: ORDER_LIST, ORDER_CREATE, OCS_ORDER
-    ├── IMAGING: IMAGE_VIEWER, RIS_WORKLIST, OCS_RIS, OCS_RIS_DETAIL, RIS_DASHBOARD, RIS_RESULT_UPLOAD
+    ├── PATIENT: PATIENT_LIST, PATIENT_DETAIL, PATIENT_CARE, ENCOUNTER_LIST
+    ├── OCS: OCS_STATUS, OCS_CREATE, OCS_MANAGE
+    ├── IMAGING: IMAGE_VIEWER, OCS_RIS, OCS_RIS_DETAIL, RIS_DASHBOARD, RIS_RESULT_UPLOAD
     ├── LAB: LAB_RESULT_VIEW, LAB_RESULT_UPLOAD, OCS_LIS, OCS_LIS_DETAIL, LIS_PROCESS_STATUS
-    ├── AI_SUMMARY
+    ├── AI_SUMMARY: AI_REQUEST_LIST, AI_REQUEST_CREATE, AI_REQUEST_DETAIL
     ├── NURSE_RECEPTION
     └── ADMIN: ADMIN_USER, ADMIN_USER_DETAIL, ADMIN_ROLE, ADMIN_MENU_PERMISSION, ADMIN_AUDIT_LOG, ADMIN_SYSTEM_MONITOR
     """
@@ -296,10 +296,10 @@ def load_menu_permission_seed():
         ('PATIENT_DETAIL', '환자 상세', '환자 상세 화면'),
         ('PATIENT_CARE', '환자 진료', '환자 진료 화면 접근'),
         ('ENCOUNTER_LIST', '진료 예약', '진료 예약/목록 화면'),
-        ('ORDER', '검사 오더', '검사 오더 메뉴'),
-        ('ORDER_LIST', '오더 목록', '검사 오더 목록 화면'),
-        ('ORDER_CREATE', '오더 생성', '검사 오더 생성 화면'),
-        ('OCS_ORDER', '검사 오더', '의사용 검사 오더 생성/관리'),
+        ('OCS', '검사 오더', '검사 오더 메뉴'),
+        ('OCS_STATUS', '검사 현황', '검사 오더 현황 조회 (간호사/관리자용)'),
+        ('OCS_CREATE', '오더 생성', '검사 오더 생성 화면'),
+        ('OCS_MANAGE', '오더 관리', '의사용 검사 오더 관리'),
         ('OCS_RIS', '영상 워크리스트', 'RIS 작업자용 영상 오더 처리'),
         ('OCS_RIS_DETAIL', '영상 검사 상세', 'RIS 영상 검사 상세 페이지'),
         ('RIS_DASHBOARD', '판독 현황 대시보드', 'RIS 전체 판독 현황 대시보드'),
@@ -375,7 +375,7 @@ def load_menu_permission_seed():
     menu_dashboard, _ = create_menu(3, code='DASHBOARD', path='/dashboard', icon='home', order=1, is_active=True)
     menu_imaging, _ = create_menu(4, code='IMAGING', path=None, icon=None, group_label='영상', order=4, is_active=True)
     menu_lab, _ = create_menu(5, code='LAB', path=None, icon=None, group_label='검사', order=5, is_active=True)
-    menu_order, _ = create_menu(6, code='ORDER', path=None, icon=None, group_label='검사 오더', order=3, is_active=True)
+    menu_ocs, _ = create_menu(6, code='OCS', path=None, icon=None, group_label='검사 오더', order=3, is_active=True)
     menu_patient, _ = create_menu(7, code='PATIENT', path=None, icon=None, group_label='환자', order=2, is_active=True)
 
     # Admin 하위
@@ -394,19 +394,16 @@ def load_menu_permission_seed():
     # Lab 하위
     create_menu(17, code='LAB_RESULT_VIEW', path='/lab', icon='book', order=1, is_active=True, parent=menu_lab)
 
-    # Order 하위
-    create_menu(18, code='ORDER_CREATE', path='/orders/create', breadcrumb_only=True, order=2, is_active=True, parent=menu_order)
-    create_menu(19, code='ORDER_LIST', path='/orders/list', icon='clipboard', order=1, is_active=True, parent=menu_order)
+    # OCS 하위 (검사 오더)
+    create_menu(18, code='OCS_CREATE', path='/ocs/create', breadcrumb_only=True, order=2, is_active=True, parent=menu_ocs)
+    create_menu(19, code='OCS_STATUS', path='/ocs/status', icon='clipboard', order=1, is_active=True, parent=menu_ocs)
+    menu_ocs_manage, _ = create_menu(23, code='OCS_MANAGE', path='/ocs/manage', icon='file-medical', order=3, is_active=True, parent=menu_ocs)
 
     # Patient 하위
     create_menu(20, code='PATIENT_LIST', path='/patients', order=1, is_active=True, parent=menu_patient)
     create_menu(21, code='PATIENT_DETAIL', path='/patients/:patientId', breadcrumb_only=True, order=1, is_active=True, parent_id=20)
     create_menu(22, code='PATIENT_CARE', path='/patientsCare', order=2, is_active=True, parent=menu_patient)
     create_menu(36, code='ENCOUNTER_LIST', path='/encounters', order=3, is_active=True, parent=menu_patient)
-
-    # OCS 메뉴 (역할 기반 그룹 분리)
-    # OCS_ORDER: ORDER 그룹 (의사용 오더)
-    menu_ocs_order, _ = create_menu(23, code='OCS_ORDER', path='/ocs/order', icon='file-medical', order=3, is_active=True, parent=menu_order)
 
     # OCS_RIS: IMAGING 그룹 (영상과용)
     menu_ocs_ris, _ = create_menu(24, code='OCS_RIS', path='/ocs/ris', icon='x-ray', order=3, is_active=True, parent=menu_imaging)
@@ -478,15 +475,14 @@ def load_menu_permission_seed():
         (21, 'DEFAULT', '환자 상세'),
         (22, 'DEFAULT', '환자 진료'),
         (36, 'DEFAULT', '진료 예약'),
-        # ORDER
+        # OCS (검사 오더)
         (6, 'DEFAULT', '검사 오더'),
         (6, 'DOCTOR', '검사 오더'),
         (6, 'NURSE', '검사 현황'),
         (19, 'DEFAULT', '검사 현황'),  # 간호사/관리자용 - 전체 조회
         (18, 'DEFAULT', '오더 생성'),
-        # OCS
-        (23, 'DEFAULT', '내 검사 오더'),  # 의사용 - 본인 오더만
-        (23, 'DOCTOR', '내 검사 오더'),
+        (23, 'DEFAULT', '오더 관리'),  # 의사용 - 본인 오더 관리
+        (23, 'DOCTOR', '내 오더 관리'),
         (24, 'DEFAULT', '영상 워크리스트'),
         (25, 'DEFAULT', '검사 워크리스트'),
         (26, 'DEFAULT', '영상 검사 상세'),
@@ -550,7 +546,7 @@ def load_menu_permission_seed():
         'SYSTEMMANAGER': list(permission_map.keys()),  # 모든 권한
         'ADMIN': [
             'DASHBOARD', 'PATIENT', 'PATIENT_LIST', 'PATIENT_DETAIL', 'PATIENT_CARE', 'ENCOUNTER_LIST',
-            'ORDER', 'ORDER_LIST', 'ORDER_CREATE', 'OCS_ORDER',
+            'OCS', 'OCS_STATUS', 'OCS_CREATE', 'OCS_MANAGE',
             'OCS_RIS', 'OCS_RIS_DETAIL', 'OCS_LIS', 'OCS_LIS_DETAIL',
             'IMAGING', 'IMAGE_VIEWER', 'RIS_WORKLIST',
             'LAB', 'LAB_RESULT_VIEW', 'LAB_RESULT_UPLOAD',
@@ -558,8 +554,8 @@ def load_menu_permission_seed():
             'NURSE_RECEPTION',
             'ADMIN', 'ADMIN_USER', 'ADMIN_USER_DETAIL', 'ADMIN_ROLE', 'ADMIN_MENU_PERMISSION', 'ADMIN_AUDIT_LOG'
         ],
-        'DOCTOR': ['DASHBOARD', 'PATIENT_LIST', 'PATIENT_DETAIL', 'PATIENT_CARE', 'ENCOUNTER_LIST', 'ORDER_LIST', 'OCS_ORDER', 'IMAGE_VIEWER', 'RIS_WORKLIST', 'LAB_RESULT_VIEW', 'AI_SUMMARY', 'AI_REQUEST_LIST', 'AI_REQUEST_CREATE', 'AI_REQUEST_DETAIL'],
-        'NURSE': ['DASHBOARD', 'PATIENT_LIST', 'PATIENT_DETAIL', 'ENCOUNTER_LIST', 'ORDER_LIST', 'IMAGE_VIEWER', 'LAB_RESULT_VIEW', 'NURSE_RECEPTION'],  # PATIENT_CARE 제거 (DOCTOR, SYSTEMMANAGER만)
+        'DOCTOR': ['DASHBOARD', 'PATIENT_LIST', 'PATIENT_DETAIL', 'PATIENT_CARE', 'ENCOUNTER_LIST', 'OCS_STATUS', 'OCS_CREATE', 'OCS_MANAGE', 'IMAGE_VIEWER', 'RIS_WORKLIST', 'LAB_RESULT_VIEW', 'AI_SUMMARY', 'AI_REQUEST_LIST', 'AI_REQUEST_CREATE', 'AI_REQUEST_DETAIL'],
+        'NURSE': ['DASHBOARD', 'PATIENT_LIST', 'PATIENT_DETAIL', 'ENCOUNTER_LIST', 'OCS_STATUS', 'IMAGE_VIEWER', 'LAB_RESULT_VIEW', 'NURSE_RECEPTION'],  # PATIENT_CARE 제거 (DOCTOR, SYSTEMMANAGER만)
         'RIS': ['DASHBOARD', 'IMAGE_VIEWER', 'RIS_WORKLIST', 'OCS_RIS', 'OCS_RIS_DETAIL', 'RIS_DASHBOARD', 'RIS_RESULT_UPLOAD'],
         'LIS': ['DASHBOARD', 'LAB_RESULT_VIEW', 'LAB_RESULT_UPLOAD', 'OCS_LIS', 'OCS_LIS_DETAIL', 'LIS_PROCESS_STATUS'],
     }
@@ -708,6 +704,47 @@ def create_dummy_encounters(target_count=20, force=False):
         '치매', '간질', '다발성 경화증', '신경통'
     ]
 
+    # SOAP 노트 샘플 데이터
+    subjective_samples = [
+        '3일 전부터 지속되는 두통, 아침에 더 심함',
+        '일주일간 어지러움 증상, 구역감 동반',
+        '양손 저림 증상, 특히 야간에 심해짐',
+        '최근 건망증이 심해졌다고 호소',
+        '잠들기 어렵고 자주 깸, 피로감 호소',
+        '우측 관자놀이 쪽 박동성 두통',
+        '경추 부위 통증, 고개 돌릴 때 악화',
+    ]
+
+    objective_samples = [
+        'BP 130/85, HR 72, BT 36.5',
+        '신경학적 검사 정상, 경부 강직 없음',
+        '동공 반사 정상, 안구 운동 정상',
+        'Romberg test 양성, 보행 시 불안정',
+        'MMT 정상, DTR 정상, 병적 반사 없음',
+        'GCS 15, 의식 명료, 지남력 정상',
+        '뇌 MRI: T2 고신호 병변 확인',
+    ]
+
+    assessment_samples = [
+        '긴장성 두통 의심, R/O 편두통',
+        '말초성 현훈 vs 중추성 현훈 감별 필요',
+        '수근관 증후군 의심',
+        '경도 인지장애 가능성, 치매 스크리닝 필요',
+        '불면증, 수면 무호흡 가능성',
+        '뇌종양 의심, 추가 검사 필요',
+        '경추 디스크 탈출증 의심',
+    ]
+
+    plan_samples = [
+        '뇌 MRI 촬영, 진통제 처방, 2주 후 재진',
+        '청력검사, 전정기능검사 예정, 어지럼증 약물 처방',
+        '신경전도검사 의뢰, 보존적 치료',
+        '인지기능검사, 혈액검사 (갑상선, B12)',
+        '수면다원검사 의뢰, 수면위생 교육',
+        'MRI 추적검사, 신경외과 협진',
+        '물리치료 의뢰, NSAIDs 처방',
+    ]
+
     created_count = 0
 
     for i in range(target_count):
@@ -734,6 +771,16 @@ def create_dummy_encounters(target_count=20, force=False):
         elif status == 'cancelled' and random.choice([True, False]):
             discharge_date = admission_date
 
+        # 완료된 진료는 SOAP 노트 작성
+        soap_data = {}
+        if status in ['completed', 'in_progress']:
+            soap_data = {
+                'subjective': random.choice(subjective_samples),
+                'objective': random.choice(objective_samples),
+                'assessment': random.choice(assessment_samples),
+                'plan': random.choice(plan_samples),
+            }
+
         try:
             encounter = Encounter.objects.create(
                 patient=random.choice(patients),
@@ -746,6 +793,7 @@ def create_dummy_encounters(target_count=20, force=False):
                 chief_complaint=random.choice(chief_complaints),
                 primary_diagnosis=random.choice(primary_diagnoses),
                 secondary_diagnoses=random.sample(['고혈압', '당뇨', '고지혈증'], random.randint(0, 2)),
+                **soap_data,
             )
             created_count += 1
         except Exception as e:
@@ -1138,6 +1186,127 @@ def create_ai_models():
     return True
 
 
+def create_patient_alerts(force=False):
+    """환자 주의사항 더미 데이터 생성"""
+    print("\n[6단계] 환자 주의사항 데이터 생성...")
+
+    from apps.patients.models import Patient, PatientAlert
+    from django.contrib.auth import get_user_model
+    User = get_user_model()
+
+    # 기존 데이터 확인
+    existing_count = PatientAlert.objects.count()
+    if existing_count > 0 and not force:
+        print(f"[SKIP] 이미 {existing_count}건의 주의사항이 존재합니다.")
+        return True
+
+    patients = list(Patient.objects.filter(is_deleted=False))
+    doctors = list(User.objects.filter(role__code='DOCTOR'))
+
+    if not patients:
+        print("[ERROR] 환자가 없습니다.")
+        return False
+
+    if not doctors:
+        doctors = list(User.objects.all()[:1])
+
+    alert_samples = [
+        {'alert_type': 'ALLERGY', 'severity': 'HIGH', 'title': '페니실린 알레르기', 'description': '페니실린 계열 항생제 투여 시 아나필락시스 반응 가능'},
+        {'alert_type': 'ALLERGY', 'severity': 'HIGH', 'title': '조영제 알레르기', 'description': 'CT/MRI 조영제 투여 시 두드러기, 호흡곤란 발생 이력'},
+        {'alert_type': 'ALLERGY', 'severity': 'MEDIUM', 'title': '아스피린 과민반응', 'description': 'NSAIDs 사용 시 주의 필요'},
+        {'alert_type': 'CONTRAINDICATION', 'severity': 'HIGH', 'title': '와파린 복용 중', 'description': '항응고제 복용 중 - 출혈 위험'},
+        {'alert_type': 'CONTRAINDICATION', 'severity': 'HIGH', 'title': 'MRI 금기', 'description': '심장 박동기 삽입 환자 - MRI 촬영 금지'},
+        {'alert_type': 'PRECAUTION', 'severity': 'MEDIUM', 'title': '낙상 주의', 'description': '보행 장애로 인한 낙상 위험'},
+        {'alert_type': 'PRECAUTION', 'severity': 'LOW', 'title': '당뇨 환자', 'description': '혈당 관리 필요 - 공복 검사 시 저혈당 주의'},
+        {'alert_type': 'OTHER', 'severity': 'LOW', 'title': '보호자 연락 필요', 'description': '중요 결정 시 보호자 동의 필요'},
+    ]
+
+    created_count = 0
+
+    # 각 환자에게 0~3개의 주의사항 추가
+    for patient in patients:
+        num_alerts = random.randint(0, 3)
+        if num_alerts == 0:
+            continue
+
+        selected_alerts = random.sample(alert_samples, min(num_alerts, len(alert_samples)))
+        for alert_data in selected_alerts:
+            try:
+                PatientAlert.objects.create(
+                    patient=patient,
+                    alert_type=alert_data['alert_type'],
+                    severity=alert_data['severity'],
+                    title=alert_data['title'],
+                    description=alert_data['description'],
+                    is_active=True,
+                    created_by=random.choice(doctors),
+                )
+                created_count += 1
+            except Exception as e:
+                print(f"  오류: {e}")
+
+    print(f"[OK] 환자 주의사항 생성: {created_count}건")
+    print(f"  현재 전체 주의사항: {PatientAlert.objects.count()}건")
+    return True
+
+
+def update_encounters_with_soap(force=False):
+    """기존 진료에 SOAP 데이터 추가"""
+    print("\n[7단계] 진료 SOAP 데이터 업데이트...")
+
+    from apps.encounters.models import Encounter
+
+    # 완료/진행중 진료만 업데이트
+    encounters = Encounter.objects.filter(
+        status__in=['completed', 'in_progress'],
+        subjective='',  # SOAP 데이터가 없는 진료만
+    )
+
+    if not encounters.exists() and not force:
+        print("[SKIP] 업데이트 대상 진료가 없거나 이미 SOAP 데이터가 있습니다.")
+        return True
+
+    soap_samples = [
+        {
+            'subjective': '두통이 2주 전부터 시작되어 점점 심해지고 있습니다. 오심, 구토 동반됨.',
+            'objective': 'V/S: BP 130/85, HR 78, BT 36.5\nNeuro exam: Pupil reflex (+/+), MMT 5/5',
+            'assessment': '두통 - 원인 감별 필요 (Tension type vs. Secondary headache)',
+            'plan': '1. Brain MRI with contrast 처방\n2. 진통제 처방 (Acetaminophen 500mg tid)\n3. 2주 후 F/U',
+        },
+        {
+            'subjective': '왼쪽 팔다리 저림 증상이 3일 전부터 있습니다. 힘이 빠지는 느낌도 있음.',
+            'objective': 'V/S: 안정적\nNeuro exam: Lt. side weakness (MMT 4/5), sensory decreased',
+            'assessment': 'Rt. hemisphere lesion 의심 - Brain tumor vs. Infarction R/O',
+            'plan': '1. Brain CT & MRI 시행\n2. Lab 검사 (CBC, Coag, Chemistry)\n3. 신경외과 협진 의뢰',
+        },
+        {
+            'subjective': '경련이 어제 발생했습니다. 의식 소실 동반, 약 2분간 지속.',
+            'objective': 'V/S: 안정적\nEEG: Abnormal findings at Rt. temporal area',
+            'assessment': 'New onset seizure - Structural lesion 감별 필요',
+            'plan': '1. Anti-epileptic drug 시작 (Levetiracetam 500mg bid)\n2. Brain MRI 시행\n3. 발작 일지 작성 교육',
+        },
+        {
+            'subjective': '정기 추적 검사 방문. 특이 증상 없음.',
+            'objective': 'V/S: 정상\nNeuro exam: No focal neurological deficit',
+            'assessment': 'Brain tumor s/p treatment - Stable disease',
+            'plan': '1. Brain MRI F/U 예약\n2. 현재 투약 유지\n3. 3개월 후 재방문',
+        },
+    ]
+
+    updated_count = 0
+    for encounter in encounters[:15]:  # 최대 15건만 업데이트
+        soap = random.choice(soap_samples)
+        encounter.subjective = soap['subjective']
+        encounter.objective = soap['objective']
+        encounter.assessment = soap['assessment']
+        encounter.plan = soap['plan']
+        encounter.save()
+        updated_count += 1
+
+    print(f"[OK] 진료 SOAP 데이터 업데이트: {updated_count}건")
+    return True
+
+
 def reset_base_data():
     """기본 더미 데이터 삭제 (base 영역만)"""
     print("\n[RESET] 기본 더미 데이터 삭제 중...")
@@ -1145,7 +1314,7 @@ def reset_base_data():
     from apps.ocs.models import OCS, OCSHistory
     from apps.imaging.models import ImagingStudy
     from apps.encounters.models import Encounter
-    from apps.patients.models import Patient
+    from apps.patients.models import Patient, PatientAlert
     from apps.menus.models import Menu, MenuLabel, MenuPermission
     from apps.ai_inference.models import AIInferenceRequest, AIInferenceResult, AIInferenceLog
     from apps.treatment.models import TreatmentPlan, TreatmentSession
@@ -1153,6 +1322,11 @@ def reset_base_data():
     from apps.prescriptions.models import Prescription, PrescriptionItem
 
     # 삭제 순서: 의존성 역순
+    # 환자 주의사항 삭제
+    patient_alert_count = PatientAlert.objects.count()
+    PatientAlert.objects.all().delete()
+    print(f"  PatientAlert: {patient_alert_count}건 삭제")
+
     # 처방 삭제 (Patient 참조)
     prescription_item_count = PrescriptionItem.objects.count()
     PrescriptionItem.objects.all().delete()
@@ -1232,7 +1406,7 @@ def print_summary():
     print("기본 더미 데이터 생성 완료!")
     print("="*60)
 
-    from apps.patients.models import Patient
+    from apps.patients.models import Patient, PatientAlert
     from apps.encounters.models import Encounter
     from apps.imaging.models import ImagingStudy
     from apps.ocs.models import OCS
@@ -1246,7 +1420,9 @@ def print_summary():
     print(f"  - 메뉴-권한 매핑: {MenuPermission.objects.count()}개")
     print(f"  - 권한: {Permission.objects.count()}개")
     print(f"  - 환자: {Patient.objects.filter(is_deleted=False).count()}명")
+    print(f"  - 환자 주의사항: {PatientAlert.objects.count()}건")
     print(f"  - 진료: {Encounter.objects.count()}건")
+    print(f"  - 진료 (SOAP 포함): {Encounter.objects.exclude(subjective='').count()}건")
     print(f"  - OCS (RIS): {OCS.objects.filter(job_role='RIS').count()}건")
     print(f"  - OCS (LIS): {OCS.objects.filter(job_role='LIS').count()}건")
     print(f"  - 영상 검사: {ImagingStudy.objects.count()}건")
@@ -1324,6 +1500,12 @@ def main():
 
     # AI 모델 시드 데이터 생성
     create_ai_models()
+
+    # 환자 주의사항 생성
+    create_patient_alerts(force=force)
+
+    # 진료 SOAP 데이터 업데이트
+    update_encounters_with_soap(force=force)
 
     # 요약 출력
     print_summary()
