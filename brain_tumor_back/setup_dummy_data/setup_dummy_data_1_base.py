@@ -585,8 +585,8 @@ def load_menu_permission_seed():
     # 간호사 진료 접수 메뉴
     create_menu(28, code='NURSE_RECEPTION', path='/nurse/reception', icon='clipboard-list', order=30, is_active=True, parent=None)
 
-    # RIS Dashboard 메뉴 (IMAGING 그룹)
-    create_menu(30, code='RIS_DASHBOARD', path='/ocs/ris/dashboard', icon='chart-bar', order=4, is_active=True, parent=menu_imaging)
+    # RIS Dashboard 메뉴 (IMAGING 그룹) - process-status로 경로 통일
+    create_menu(30, code='RIS_DASHBOARD', path='/ocs/ris/process-status', icon='chart-bar', order=4, is_active=True, parent=menu_imaging)
 
     # RIS Result Upload 메뉴 (IMAGING 그룹)
     create_menu(32, code='RIS_RESULT_UPLOAD', path='/ris/upload', breadcrumb_only=True, order=5, is_active=True, parent=menu_imaging)

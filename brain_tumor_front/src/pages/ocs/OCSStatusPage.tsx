@@ -250,7 +250,7 @@ export default function OCSStatusPage() {
                 <th>환자번호</th>
                 <th>역할</th>
                 <th>작업유형</th>
-                <th>처방의</th>
+                <th>요청의사</th>
                 <th>작업자</th>
                 <th>생성일시</th>
               </tr>

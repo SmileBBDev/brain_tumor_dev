@@ -22,7 +22,7 @@ const OCSRISWorklistPage = lazy(() => import('@/pages/ocs/RISWorklistPage'));
 const RISStudyDetailPage = lazy(() => import('@/pages/ocs/RISStudyDetailPage'));
 const LISWorklistPage = lazy(() => import('@/pages/ocs/LISWorklistPage'));
 const LISStudyDetailPage = lazy(() => import('@/pages/ocs/LISStudyDetailPage'));
-const RISDashboardPage = lazy(() => import('@/pages/ocs/RISDashboardPage'));
+const RISProcessStatusPage = lazy(() => import('@/pages/ocs/RISProcessStatusPage'));
 const LISUploadPage = lazy(() => import('@/pages/ocs/LISUploadPage'));
 const LISProcessStatusPage = lazy(() => import('@/pages/ocs/LISProcessStatusPage'));
 const RISUploadPage = lazy(() => import('@/pages/ocs/RISUploadPage'));
@@ -74,7 +74,7 @@ export const routeMap: Record<string, ComponentType> = {
   PATIENT_IMAGING_HISTORY: PatientImagingHistoryPage,
   OCS_RIS: OCSRISWorklistPage,
   OCS_RIS_DETAIL: RISStudyDetailPage,
-  RIS_DASHBOARD: RISDashboardPage,
+  RIS_DASHBOARD: RISProcessStatusPage,
   RIS_RESULT_UPLOAD: RISUploadPage,
 
   // === LAB 그룹 ===

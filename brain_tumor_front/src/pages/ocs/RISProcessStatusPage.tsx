@@ -9,7 +9,7 @@ import { useNavigate } from 'react-router-dom';
 import { getOCSList } from '@/services/ocs.api';
 import type { OCSListItem } from '@/types/ocs';
 import { useOCSEventCallback } from '@/context/OCSNotificationContext';
-import './RISDashboardPage.css';
+import './RISProcessStatusPage.css';
 
 // 상태별 설정
 const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
@@ -50,7 +50,7 @@ const formatElapsedTime = (minutes: number): string => {
   return mins > 0 ? `${hours}시간 ${mins}분` : `${hours}시간`;
 };
 
-export default function RISDashboardPage() {
+export default function RISProcessStatusPage() {
   const navigate = useNavigate();
 
   // 상태
@@ -142,7 +142,7 @@ export default function RISDashboardPage() {
   };
 
   return (
-    <div className="page ris-dashboard-page">
+    <div className="page ris-process-status-page">
       {/* Toast 알림은 AppLayout에서 전역 렌더링 */}
 
       {/* 헤더 */}
@@ -262,7 +262,8 @@ export default function RISDashboardPage() {
                 <th>상태</th>
                 <th>접수 시간</th>
                 <th>경과 시간</th>
-                <th>담당자</th>
+                <th>작업자</th>
+                <th>요청의사</th>
               </tr>
             </thead>
             <tbody>
@@ -290,6 +291,7 @@ export default function RISDashboardPage() {
                       {formatElapsedTime(elapsed)}
                     </td>
                     <td>{item.worker?.name || '-'}</td>
+                    <td>{item.doctor?.name || '-'}</td>
                   </tr>
                 );
               })}

@@ -232,8 +232,8 @@ export default function LISWorklistPage() {
                 <th>우선순위</th>
                 <th>환자</th>
                 <th>검사 항목</th>
-                <th>처방 의사</th>
-                <th>담당자</th>
+                <th>요청의사</th>
+                <th>작업자</th>
                 <th>생성일시</th>
                 <th>액션</th>
               </tr>

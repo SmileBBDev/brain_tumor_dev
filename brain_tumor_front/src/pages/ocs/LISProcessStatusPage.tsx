@@ -1,38 +1,28 @@
 /**
- * LIS 검사 결과 처리 상태 화면 (P.86)
- * - 업로드된 Raw 데이터의 파싱/정규화/저장 상태 모니터링
- * - 오류 발생 시 재처리 기능
+ * LIS 전체 검사 현황 대시보드
+ * - 현황 요약: 전체 검사 건수, Pending/진행중/완료 건수
+ * - 진행 상황 분포 그래프
+ * - 지연 검사 알림: 일정 시간 초과한 검사 목록
  */
-import { useState, useEffect, useCallback } from 'react';
-import Pagination from '@/layout/Pagination';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { getOCSList } from '@/services/ocs.api';
+import type { OCSListItem } from '@/types/ocs';
+import { useOCSEventCallback } from '@/context/OCSNotificationContext';
 import './LISProcessStatusPage.css';
 
-// 처리 상태 타입
-type ProcessStatus = 'pending' | 'parsing' | 'normalizing' | 'saving' | 'completed' | 'error';
-
-// 처리 아이템 인터페이스
-interface ProcessItem {
-  id: string;
-  rawId: string;
-  fileName: string;
-  receivedAt: string;
-  parseStatus: ProcessStatus;
-  normalizeStatus: ProcessStatus;
-  saveStatus: ProcessStatus;
-  errorMessage: string | null;
-  recordCount: number | null;
-  processedAt: string | null;
-}
-
-// 상태 설정
-const STATUS_CONFIG: Record<ProcessStatus, { label: string; className: string }> = {
-  pending: { label: '대기', className: 'status-pending' },
-  parsing: { label: '파싱 중', className: 'status-processing' },
-  normalizing: { label: '정규화 중', className: 'status-processing' },
-  saving: { label: '저장 중', className: 'status-processing' },
-  completed: { label: '완료', className: 'status-completed' },
-  error: { label: '오류', className: 'status-error' },
+// 상태별 설정
+const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
+  ORDERED: { label: 'Pending', color: '#f39c12' },
+  ACCEPTED: { label: 'Pending', color: '#f39c12' },
+  IN_PROGRESS: { label: '진행중', color: '#3498db' },
+  RESULT_READY: { label: '진행중', color: '#3498db' },
+  CONFIRMED: { label: '완료', color: '#27ae60' },
+  CANCELLED: { label: '취소', color: '#95a5a6' },
 };
+
+// 지연 기준 (분)
+const DELAY_THRESHOLD_MINUTES = 60;
 
 // 날짜 포맷
 const formatDateTime = (dateStr: string): string => {
@@ -42,176 +32,123 @@ const formatDateTime = (dateStr: string): string => {
     day: '2-digit',
     hour: '2-digit',
     minute: '2-digit',
-    second: '2-digit',
   });
 };
 
-// 더미 데이터 생성
-const generateMockData = (): ProcessItem[] => {
-  const items: ProcessItem[] = [];
+// 경과 시간 계산
+const getElapsedMinutes = (dateStr: string): number => {
+  const date = new Date(dateStr);
+  const now = new Date();
+  return Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
+};
 
-  for (let i = 1; i <= 25; i++) {
-    const isError = i % 7 === 0;
-    const isCompleted = i % 3 === 0 && !isError;
-    const isPending = i % 5 === 0 && !isError && !isCompleted;
-
-    let parseStatus: ProcessStatus = 'completed';
-    let normalizeStatus: ProcessStatus = 'completed';
-    let saveStatus: ProcessStatus = 'completed';
-    let errorMessage: string | null = null;
-
-    if (isPending) {
-      parseStatus = 'pending';
-      normalizeStatus = 'pending';
-      saveStatus = 'pending';
-    } else if (isError) {
-      const errorStep = Math.floor(Math.random() * 3);
-      if (errorStep === 0) {
-        parseStatus = 'error';
-        normalizeStatus = 'pending';
-        saveStatus = 'pending';
-        errorMessage = '파일 형식이 올바르지 않습니다. (line 15)';
-      } else if (errorStep === 1) {
-        parseStatus = 'completed';
-        normalizeStatus = 'error';
-        saveStatus = 'pending';
-        errorMessage = '필수 필드 누락: patient_id';
-      } else {
-        parseStatus = 'completed';
-        normalizeStatus = 'completed';
-        saveStatus = 'error';
-        errorMessage = '데이터베이스 연결 오류';
-      }
-    }
-
-    items.push({
-      id: `proc-${i}`,
-      rawId: `RAW-${String(i).padStart(6, '0')}`,
-      fileName: `lab_result_${String(i).padStart(3, '0')}.csv`,
-      receivedAt: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString(),
-      parseStatus,
-      normalizeStatus,
-      saveStatus,
-      errorMessage,
-      recordCount: isCompleted ? Math.floor(Math.random() * 50) + 10 : null,
-      processedAt: isCompleted ? new Date(Date.now() - Math.random() * 24 * 60 * 60 * 1000).toISOString() : null,
-    });
-  }
-
-  return items.sort((a, b) => new Date(b.receivedAt).getTime() - new Date(a.receivedAt).getTime());
+// 경과 시간 표시
+const formatElapsedTime = (minutes: number): string => {
+  if (minutes < 60) return `${minutes}분`;
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  return mins > 0 ? `${hours}시간 ${mins}분` : `${hours}시간`;
 };
 
 export default function LISProcessStatusPage() {
+  const navigate = useNavigate();
+
   // 상태
-  const [items, setItems] = useState<ProcessItem[]>([]);
+  const [ocsItems, setOcsItems] = useState<OCSListItem[]>([]);
   const [loading, setLoading] = useState(false);
-  const [page, setPage] = useState(1);
-  const pageSize = 15;
 
-  // 필터
-  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'processing' | 'completed' | 'error'>('all');
-
-  // 재처리 중인 항목
-  const [reprocessingIds, setReprocessingIds] = useState<Set<string>>(new Set());
-
-  // 데이터 로드 (실제 구현 시 API 호출)
+  // 데이터 로드 (useOCSEventCallback보다 먼저 정의해야 함)
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      // 시뮬레이션
-      await new Promise((resolve) => setTimeout(resolve, 300));
-      const data = generateMockData();
-      setItems(data);
+      const response = await getOCSList({
+        job_role: 'LIS',
+        page_size: 200, // 전체 조회
+      });
+      setOcsItems(response.results || []);
     } catch (error) {
-      console.error('Failed to load process status:', error);
+      console.error('Failed to load LIS data:', error);
     } finally {
       setLoading(false);
     }
   }, []);
 
+  // WebSocket 이벤트 콜백 (전역 Context 사용)
+  useOCSEventCallback({
+    autoRefresh: loadData,
+  });
+
   useEffect(() => {
     loadData();
   }, [loadData]);
 
-  // 재처리 핸들러
-  const handleReprocess = async (item: ProcessItem) => {
-    setReprocessingIds((prev) => new Set(prev).add(item.id));
+  // 통계 계산
+  const stats = useMemo(() => {
+    const result = {
+      total: ocsItems.length,
+      pending: 0,
+      inProgress: 0,
+      completed: 0,
+      cancelled: 0,
+    };
 
-    try {
-      // 시뮬레이션: 2초 후 성공
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+    ocsItems.forEach((item) => {
+      switch (item.ocs_status) {
+        case 'ORDERED':
+        case 'ACCEPTED':
+          result.pending++;
+          break;
+        case 'IN_PROGRESS':
+        case 'RESULT_READY':
+          result.inProgress++;
+          break;
+        case 'CONFIRMED':
+          result.completed++;
+          break;
+        case 'CANCELLED':
+          result.cancelled++;
+          break;
+      }
+    });
 
-      // 상태 업데이트
-      setItems((prev) =>
-        prev.map((i) =>
-          i.id === item.id
-            ? {
-                ...i,
-                parseStatus: 'completed',
-                normalizeStatus: 'completed',
-                saveStatus: 'completed',
-                errorMessage: null,
-                recordCount: Math.floor(Math.random() * 50) + 10,
-                processedAt: new Date().toISOString(),
-              }
-            : i
-        )
-      );
-    } catch (error) {
-      console.error('Reprocess failed:', error);
-    } finally {
-      setReprocessingIds((prev) => {
-        const newSet = new Set(prev);
-        newSet.delete(item.id);
-        return newSet;
-      });
-    }
+    return result;
+  }, [ocsItems]);
+
+  // 지연된 항목
+  const delayedItems = useMemo(() => {
+    return ocsItems
+      .filter((item) => {
+        if (item.ocs_status === 'CONFIRMED' || item.ocs_status === 'CANCELLED') {
+          return false;
+        }
+        const elapsed = getElapsedMinutes(item.created_at);
+        return elapsed > DELAY_THRESHOLD_MINUTES;
+      })
+      .sort((a, b) => {
+        return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+      })
+      .slice(0, 10);
+  }, [ocsItems]);
+
+  // 진행률 퍼센트
+  const getPercentage = (value: number): number => {
+    if (stats.total === 0) return 0;
+    return Math.round((value / stats.total) * 100);
   };
 
-  // 전체 상태 계산
-  const getOverallStatus = (item: ProcessItem): ProcessStatus => {
-    if (item.parseStatus === 'error' || item.normalizeStatus === 'error' || item.saveStatus === 'error') {
-      return 'error';
-    }
-    if (item.parseStatus === 'pending' && item.normalizeStatus === 'pending' && item.saveStatus === 'pending') {
-      return 'pending';
-    }
-    if (item.parseStatus === 'completed' && item.normalizeStatus === 'completed' && item.saveStatus === 'completed') {
-      return 'completed';
-    }
-    return 'parsing'; // processing
-  };
-
-  // 필터링
-  const filteredItems = items.filter((item) => {
-    if (statusFilter === 'all') return true;
-    const overall = getOverallStatus(item);
-    if (statusFilter === 'pending') return overall === 'pending';
-    if (statusFilter === 'processing') return ['parsing', 'normalizing', 'saving'].includes(overall);
-    if (statusFilter === 'completed') return overall === 'completed';
-    if (statusFilter === 'error') return overall === 'error';
-    return true;
-  });
-
-  // 페이지네이션
-  const paginatedItems = filteredItems.slice((page - 1) * pageSize, page * pageSize);
-  const totalPages = Math.ceil(filteredItems.length / pageSize);
-
-  // 통계
-  const stats = {
-    total: items.length,
-    pending: items.filter((i) => getOverallStatus(i) === 'pending').length,
-    processing: items.filter((i) => ['parsing', 'normalizing', 'saving'].includes(getOverallStatus(i))).length,
-    completed: items.filter((i) => getOverallStatus(i) === 'completed').length,
-    error: items.filter((i) => getOverallStatus(i) === 'error').length,
+  // 행 클릭
+  const handleRowClick = (item: OCSListItem) => {
+    navigate(`/ocs/lis/${item.id}`);
   };
 
   return (
     <div className="page lis-process-status-page">
+      {/* Toast 알림은 AppLayout에서 전역 렌더링 */}
+
       {/* 헤더 */}
       <header className="page-header">
-        <h2>검사 결과 처리 상태</h2>
-        <span className="subtitle">업로드된 Raw 데이터의 처리 현황을 모니터링합니다</span>
+        <h2>전체 검사 현황</h2>
+        <span className="subtitle">검사실 검사 진행 상황을 모니터링합니다</span>
         <button className="refresh-btn" onClick={loadData} disabled={loading}>
           {loading ? '로딩 중...' : '새로고침'}
         </button>
@@ -220,123 +157,146 @@ export default function LISProcessStatusPage() {
       {/* 요약 카드 */}
       <section className="summary-cards">
         <div className="summary-card total">
-          <span className="card-label">전체</span>
-          <span className="card-value">{stats.total}</span>
+          <span className="card-icon">📊</span>
+          <div className="card-content">
+            <span className="card-label">전체 검사</span>
+            <span className="card-value">{stats.total}</span>
+          </div>
         </div>
         <div className="summary-card pending">
-          <span className="card-label">대기</span>
-          <span className="card-value">{stats.pending}</span>
+          <span className="card-icon">⏳</span>
+          <div className="card-content">
+            <span className="card-label">Pending</span>
+            <span className="card-value">{stats.pending}</span>
+          </div>
         </div>
-        <div className="summary-card processing">
-          <span className="card-label">처리 중</span>
-          <span className="card-value">{stats.processing}</span>
+        <div className="summary-card in-progress">
+          <span className="card-icon">🔬</span>
+          <div className="card-content">
+            <span className="card-label">진행중</span>
+            <span className="card-value">{stats.inProgress}</span>
+          </div>
         </div>
         <div className="summary-card completed">
-          <span className="card-label">완료</span>
-          <span className="card-value">{stats.completed}</span>
-        </div>
-        <div className="summary-card error">
-          <span className="card-label">오류</span>
-          <span className="card-value">{stats.error}</span>
-        </div>
-      </section>
-
-      {/* 필터 */}
-      <section className="filter-section">
-        <div className="filter-group">
-          <label>상태 필터:</label>
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
-          >
-            <option value="all">전체</option>
-            <option value="pending">대기</option>
-            <option value="processing">처리 중</option>
-            <option value="completed">완료</option>
-            <option value="error">오류</option>
-          </select>
+          <span className="card-icon">✅</span>
+          <div className="card-content">
+            <span className="card-label">완료</span>
+            <span className="card-value">{stats.completed}</span>
+          </div>
         </div>
       </section>
 
-      {/* 테이블 */}
-      <section className="table-section">
-        {loading ? (
-          <div className="loading">로딩 중...</div>
-        ) : paginatedItems.length === 0 ? (
-          <div className="empty-message">처리 기록이 없습니다.</div>
+      {/* 진행 상황 분포 */}
+      <section className="progress-section">
+        <h3>검사 상태 분포</h3>
+        <div className="progress-chart">
+          <div className="progress-bar">
+            {stats.pending > 0 && (
+              <div
+                className="progress-segment pending"
+                style={{ width: `${getPercentage(stats.pending)}%` }}
+                title={`Pending: ${stats.pending}건 (${getPercentage(stats.pending)}%)`}
+              />
+            )}
+            {stats.inProgress > 0 && (
+              <div
+                className="progress-segment in-progress"
+                style={{ width: `${getPercentage(stats.inProgress)}%` }}
+                title={`진행중: ${stats.inProgress}건 (${getPercentage(stats.inProgress)}%)`}
+              />
+            )}
+            {stats.completed > 0 && (
+              <div
+                className="progress-segment completed"
+                style={{ width: `${getPercentage(stats.completed)}%` }}
+                title={`완료: ${stats.completed}건 (${getPercentage(stats.completed)}%)`}
+              />
+            )}
+            {stats.cancelled > 0 && (
+              <div
+                className="progress-segment cancelled"
+                style={{ width: `${getPercentage(stats.cancelled)}%` }}
+                title={`취소: ${stats.cancelled}건 (${getPercentage(stats.cancelled)}%)`}
+              />
+            )}
+          </div>
+          <div className="progress-legend">
+            <div className="legend-item">
+              <span className="legend-color pending" />
+              <span>Pending ({stats.pending}건, {getPercentage(stats.pending)}%)</span>
+            </div>
+            <div className="legend-item">
+              <span className="legend-color in-progress" />
+              <span>진행중 ({stats.inProgress}건, {getPercentage(stats.inProgress)}%)</span>
+            </div>
+            <div className="legend-item">
+              <span className="legend-color completed" />
+              <span>완료 ({stats.completed}건, {getPercentage(stats.completed)}%)</span>
+            </div>
+            {stats.cancelled > 0 && (
+              <div className="legend-item">
+                <span className="legend-color cancelled" />
+                <span>취소 ({stats.cancelled}건, {getPercentage(stats.cancelled)}%)</span>
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
+
+      {/* 지연 검사 알림 */}
+      <section className="delayed-section">
+        <h3>
+          지연 검사 알림
+          <span className="threshold-info">({DELAY_THRESHOLD_MINUTES}분 초과)</span>
+        </h3>
+        {delayedItems.length === 0 ? (
+          <div className="empty-message">지연된 검사가 없습니다.</div>
         ) : (
-          <table className="process-table">
+          <table className="delayed-table">
             <thead>
               <tr>
-                <th>Raw ID</th>
-                <th>파일명</th>
-                <th>수신 시간</th>
-                <th>파싱</th>
-                <th>정규화</th>
-                <th>저장</th>
-                <th>레코드 수</th>
-                <th>오류 메시지</th>
-                <th>액션</th>
+                <th>OCS ID</th>
+                <th>환자명</th>
+                <th>환자번호</th>
+                <th>검사 유형</th>
+                <th>상태</th>
+                <th>접수 시간</th>
+                <th>경과 시간</th>
+                <th>작업자</th>
+                <th>요청의사</th>
               </tr>
             </thead>
             <tbody>
-              {paginatedItems.map((item) => {
-                const hasError = getOverallStatus(item) === 'error';
-                const isReprocessing = reprocessingIds.has(item.id);
+              {delayedItems.map((item) => {
+                const elapsed = getElapsedMinutes(item.created_at);
+                const isUrgent = elapsed > DELAY_THRESHOLD_MINUTES * 2;
 
                 return (
-                  <tr key={item.id} className={hasError ? 'error-row' : ''}>
-                    <td className="raw-id">{item.rawId}</td>
-                    <td className="filename">{item.fileName}</td>
-                    <td className="datetime">{formatDateTime(item.receivedAt)}</td>
+                  <tr
+                    key={item.id}
+                    className={`clickable-row ${isUrgent ? 'urgent-row' : ''}`}
+                    onClick={() => handleRowClick(item)}
+                  >
+                    <td className="ocs-id">{item.ocs_id}</td>
+                    <td className="patient-name">{item.patient.name}</td>
+                    <td>{item.patient.patient_number}</td>
+                    <td>{item.job_type}</td>
                     <td>
-                      <span className={`status-badge ${STATUS_CONFIG[item.parseStatus].className}`}>
-                        {STATUS_CONFIG[item.parseStatus].label}
+                      <span className={`status-badge ${item.ocs_status.toLowerCase()}`}>
+                        {STATUS_CONFIG[item.ocs_status]?.label || item.ocs_status_display}
                       </span>
                     </td>
-                    <td>
-                      <span className={`status-badge ${STATUS_CONFIG[item.normalizeStatus].className}`}>
-                        {STATUS_CONFIG[item.normalizeStatus].label}
-                      </span>
+                    <td>{formatDateTime(item.created_at)}</td>
+                    <td className={`elapsed-time ${isUrgent ? 'urgent' : 'delayed'}`}>
+                      {formatElapsedTime(elapsed)}
                     </td>
-                    <td>
-                      <span className={`status-badge ${STATUS_CONFIG[item.saveStatus].className}`}>
-                        {STATUS_CONFIG[item.saveStatus].label}
-                      </span>
-                    </td>
-                    <td className="record-count">{item.recordCount ?? '-'}</td>
-                    <td className="error-message">
-                      {item.errorMessage && (
-                        <span className="error-text" title={item.errorMessage}>
-                          {item.errorMessage}
-                        </span>
-                      )}
-                    </td>
-                    <td className="action-cell">
-                      {hasError && (
-                        <button
-                          className="reprocess-btn"
-                          onClick={() => handleReprocess(item)}
-                          disabled={isReprocessing}
-                        >
-                          {isReprocessing ? '처리 중...' : '재처리'}
-                        </button>
-                      )}
-                    </td>
+                    <td>{item.worker?.name || '-'}</td>
+                    <td>{item.doctor?.name || '-'}</td>
                   </tr>
                 );
               })}
             </tbody>
           </table>
-        )}
-
-        {totalPages > 1 && (
-          <Pagination
-            currentPage={page}
-            totalPages={totalPages}
-            onChange={setPage}
-            pageSize={pageSize}
-          />
         )}
       </section>
     </div>

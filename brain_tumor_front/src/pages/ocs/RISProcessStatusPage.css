@@ -1,29 +1,29 @@
 /* RIS 전체 판독 현황 대시보드 스타일 */
 
-.ris-dashboard-page {
+.ris-process-status-page {
   padding: 20px;
 }
 
-.ris-dashboard-page .page-header {
+.ris-process-status-page .page-header {
   display: flex;
   align-items: center;
   gap: 16px;
   margin-bottom: 24px;
 }
 
-.ris-dashboard-page .page-header h2 {
+.ris-process-status-page .page-header h2 {
   margin: 0;
   font-size: 24px;
   font-weight: 600;
   color: #1a1a2e;
 }
 
-.ris-dashboard-page .page-header .subtitle {
+.ris-process-status-page .page-header .subtitle {
   color: #6c757d;
   font-size: 14px;
 }
 
-.ris-dashboard-page .page-header .refresh-btn {
+.ris-process-status-page .page-header .refresh-btn {
   margin-left: auto;
   padding: 8px 16px;
   background: #3498db;
@@ -35,24 +35,24 @@
   transition: background 0.2s;
 }
 
-.ris-dashboard-page .page-header .refresh-btn:hover:not(:disabled) {
+.ris-process-status-page .page-header .refresh-btn:hover:not(:disabled) {
   background: #2980b9;
 }
 
-.ris-dashboard-page .page-header .refresh-btn:disabled {
+.ris-process-status-page .page-header .refresh-btn:disabled {
   background: #95a5a6;
   cursor: not-allowed;
 }
 
 /* 요약 카드 */
-.ris-dashboard-page .summary-cards {
+.ris-process-status-page .summary-cards {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 16px;
   margin-bottom: 24px;
 }
 
-.ris-dashboard-page .summary-card {
+.ris-process-status-page .summary-card {
   background: #fff;
   border-radius: 12px;
   padding: 20px;
@@ -62,7 +62,7 @@
   gap: 16px;
 }
 
-.ris-dashboard-page .summary-card .card-icon {
+.ris-process-status-page .summary-card .card-icon {
   font-size: 32px;
   width: 56px;
   height: 56px;
@@ -73,52 +73,52 @@
   background: #f8f9fa;
 }
 
-.ris-dashboard-page .summary-card .card-content {
+.ris-process-status-page .summary-card .card-content {
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
 
-.ris-dashboard-page .summary-card .card-label {
+.ris-process-status-page .summary-card .card-label {
   font-size: 13px;
   color: #6c757d;
 }
 
-.ris-dashboard-page .summary-card .card-value {
+.ris-process-status-page .summary-card .card-value {
   font-size: 28px;
   font-weight: 700;
 }
 
-.ris-dashboard-page .summary-card.total .card-value {
+.ris-process-status-page .summary-card.total .card-value {
   color: #2c3e50;
 }
 
-.ris-dashboard-page .summary-card.pending .card-icon {
+.ris-process-status-page .summary-card.pending .card-icon {
   background: #fef4e6;
 }
 
-.ris-dashboard-page .summary-card.pending .card-value {
+.ris-process-status-page .summary-card.pending .card-value {
   color: #f39c12;
 }
 
-.ris-dashboard-page .summary-card.reading .card-icon {
+.ris-process-status-page .summary-card.reading .card-icon {
   background: #e8f4fc;
 }
 
-.ris-dashboard-page .summary-card.reading .card-value {
+.ris-process-status-page .summary-card.reading .card-value {
   color: #3498db;
 }
 
-.ris-dashboard-page .summary-card.finalized .card-icon {
+.ris-process-status-page .summary-card.finalized .card-icon {
   background: #e8f8f0;
 }
 
-.ris-dashboard-page .summary-card.finalized .card-value {
+.ris-process-status-page .summary-card.finalized .card-value {
   color: #27ae60;
 }
 
 /* 진행 상황 분포 */
-.ris-dashboard-page .progress-section {
+.ris-process-status-page .progress-section {
   background: #fff;
   border-radius: 12px;
   padding: 20px 24px;
@@ -126,20 +126,20 @@
   margin-bottom: 24px;
 }
 
-.ris-dashboard-page .progress-section h3 {
+.ris-process-status-page .progress-section h3 {
   margin: 0 0 16px 0;
   font-size: 16px;
   font-weight: 600;
   color: #2c3e50;
 }
 
-.ris-dashboard-page .progress-chart {
+.ris-process-status-page .progress-chart {
   display: flex;
   flex-direction: column;
   gap: 16px;
 }
 
-.ris-dashboard-page .progress-bar {
+.ris-process-status-page .progress-bar {
   display: flex;
   height: 32px;
   border-radius: 8px;
@@ -147,33 +147,33 @@
   background: #e9ecef;
 }
 
-.ris-dashboard-page .progress-segment {
+.ris-process-status-page .progress-segment {
   transition: width 0.3s ease;
 }
 
-.ris-dashboard-page .progress-segment.pending {
+.ris-process-status-page .progress-segment.pending {
   background: #f39c12;
 }
 
-.ris-dashboard-page .progress-segment.reading {
+.ris-process-status-page .progress-segment.reading {
   background: #3498db;
 }
 
-.ris-dashboard-page .progress-segment.finalized {
+.ris-process-status-page .progress-segment.finalized {
   background: #27ae60;
 }
 
-.ris-dashboard-page .progress-segment.cancelled {
+.ris-process-status-page .progress-segment.cancelled {
   background: #95a5a6;
 }
 
-.ris-dashboard-page .progress-legend {
+.ris-process-status-page .progress-legend {
   display: flex;
   flex-wrap: wrap;
   gap: 20px;
 }
 
-.ris-dashboard-page .legend-item {
+.ris-process-status-page .legend-item {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -181,37 +181,37 @@
   color: #495057;
 }
 
-.ris-dashboard-page .legend-color {
+.ris-process-status-page .legend-color {
   width: 16px;
   height: 16px;
   border-radius: 4px;
 }
 
-.ris-dashboard-page .legend-color.pending {
+.ris-process-status-page .legend-color.pending {
   background: #f39c12;
 }
 
-.ris-dashboard-page .legend-color.reading {
+.ris-process-status-page .legend-color.reading {
   background: #3498db;
 }
 
-.ris-dashboard-page .legend-color.finalized {
+.ris-process-status-page .legend-color.finalized {
   background: #27ae60;
 }
 
-.ris-dashboard-page .legend-color.cancelled {
+.ris-process-status-page .legend-color.cancelled {
   background: #95a5a6;
 }
 
 /* 지연 판독 알림 */
-.ris-dashboard-page .delayed-section {
+.ris-process-status-page .delayed-section {
   background: #fff;
   border-radius: 12px;
   padding: 20px 24px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
-.ris-dashboard-page .delayed-section h3 {
+.ris-process-status-page .delayed-section h3 {
   margin: 0 0 16px 0;
   font-size: 16px;
   font-weight: 600;
@@ -221,25 +221,25 @@
   gap: 8px;
 }
 
-.ris-dashboard-page .threshold-info {
+.ris-process-status-page .threshold-info {
   font-size: 13px;
   font-weight: 400;
   color: #6c757d;
 }
 
-.ris-dashboard-page .empty-message {
+.ris-process-status-page .empty-message {
   padding: 40px 20px;
   text-align: center;
   color: #6c757d;
   font-size: 14px;
 }
 
-.ris-dashboard-page .delayed-table {
+.ris-process-status-page .delayed-table {
   width: 100%;
   border-collapse: collapse;
 }
 
-.ris-dashboard-page .delayed-table th {
+.ris-process-status-page .delayed-table th {
   background: #f8f9fa;
   padding: 12px 16px;
   text-align: left;
@@ -249,41 +249,41 @@
   border-bottom: 2px solid #dee2e6;
 }
 
-.ris-dashboard-page .delayed-table td {
+.ris-process-status-page .delayed-table td {
   padding: 12px 16px;
   font-size: 14px;
   color: #212529;
   border-bottom: 1px solid #e9ecef;
 }
 
-.ris-dashboard-page .delayed-table .clickable-row {
+.ris-process-status-page .delayed-table .clickable-row {
   cursor: pointer;
   transition: background 0.2s;
 }
 
-.ris-dashboard-page .delayed-table .clickable-row:hover {
+.ris-process-status-page .delayed-table .clickable-row:hover {
   background: #f8f9fa;
 }
 
-.ris-dashboard-page .delayed-table .urgent-row {
+.ris-process-status-page .delayed-table .urgent-row {
   background: #fff5f5;
 }
 
-.ris-dashboard-page .delayed-table .urgent-row:hover {
+.ris-process-status-page .delayed-table .urgent-row:hover {
   background: #ffe8e8;
 }
 
-.ris-dashboard-page .ocs-id {
+.ris-process-status-page .ocs-id {
   font-family: monospace;
   font-size: 13px;
   color: #6c757d;
 }
 
-.ris-dashboard-page .patient-name {
+.ris-process-status-page .patient-name {
   font-weight: 500;
 }
 
-.ris-dashboard-page .status-badge {
+.ris-process-status-page .status-badge {
   display: inline-block;
   padding: 4px 10px;
   border-radius: 12px;
@@ -291,62 +291,62 @@
   font-weight: 500;
 }
 
-.ris-dashboard-page .status-badge.ordered,
-.ris-dashboard-page .status-badge.accepted {
+.ris-process-status-page .status-badge.ordered,
+.ris-process-status-page .status-badge.accepted {
   background: #fef4e6;
   color: #f39c12;
 }
 
-.ris-dashboard-page .status-badge.in_progress,
-.ris-dashboard-page .status-badge.result_ready {
+.ris-process-status-page .status-badge.in_progress,
+.ris-process-status-page .status-badge.result_ready {
   background: #e8f4fc;
   color: #3498db;
 }
 
-.ris-dashboard-page .status-badge.confirmed {
+.ris-process-status-page .status-badge.confirmed {
   background: #e8f8f0;
   color: #27ae60;
 }
 
-.ris-dashboard-page .elapsed-time {
+.ris-process-status-page .elapsed-time {
   font-weight: 600;
 }
 
-.ris-dashboard-page .elapsed-time.delayed {
+.ris-process-status-page .elapsed-time.delayed {
   color: #f39c12;
 }
 
-.ris-dashboard-page .elapsed-time.urgent {
+.ris-process-status-page .elapsed-time.urgent {
   color: #e74c3c;
 }
 
 /* 반응형 */
 @media (max-width: 1200px) {
-  .ris-dashboard-page .summary-cards {
+  .ris-process-status-page .summary-cards {
     grid-template-columns: repeat(2, 1fr);
   }
 }
 
 @media (max-width: 768px) {
-  .ris-dashboard-page .summary-cards {
+  .ris-process-status-page .summary-cards {
     grid-template-columns: 1fr;
   }
 
-  .ris-dashboard-page .page-header {
+  .ris-process-status-page .page-header {
     flex-direction: column;
     align-items: flex-start;
   }
 
-  .ris-dashboard-page .page-header .refresh-btn {
+  .ris-process-status-page .page-header .refresh-btn {
     margin-left: 0;
   }
 
-  .ris-dashboard-page .progress-legend {
+  .ris-process-status-page .progress-legend {
     flex-direction: column;
     gap: 8px;
   }
 
-  .ris-dashboard-page .delayed-table {
+  .ris-process-status-page .delayed-table {
     display: block;
     overflow-x: auto;
   }

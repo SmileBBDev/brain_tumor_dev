@@ -234,8 +234,8 @@ export default function RISWorklistPage() {
                 <th>Modality</th>
                 <th>환자명</th>
                 <th>환자번호</th>
-                <th>처방 의사</th>
-                <th>담당자</th>
+                <th>요청의사</th>
+                <th>작업자</th>
                 <th>생성일시</th>
                 <th>액션</th>
               </tr>
