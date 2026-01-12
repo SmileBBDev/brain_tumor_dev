@@ -40,30 +40,6 @@ function flattenAccessibleMenus(
   });
 }
 
-// 첫 접근 가능한 path 찾기
-function findFirstAccessiblePath(
-  menus: MenuNode[],
-  permissions: string[]
-): string | null {
-  for (const menu of menus) {
-    // path가 있고 접근 가능하면 바로 반환
-    if (
-      menu.path &&
-      !menu.breadcrumbOnly &&
-      permissions.includes(menu.code)
-    ) {
-      return menu.path;
-    }
-
-    // path가 없거나 접근 불가 → children 탐색
-    if (menu.children?.length) {
-      const childPath = findFirstAccessiblePath(menu.children, permissions);
-      if (childPath) return childPath;
-    }
-  }
-  return null;
-}
-
 export default function AppRoutes() {
   const { menus, permissions, isAuthReady, role } = useAuth();
 

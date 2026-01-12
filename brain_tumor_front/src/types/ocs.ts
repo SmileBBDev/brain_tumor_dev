@@ -91,17 +91,25 @@ export interface RISWorkerResult {
   dicom: {
     study_uid: string;
     series: {
+      series_id: string;      // Orthanc Series ID (NEW)
       series_uid: string;
+      series_type: string;    // T1, T2, T1C, FLAIR 등 (NEW)
       modality: string;
       description: string;
       instance_count: number;
     }[];
     accession_number: string;
+    series_count: number;
+    instance_count: number;
   };
 
   impression: string;
   findings: string;
   recommendation: string;
+
+  // 뇌종양 판독 결과
+  tumorDetected?: boolean | null;  // true: 종양 있음, false: 종양 없음, null: 미판정
+
   _custom: Record<string, unknown>;
 }
 
@@ -374,7 +382,7 @@ export interface OCSSubmitResultRequest {
 }
 
 export interface OCSConfirmRequest {
-  ocs_result?: boolean;
+  ocs_result?: boolean | null;
   worker_result?: Partial<WorkerResult> | Record<string, unknown>;
 }
 

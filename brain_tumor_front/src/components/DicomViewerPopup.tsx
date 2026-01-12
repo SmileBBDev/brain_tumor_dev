@@ -26,11 +26,22 @@ interface OcsPatientInfo {
   patientName: string;
 }
 
+// 기존 업로드된 Study 정보 (worker_result.orthanc에서 추출)
+export interface ExistingStudyInfo {
+  orthanc_study_id: string;
+  study_uid: string;
+  patient_id: string;
+  series_count: number;
+  instance_count: number;
+  uploaded_at: string;
+}
+
 // 업로드 결과 정보 (Orthanc 응답)
 export interface UploadResult {
   patientId: string;
   studyUid: string;
-  studyId: string;
+  studyId: string;               // DICOM StudyID (UUID)
+  orthancStudyId: string | null; // Orthanc Internal Study ID (for API calls)
   studyDescription: string;
   ocsId: number | null;
   uploaded: number;
@@ -42,7 +53,9 @@ interface DicomViewerPopupProps {
   open: boolean;
   onClose: () => void;
   ocsInfo?: OcsPatientInfo;
+  existingStudy?: ExistingStudyInfo;  // 기존 업로드된 Study 정보
   onUploadComplete?: (result: UploadResult) => void;  // 업로드 완료 콜백
+  onStudyDeleted?: () => void;  // 기존 Study 삭제 완료 콜백
 }
 
 // 뷰어 인스턴스 타입
@@ -51,7 +64,7 @@ interface ViewerInstance {
   selection: Selection;
 }
 
-export default function DicomViewerPopup({ open, onClose, ocsInfo, onUploadComplete }: DicomViewerPopupProps) {
+export default function DicomViewerPopup({ open, onClose, ocsInfo, existingStudy, onUploadComplete, onStudyDeleted }: DicomViewerPopupProps) {
   const [refreshKey, setRefreshKey] = useState(0);
 
   // 스플리터 상태
@@ -207,7 +220,12 @@ export default function DicomViewerPopup({ open, onClose, ocsInfo, onUploadCompl
             style={{ width: leftWidth }}
           >
             <div className="dicom-popup-stack">
-              <UploadSection onUploaded={onUploaded} ocsInfo={ocsInfo} />
+              <UploadSection
+                onUploaded={onUploaded}
+                ocsInfo={ocsInfo}
+                existingStudy={existingStudy}
+                onStudyDeleted={onStudyDeleted}
+              />
               <PacsSelector
                 key={`${refreshKey}-${activeViewerId}`}
                 onChange={handleSelectionChange}

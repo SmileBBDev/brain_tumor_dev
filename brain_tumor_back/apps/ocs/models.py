@@ -300,11 +300,12 @@ class OCS(models.Model):
         templates = {
             "RIS": {
                 "_template": "RIS",
-                "_version": "1.0",
+                "_version": "1.1",
                 "_confirmed": False,
                 "dicom": {
                     "study_uid": "",
-                    "series": [],
+                    "series": [],  # [{series_id, series_uid, series_type, series_description, instance_count}, ...]
+                    # series_type: T1, T2, T1C, FLAIR, OTHER (SeriesDescription에서 파싱)
                     "accession_number": "",
                     "series_count": 0,
                     "instance_count": 0

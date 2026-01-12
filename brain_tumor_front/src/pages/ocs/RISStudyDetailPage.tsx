@@ -12,7 +12,8 @@ import { getOCS, startOCS, saveOCSResult, confirmOCS } from '@/services/ocs.api'
 import type { OCSDetail, RISWorkerResult } from '@/types/ocs';
 import { OCS_STATUS_LABELS } from '@/types/ocs';
 import AIAnalysisPanel from './components/AIAnalysisPanel';
-import DicomViewerPopup, { type UploadResult } from '@/components/DicomViewerPopup';
+import DicomViewerPopup, { type UploadResult, type ExistingStudyInfo } from '@/components/DicomViewerPopup';
+import { getSeries } from '@/api/orthancApi';
 import './RISStudyDetailPage.css';
 
 // 검사 결과 항목 타입
@@ -63,6 +64,7 @@ export default function RISStudyDetailPage() {
   const [findings, setFindings] = useState('');
   const [impression, setImpression] = useState('');
   const [recommendation, setRecommendation] = useState('');
+  const [tumorDetected, setTumorDetected] = useState<boolean | null>(null); // 뇌종양 유무
 
   // 검사 결과 항목
   const [imageResults, setImageResults] = useState<ImageResultItem[]>([]);
@@ -89,6 +91,8 @@ export default function RISStudyDetailPage() {
           setFindings(result.findings || '');
           setImpression(result.impression || '');
           setRecommendation(result.recommendation || '');
+          // 뇌종양 유무 로드
+          setTumorDetected(result.tumorDetected ?? null);
           // 검사 결과 항목 로드
           if ((result as any).imageResults) {
             setImageResults((result as any).imageResults as ImageResultItem[]);
@@ -189,11 +193,12 @@ export default function RISStudyDetailPage() {
     try {
       const workerResult = {
         _template: 'RIS',
-        _version: '1.0',
+        _version: '1.1',
         _confirmed: false,
         findings,
         impression,
         recommendation,
+        tumorDetected,  // 뇌종양 유무
         imageResults,
         files: uploadedFiles,
         dicom: (ocsDetail.worker_result as RISWorkerResult)?.dicom || {
@@ -201,6 +206,7 @@ export default function RISStudyDetailPage() {
           series: [],
           accession_number: '',
         },
+        orthanc: (ocsDetail.worker_result as any)?.orthanc || null,
         _custom: {},
         _savedAt: new Date().toISOString(),
       };
@@ -228,6 +234,13 @@ export default function RISStudyDetailPage() {
       return;
     }
 
+    // 뇌종양 유무 선택 확인
+    if (tumorDetected === null) {
+      if (!confirm('뇌종양 판정 결과가 "미판정" 상태입니다. 계속하시겠습니까?')) {
+        return;
+      }
+    }
+
     if (!confirm('Final 저장 후에는 수정이 불가능합니다. 계속하시겠습니까?')) {
       return;
     }
@@ -236,11 +249,12 @@ export default function RISStudyDetailPage() {
     try {
       const workerResult = {
         _template: 'RIS',
-        _version: '1.0',
+        _version: '1.1',
         _confirmed: true,
         findings,
         impression,
         recommendation,
+        tumorDetected,  // 뇌종양 유무
         imageResults,
         files: uploadedFiles,
         dicom: (ocsDetail.worker_result as RISWorkerResult)?.dicom || {
@@ -248,13 +262,14 @@ export default function RISStudyDetailPage() {
           series: [],
           accession_number: '',
         },
+        orthanc: (ocsDetail.worker_result as any)?.orthanc || null,
         _custom: {},
         _verifiedAt: new Date().toISOString(),
         _verifiedBy: user?.name,
       };
 
-      // RIS도 결과 제출 시 바로 확정 처리
-      await confirmOCS(ocsDetail.id, { worker_result: workerResult });
+      // RIS도 결과 제출 시 바로 확정 처리 (ocs_result에 tumorDetected 전달)
+      await confirmOCS(ocsDetail.id, { worker_result: workerResult, ocs_result: tumorDetected });
       alert('Final 저장 및 확정이 완료되었습니다.');
 
       // 상태 갱신
@@ -283,6 +298,57 @@ export default function RISStudyDetailPage() {
     setViewerOpen(true);
   };
 
+  // 기존 업로드된 Study 정보 추출 (worker_result.orthanc에서)
+  const getExistingStudyInfo = (): ExistingStudyInfo | undefined => {
+    const result = ocsDetail?.worker_result as any;
+    if (!result?.orthanc?.orthanc_study_id) return undefined;
+
+    return {
+      orthanc_study_id: result.orthanc.orthanc_study_id,
+      study_uid: result.orthanc.study_uid || '',
+      patient_id: result.orthanc.patient_id || '',
+      series_count: result.dicom?.series_count || result.orthanc.series?.length || 0,
+      instance_count: result.dicom?.instance_count || 0,
+      uploaded_at: result.orthanc.uploaded_at || '',
+    };
+  };
+
+  // 기존 Study 삭제 완료 핸들러 (worker_result에서 orthanc/dicom 정보 제거)
+  const handleStudyDeleted = async () => {
+    if (!ocsDetail) return;
+
+    try {
+      const currentResult = (ocsDetail.worker_result as RISWorkerResult) || {};
+
+      // orthanc, dicom 정보를 초기화한 새 worker_result
+      const updatedResult = {
+        ...currentResult,
+        _template: 'RIS',
+        _version: '1.1',
+        dicom: {
+          study_uid: '',
+          series: [],
+          accession_number: '',
+          series_count: 0,
+          instance_count: 0,
+        },
+        orthanc: null,  // 삭제됨
+        _savedAt: new Date().toISOString(),
+      };
+
+      await saveOCSResult(ocsDetail.id, { worker_result: updatedResult });
+
+      // 상태 갱신
+      const updated = await getOCS(ocsDetail.id);
+      setOcsDetail(updated);
+
+      alert('기존 영상 정보가 삭제되었습니다.');
+    } catch (error) {
+      console.error('Failed to clear DICOM info:', error);
+      alert('영상 정보 삭제에 실패했습니다.');
+    }
+  };
+
   // DICOM 업로드 완료 시 worker_result에 Orthanc 정보 저장
   // 현재 폼 상태(findings, impression 등)를 보존하면서 orthanc 정보만 업데이트
   const handleUploadComplete = async (result: UploadResult) => {
@@ -291,10 +357,36 @@ export default function RISStudyDetailPage() {
     try {
       const currentResult = (ocsDetail.worker_result as RISWorkerResult) || {};
 
+      // Orthanc에서 시리즈 정보 가져오기 (series_id, series_type 포함)
+      let seriesInfoList: any[] = [];
+      let totalInstanceCount = 0;
+
+      // orthancStudyId가 있으면 해당 Study의 시리즈 정보 조회
+      // orthancStudyId = Orthanc Internal Study ID (실제 API 호출에 사용)
+      // studyId = DICOM StudyID (UUID, Orthanc API에서 사용 불가)
+      const orthancStudyId = result.orthancStudyId;
+      if (orthancStudyId) {
+        try {
+          // getSeries는 Orthanc Internal Study ID를 파라미터로 받음
+          const seriesData = await getSeries(orthancStudyId);
+          seriesInfoList = seriesData.map((s: any) => ({
+            series_id: s.orthancId,           // Orthanc Series ID
+            series_uid: s.seriesInstanceUID || '',
+            series_type: s.seriesType || 'OTHER',  // T1, T2, T1C, FLAIR, OTHER
+            modality: s.modality || '',
+            description: s.description || '',
+            instance_count: s.instancesCount || 0,
+          }));
+          totalInstanceCount = seriesInfoList.reduce((sum, s) => sum + (s.instance_count || 0), 0);
+        } catch (e) {
+          console.warn('Failed to fetch series info from Orthanc:', e);
+        }
+      }
+
       // 현재 폼 상태와 기존 저장된 데이터를 병합
       const updatedResult = {
         _template: 'RIS',
-        _version: '1.0',
+        _version: '1.1',  // 버전 업데이트 (series_id, series_type 추가)
         _confirmed: currentResult._confirmed || false,
         // 현재 폼 상태 우선 사용 (사용자가 입력 중일 수 있음)
         findings: findings || currentResult.findings || '',
@@ -302,24 +394,26 @@ export default function RISStudyDetailPage() {
         recommendation: recommendation || currentResult.recommendation || '',
         imageResults: imageResults.length > 0 ? imageResults : (currentResult as any).imageResults || [],
         files: uploadedFiles.length > 0 ? uploadedFiles : (currentResult as any).files || [],
-        // 기존 dicom 정보 보존
-        dicom: currentResult.dicom || {
-          study_uid: '',
-          series: [],
-          accession_number: '',
-          series_count: 0,
-          instance_count: 0,
+        // dicom 정보 업데이트 (series_id, series_type 포함)
+        dicom: {
+          study_uid: result.studyUid || '',
+          series: seriesInfoList,  // series_id, series_type 포함
+          accession_number: currentResult.dicom?.accession_number || '',
+          series_count: seriesInfoList.length,
+          instance_count: totalInstanceCount,
         },
         // Orthanc 업로드 정보 업데이트
         orthanc: {
           patient_id: result.patientId,
-          study_id: result.studyId,
+          orthanc_study_id: result.orthancStudyId,  // Orthanc Internal Study ID
+          study_id: result.studyId,  // DICOM StudyID (UUID)
           study_uid: result.studyUid,
-          series: result.orthancSeriesIds.map((id) => ({
-            orthanc_id: id,
-            series_uid: '',
-            description: result.studyDescription || '',
-            instances_count: 0,
+          series: seriesInfoList.map((s) => ({
+            orthanc_id: s.series_id,
+            series_uid: s.series_uid,
+            series_type: s.series_type,
+            description: s.description,
+            instances_count: s.instance_count,
           })),
           uploaded_at: new Date().toISOString(),
         },
@@ -552,21 +646,35 @@ export default function RISStudyDetailPage() {
                 <div className="info-grid">
                   <div className="info-row">
                     <label>Study UID</label>
-                    <span>{workerResult.dicom.study_uid || '-'}</span>
+                    <span className="mono text-ellipsis">{workerResult.dicom.study_uid || '-'}</span>
                   </div>
                   <div className="info-row">
                     <label>Accession Number</label>
                     <span>{workerResult.dicom.accession_number || '-'}</span>
                   </div>
+                  <div className="info-row">
+                    <label>Series / Instance</label>
+                    <span>{workerResult.dicom.series_count || 0}개 시리즈 / {workerResult.dicom.instance_count || 0}장</span>
+                  </div>
                   {workerResult.dicom.series?.length > 0 && (
                     <div className="info-row series-row">
-                      <label>Series</label>
+                      <label>Series 목록</label>
                       <div className="series-list">
-                        {workerResult.dicom.series.map((s, idx) => (
+                        {workerResult.dicom.series.map((s: any, idx: number) => (
                           <div key={idx} className="series-item">
+                            {s.series_type && (
+                              <span className={`series-type type-${s.series_type?.toLowerCase()}`}>
+                                {s.series_type}
+                              </span>
+                            )}
                             <span className="modality">{s.modality}</span>
-                            <span className="desc">{s.description}</span>
+                            <span className="desc text-ellipsis">{s.description}</span>
                             <span className="count">{s.instance_count}장</span>
+                            {s.series_id && (
+                              <span className="series-id mono text-ellipsis" title={s.series_id}>
+                                {s.series_id.substring(0, 8)}...
+                              </span>
+                            )}
                           </div>
                         ))}
                       </div>
@@ -583,6 +691,46 @@ export default function RISStudyDetailPage() {
           <div className="tab-panel report-panel">
             {/* 판독 폼 */}
             <div className="report-form">
+              {/* 뇌종양 유무 체크 */}
+              <div className="form-group tumor-detection-group">
+                <label>뇌종양 판정 결과 *</label>
+                <div className="tumor-detection-options">
+                  <label className={`tumor-option ${tumorDetected === true ? 'selected positive' : ''}`}>
+                    <input
+                      type="radio"
+                      name="tumorDetected"
+                      checked={tumorDetected === true}
+                      onChange={() => setTumorDetected(true)}
+                      disabled={!canEdit || isFinalized}
+                    />
+                    <span className="option-icon">+</span>
+                    <span className="option-label">종양 있음</span>
+                  </label>
+                  <label className={`tumor-option ${tumorDetected === false ? 'selected negative' : ''}`}>
+                    <input
+                      type="radio"
+                      name="tumorDetected"
+                      checked={tumorDetected === false}
+                      onChange={() => setTumorDetected(false)}
+                      disabled={!canEdit || isFinalized}
+                    />
+                    <span className="option-icon">-</span>
+                    <span className="option-label">종양 없음</span>
+                  </label>
+                  <label className={`tumor-option ${tumorDetected === null ? 'selected undetermined' : ''}`}>
+                    <input
+                      type="radio"
+                      name="tumorDetected"
+                      checked={tumorDetected === null}
+                      onChange={() => setTumorDetected(null)}
+                      disabled={!canEdit || isFinalized}
+                    />
+                    <span className="option-icon">?</span>
+                    <span className="option-label">미판정</span>
+                  </label>
+                </div>
+              </div>
+
               <div className="form-group">
                 <label>판독 소견 (Findings) *</label>
                 <textarea
@@ -859,7 +1007,9 @@ export default function RISStudyDetailPage() {
           patientNumber: ocsDetail.patient.patient_number,
           patientName: ocsDetail.patient.name,
         } : undefined}
+        existingStudy={getExistingStudyInfo()}
         onUploadComplete={handleUploadComplete}
+        onStudyDeleted={handleStudyDeleted}
       />
     </div>
   );

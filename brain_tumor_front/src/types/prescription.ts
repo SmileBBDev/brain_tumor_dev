@@ -45,6 +45,7 @@ export interface PrescriptionItemCreateData {
 export interface PrescriptionListItem {
   id: number;
   prescription_id: string;
+  prescription_number?: string;  // 처방 번호 (목록에서 표시용)
   patient: number;
   patient_name?: string;
   patient_number?: string;
@@ -54,6 +55,8 @@ export interface PrescriptionListItem {
   status: PrescriptionStatus;
   status_display?: string;
   diagnosis?: string;
+  notes?: string;  // 비고
+  items?: PrescriptionItem[];  // 처방 항목 (상세 조회 시)
   item_count: number;
   created_at: string;
   issued_at?: string;

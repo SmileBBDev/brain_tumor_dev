@@ -99,6 +99,49 @@ def _normalize_tag_value(v):
     return str(v)
 
 
+def _parse_series_type(series_description: str) -> str:
+    """
+    SeriesDescription에서 MRI 시퀀스 타입을 파싱합니다.
+
+    Returns:
+        T1, T2, T1C (T1 contrast), FLAIR, OTHER
+    """
+    if not series_description:
+        return "OTHER"
+
+    desc_upper = series_description.upper()
+
+    # T1C (T1 contrast/enhanced) - T1C, T1+C, T1 GAD, T1 CONTRAST, POST 등
+    t1c_patterns = ['T1C', 'T1+C', 'T1 C', 'T1+GAD', 'T1 GAD', 'T1POST', 'T1 POST',
+                    'POST GAD', 'POST CONTRAST', 'CONTRAST', '+C', 'CE-', 'CE_',
+                    'POSTCONTRAST', 'POST-CONTRAST', 'ENHANCED', 'T1W+C']
+    for pattern in t1c_patterns:
+        if pattern in desc_upper:
+            return "T1C"
+
+    # FLAIR - 우선순위 높음 (T2 FLAIR도 FLAIR로 분류)
+    if 'FLAIR' in desc_upper:
+        return "FLAIR"
+
+    # T2 - T2, T2W, T2-weighted 등
+    t2_patterns = ['T2W', 'T2-W', 'T2 W', 'T2_W']
+    for pattern in t2_patterns:
+        if pattern in desc_upper:
+            return "T2"
+    if 'T2' in desc_upper and 'T2*' not in desc_upper:  # T2*는 제외
+        return "T2"
+
+    # T1 (contrast 아닌 것) - T1, T1W, T1-weighted 등
+    t1_patterns = ['T1W', 'T1-W', 'T1 W', 'T1_W', 'T1 PRE', 'T1PRE', 'PRE GAD', 'PRE CONTRAST']
+    for pattern in t1_patterns:
+        if pattern in desc_upper:
+            return "T1"
+    if 'T1' in desc_upper:
+        return "T1"
+
+    return "OTHER"
+
+
 def _auto_cleanup_if_empty(patient_id=None, study_id=None):
     try:
         if study_id:
@@ -210,12 +253,14 @@ def list_series(request):
             try:
                 ser = _get(f"/series/{ser_id}")
                 tags = ser.get("MainDicomTags", {}) or {}
+                series_desc = tags.get("SeriesDescription", "")
                 result.append(
                     {
                         "orthancId": ser_id,
                         "seriesInstanceUID": tags.get("SeriesInstanceUID", ""),
                         "seriesNumber": tags.get("SeriesNumber", ""),
-                        "description": tags.get("SeriesDescription", ""),
+                        "description": series_desc,
+                        "seriesType": _parse_series_type(series_desc),  # T1, T2, T1C, FLAIR, OTHER
                         "modality": tags.get("Modality", ""),
                         "instancesCount": len(ser.get("Instances", [])),
                     }
@@ -467,10 +512,21 @@ def upload_patient(request):
             logger.warning("upload failed %s: %s", getattr(f, "name", "?"), e)
             errors.append(getattr(f, "name", f"index-{idx}"))
 
+    # Orthanc Internal Study ID 조회 (첫 번째 시리즈에서 ParentStudy 가져오기)
+    orthanc_study_id = None
+    if uploaded_series:
+        try:
+            first_series_id = list(uploaded_series)[0]
+            series_info = _get(f"/series/{first_series_id}")
+            orthanc_study_id = series_info.get("ParentStudy")
+        except Exception as e:
+            logger.warning("Failed to get ParentStudy: %s", e)
+
     resp_data = {
         "patientId": patient_id,
         "studyUid": study_uid,
-        "studyId": study_id,
+        "studyId": study_id,  # DICOM StudyID (UUID)
+        "orthancStudyId": orthanc_study_id,  # Orthanc Internal Study ID (NEW)
         "studyDescription": final_study_desc,
         "ocsId": ocs_id if ocs_id else None,  # OCS 연동 정보
         "uploaded": uploaded,

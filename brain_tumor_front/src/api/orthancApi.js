@@ -61,3 +61,9 @@ export function getInstanceFileUrl(orthancId) {
     import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
   return `${base}${EP.orthanc.instanceFile(orthancId)}`;
 }
+
+// Orthanc Study 삭제
+export async function deleteStudy(studyOrthancId) {
+  const res = await http.delete(EP.orthanc.deleteStudy(studyOrthancId));
+  return res.data;
+}

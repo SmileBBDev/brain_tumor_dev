@@ -5,6 +5,12 @@ import { getPatients, getStudies, getSeries } from "../api/orthancApi";
 
 const asText = (v) => (v == null ? "" : String(v));
 
+// 긴 텍스트 말줄임 처리
+const truncate = (text, maxLen = 40) => {
+  if (!text || text.length <= maxLen) return text;
+  return text.substring(0, maxLen) + '...';
+};
+
 export default function PacsSelector({ onChange, ocsInfo, initialSelection }) {
   const [patients, setPatients] = useState([]);
   const [studies, setStudies] = useState([]);
@@ -209,7 +215,7 @@ export default function PacsSelector({ onChange, ocsInfo, initialSelection }) {
             <option value="">-- 선택 --</option>
             {patients.map((p) => (
               <option key={p.orthancId} value={p.orthancId}>
-                {asText(p.patientName || p.patientId)} ({p.studiesCount})
+                {truncate(asText(p.patientName || p.patientId), 30)} ({p.studiesCount})
               </option>
             ))}
           </select>
@@ -232,7 +238,7 @@ export default function PacsSelector({ onChange, ocsInfo, initialSelection }) {
             <option value="">-- 선택 --</option>
             {studies.map((s) => (
               <option key={s.orthancId} value={s.orthancId}>
-                {asText(s.studyInstanceUID || s.orthancId)}
+                {truncate(asText(s.studyInstanceUID || s.orthancId), 40)}
               </option>
             ))}
           </select>
@@ -271,7 +277,7 @@ export default function PacsSelector({ onChange, ocsInfo, initialSelection }) {
             <option value="">-- 선택 --</option>
             {seriesList.map((s) => (
               <option key={s.orthancId} value={s.orthancId}>
-                {asText(s.description || s.seriesInstanceUID)}
+                {truncate(asText(s.description || s.seriesInstanceUID), 40)}
               </option>
             ))}
           </select>
@@ -288,7 +294,7 @@ export default function PacsSelector({ onChange, ocsInfo, initialSelection }) {
             <option value="">-- 없음 --</option>
             {overlayCandidates.map((s) => (
               <option key={s.orthancId} value={s.orthancId}>
-                {asText(s.description || s.seriesInstanceUID)}
+                {truncate(asText(s.description || s.seriesInstanceUID), 40)}
               </option>
             ))}
           </select>

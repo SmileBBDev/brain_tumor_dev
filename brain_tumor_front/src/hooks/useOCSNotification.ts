@@ -2,11 +2,14 @@
  * OCS 실시간 알림 Hook
  * - WebSocket을 통해 OCS 상태 변경 알림 수신
  * - Toast 알림 표시
+ * - 싱글톤 WebSocket 사용으로 라우팅 시 중복 알림 방지
  */
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { useAuth } from '@/pages/auth/AuthProvider';
 import {
-  connectOCSSocket,
+  subscribeOCSSocket,
+  unsubscribeOCSSocket,
+  isOCSSocketConnected,
   type OCSStatusChangedEvent,
   type OCSCreatedEvent,
   type OCSCancelledEvent,
@@ -26,14 +29,16 @@ interface UseOCSNotificationOptions {
   onCreated?: (event: OCSCreatedEvent) => void;
   onCancelled?: (event: OCSCancelledEvent) => void;
   autoRefresh?: () => void;
+  /** Toast 알림 비활성화 (콜백만 사용) */
+  disableToast?: boolean;
 }
 
 export function useOCSNotification(options: UseOCSNotificationOptions = {}) {
   const { isAuthenticated, user } = useAuth();
-  const wsRef = useRef<WebSocket | null>(null);
+  const listenerIdRef = useRef<string | null>(null);
   const optionsRef = useRef(options);
   const [notifications, setNotifications] = useState<OCSNotification[]>([]);
-  const [isConnected, setIsConnected] = useState(false);
+  const [isConnected, setIsConnected] = useState(isOCSSocketConnected());
 
   // options가 변경될 때 ref 업데이트
   useEffect(() => {
@@ -41,6 +46,11 @@ export function useOCSNotification(options: UseOCSNotificationOptions = {}) {
   }, [options]);
 
   const addNotification = useCallback((notification: Omit<OCSNotification, 'id'>) => {
+    // Toast 비활성화 옵션이 있으면 알림 추가하지 않음
+    if (optionsRef.current.disableToast) {
+      return null;
+    }
+
     const newNotification: OCSNotification = {
       ...notification,
       id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -68,12 +78,13 @@ export function useOCSNotification(options: UseOCSNotificationOptions = {}) {
       return;
     }
 
-    // 이미 연결된 WebSocket이 있으면 새로 연결하지 않음
-    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+    // 이미 구독 중이면 새로 구독하지 않음
+    if (listenerIdRef.current) {
       return;
     }
 
-    wsRef.current = connectOCSSocket({
+    // 싱글톤 WebSocket에 구독 등록
+    listenerIdRef.current = subscribeOCSSocket({
       onStatusChanged: (event) => {
         addNotification({
           type: 'status_changed',
@@ -122,16 +133,13 @@ export function useOCSNotification(options: UseOCSNotificationOptions = {}) {
       },
     });
 
-    if (wsRef.current) {
-      wsRef.current.onopen = () => {
-        setIsConnected(true);
-      };
-    }
+    setIsConnected(isOCSSocketConnected());
 
+    // cleanup: 구독 해제
     return () => {
-      if (wsRef.current) {
-        wsRef.current.close();
-        wsRef.current = null;
+      if (listenerIdRef.current) {
+        unsubscribeOCSSocket(listenerIdRef.current);
+        listenerIdRef.current = null;
       }
     };
   }, [isAuthenticated, user, addNotification]);

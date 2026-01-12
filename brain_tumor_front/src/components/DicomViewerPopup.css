@@ -213,7 +213,8 @@
   display: flex;
   flex-direction: column;
 
-  overflow-y: auto;
+  overflow-x: hidden; /* 가로 스크롤바 제거 */
+  overflow-y: auto;   /* 세로 스크롤바 유지 */
   transition: width 0.05s ease;
 }
 
@@ -257,6 +258,11 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
+  overflow-x: hidden; /* 가로 스크롤바만 제거 */
+  min-width: 0;
+  /* 컨텐츠가 부모를 초과하도록 최소 높이 설정 */
+  min-height: max-content;
+  padding-bottom: 16px;
 }
 
 .dicom-popup-right {
@@ -321,6 +327,7 @@
   font-size: 11px;
   font-weight: 600;
   color: rgba(255, 255, 255, 0.7);
+  min-width: 0; /* flex 내 ellipsis 동작을 위해 필요 */
 }
 
 .viewer-cell.active .viewer-cell-header {
@@ -334,4 +341,22 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+}
+
+/* 공통 말줄임 유틸리티 클래스 */
+.text-ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 여러 줄 말줄임 */
+.text-ellipsis-multiline {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }

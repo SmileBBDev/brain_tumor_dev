@@ -9,6 +9,7 @@
 .uploadCard {
   width: 100%;
   min-width: 0;
+  min-height: 280px; /* 최소 높이 부여 - 스크롤 유도 */
 
   /* ✅ Selection 블럭(.selCard)과 동일한 톤 */
   background: #181b21;
@@ -17,6 +18,7 @@
   padding: 14px;
   color: #e6e6e6;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  overflow: hidden; /* 스크롤바 제거 */
 }
 
 .uploadCardHeader {
@@ -44,9 +46,10 @@
   flex-direction: column;
   gap: 14px;
 
-  /* ✅ 중요: 잘림 방지 */
+  /* ✅ 중요: 스크롤바 제거 - ellipsis 처리 */
   min-height: 0;
-  overflow: visible;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .field {
@@ -71,6 +74,10 @@
   background: rgba(0, 0, 0, 0.35);
   color: rgba(255, 255, 255, 0.95);
   outline: none;
+  /* ellipsis 처리 */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .input:disabled {
@@ -228,4 +235,123 @@
 .metaRow.warning {
   color: rgba(255, 180, 80, 0.95);
   font-weight: 600;
+}
+
+/* 경고 상태 (DICOM 아닌 파일 제외) */
+.status.warning {
+  background: rgba(255, 180, 80, 0.12);
+  border: 1px solid rgba(255, 180, 80, 0.25);
+  color: rgba(255, 200, 120, 0.95);
+}
+
+/* 시리즈 구성 표시 */
+.seriesBreakdown {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  padding: 8px 0;
+}
+
+.seriesLabel {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.60);
+  font-weight: 600;
+}
+
+.seriesTag {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  background: rgba(100, 200, 255, 0.15);
+  border: 1px solid rgba(100, 200, 255, 0.25);
+  color: rgba(150, 220, 255, 0.95);
+}
+
+/* 기존 업로드 Study 정보 박스 */
+.existingStudyBox {
+  background: rgba(255, 150, 100, 0.08);
+  border: 1px solid rgba(255, 150, 100, 0.25);
+  border-radius: 10px;
+  padding: 12px;
+  margin-bottom: 14px;
+}
+
+.existingStudyHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.existingStudyTitle {
+  font-size: 13px;
+  font-weight: 700;
+  color: rgba(255, 180, 120, 0.95);
+}
+
+.existingStudyContent {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.existingStudyRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+}
+
+.existingLabel {
+  color: rgba(255, 255, 255, 0.60);
+  font-weight: 600;
+}
+
+.existingValue {
+  color: rgba(255, 255, 255, 0.90);
+  font-weight: 600;
+  text-align: right;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.existingValue.mono {
+  font-family: 'Consolas', 'Monaco', monospace;
+  font-size: 10px;
+  color: rgba(255, 180, 120, 0.90);
+}
+
+.existingStudyHint {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  font-size: 10px;
+  color: rgba(255, 150, 100, 0.80);
+  font-style: italic;
+}
+
+/* 삭제 버튼 */
+.btn.btnDelete {
+  height: 28px;
+  padding: 0 10px;
+  font-size: 11px;
+  background: rgba(255, 80, 80, 0.15);
+  border: 1px solid rgba(255, 80, 80, 0.30);
+  color: rgba(255, 120, 120, 0.95);
+}
+
+.btn.btnDelete:hover:not(:disabled) {
+  background: rgba(255, 80, 80, 0.25);
+  border-color: rgba(255, 80, 80, 0.45);
+}
+
+.btn.btnDelete:disabled {
+  opacity: 0.45;
 }
