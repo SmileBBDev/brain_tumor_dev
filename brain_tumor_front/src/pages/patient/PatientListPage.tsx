@@ -6,6 +6,7 @@ import PatientDeleteModal from './PatientDeleteModal';
 import Pagination from '@/layout/Pagination';
 import { useAuth } from '../auth/AuthProvider';
 import { getPatients } from '@/services/patient.api';
+import { exportPatientList } from '@/utils/exportUtils';
 import type { Patient, PatientSearchParams, Gender, PatientStatus } from '@/types/patient';
 
 export default function PatientListPage() {
@@ -92,6 +93,15 @@ export default function PatientListPage() {
     fetchPatients();
   };
 
+  // Excel 내보내기
+  const handleExportExcel = async () => {
+    try {
+      await exportPatientList(patients);
+    } catch (error) {
+      console.error('Excel 내보내기 실패:', error);
+    }
+  };
+
   return (
     <div className="page patient-list">
       {/* 검색 / 필터 영역 (환자 외의 역할에만 표시) */}
@@ -120,6 +130,11 @@ export default function PatientListPage() {
             </select>
           </div>
           <div className="filter-right">
+            {isSystemManager && (
+              <button className="btn secondary" onClick={handleExportExcel}>
+                Excel 내보내기
+              </button>
+            )}
             {(role === 'DOCTOR' || role === 'NURSE' || isSystemManager) && (
               <button className="btn primary" onClick={() => setIsCreateModalOpen(true)}>
                 환자 등록

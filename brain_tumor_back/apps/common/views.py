@@ -196,20 +196,39 @@ class DoctorDashboardStatsView(APIView):
             # 남은 예약 수
             remaining = today_appointments.filter(admission_date__gte=now).count()
 
+            # 전체 금일 통계 (상태별)
+            all_today = Encounter.objects.filter(
+                attending_doctor=request.user,
+                admission_date__gte=today_start,
+                admission_date__lt=today_end,
+                is_deleted=False
+            )
+            waiting = all_today.filter(status='scheduled').count()
+            in_progress = all_today.filter(status='in_progress').count()
+            completed = all_today.filter(status='completed').count()
+
             return Response({
                 'today_appointments': [
                     {
+                        'encounter_id': enc.id,
                         'patient_id': enc.patient.id,
                         'patient_name': enc.patient.name,
                         'patient_number': enc.patient.patient_number,
                         'appointment_time': enc.admission_date.isoformat(),
-                        'scheduled_time': enc.scheduled_time.isoformat() if enc.scheduled_time else None,
+                        'scheduled_time': enc.scheduled_time.strftime('%H:%M:%S') if enc.scheduled_time else None,
                         'encounter_type': enc.encounter_type,
+                        'status': enc.status,
                         'reason': enc.chief_complaint or '',
                         'department': enc.department,
                     }
                     for enc in upcoming
                 ],
+                'stats': {
+                    'total_today': all_today.count(),
+                    'waiting': waiting,
+                    'in_progress': in_progress,
+                    'completed': completed,
+                },
                 'total_today': total_today,
                 'remaining': remaining,
             })

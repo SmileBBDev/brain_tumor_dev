@@ -47,14 +47,17 @@ const getTodayString = (): string => {
   return today.toISOString().split('T')[0];
 };
 
-// 이달 시작/끝 날짜
-const getMonthRange = (): { start: string; end: string } => {
+// 월별 범위 계산 (offset: -1=전월, 0=당월, 1=차월)
+const getMonthRange = (offset: number = 0): { start: string; end: string; month: number; year: number } => {
   const now = new Date();
-  const start = new Date(now.getFullYear(), now.getMonth(), 1);
-  const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  const targetMonth = now.getMonth() + offset;
+  const start = new Date(now.getFullYear(), targetMonth, 1);
+  const end = new Date(now.getFullYear(), targetMonth + 1, 0);
   return {
     start: start.toISOString().split('T')[0],
     end: end.toISOString().split('T')[0],
+    month: start.getMonth() + 1,
+    year: start.getFullYear(),
   };
 };
 
@@ -64,6 +67,7 @@ export default function NurseReceptionPage() {
   // 탭 상태
   const [activeTab, setActiveTab] = useState<'today' | 'monthly'>('today');
   const [selectedDoctorId, setSelectedDoctorId] = useState<number | 'all'>('all');
+  const [monthOffset, setMonthOffset] = useState<number>(0); // -1=전월, 0=당월, 1=차월
 
   // 의사 목록
   const [doctors, setDoctors] = useState<User[]>([]);
@@ -108,7 +112,7 @@ export default function NurseReceptionPage() {
     loadStatistics();
   }, []);
 
-  // 오늘 접수 로드
+  // 오늘 접수 로드 (모든 상태 - 예정/진행중/완료)
   const loadTodayEncounters = useCallback(async () => {
     setTodayLoading(true);
     try {
@@ -117,6 +121,7 @@ export default function NurseReceptionPage() {
         start_date: today,
         end_date: today,
         page_size: 100, // 오늘 전체
+        // status 제거 - 모든 상태 조회 (scheduled, in_progress, completed)
       };
 
       if (selectedDoctorId !== 'all') {
@@ -124,11 +129,16 @@ export default function NurseReceptionPage() {
       }
 
       const response = await getEncounters(params);
+      let encounters: Encounter[] = [];
       if (Array.isArray(response)) {
-        setTodayEncounters(response);
+        encounters = response;
       } else {
-        setTodayEncounters(response.results || []);
+        encounters = response.results || [];
       }
+
+      // 취소된 건 제외
+      encounters = encounters.filter(enc => enc.status !== 'cancelled');
+      setTodayEncounters(encounters);
     } catch (error) {
       console.error('Failed to fetch today encounters:', error);
     } finally {
@@ -140,7 +150,7 @@ export default function NurseReceptionPage() {
   const loadMonthlyEncounters = useCallback(async () => {
     setMonthlyLoading(true);
     try {
-      const { start, end } = getMonthRange();
+      const { start, end } = getMonthRange(monthOffset);
       const params: EncounterSearchParams = {
         start_date: start,
         end_date: end,
@@ -166,7 +176,10 @@ export default function NurseReceptionPage() {
     } finally {
       setMonthlyLoading(false);
     }
-  }, [selectedDoctorId, monthlyPage]);
+  }, [selectedDoctorId, monthlyPage, monthOffset]);
+
+  // 현재 선택된 월 정보
+  const currentMonthInfo = useMemo(() => getMonthRange(monthOffset), [monthOffset]);
 
   // 탭 변경 시 데이터 로드
   useEffect(() => {
@@ -262,12 +275,26 @@ export default function NurseReceptionPage() {
         >
           오늘 접수 ({todaySummary.total})
         </button>
-        <button
-          className={activeTab === 'monthly' ? 'active' : ''}
-          onClick={() => setActiveTab('monthly')}
-        >
-          이달 예약 ({monthlyTotalCount})
-        </button>
+        <div className="month-nav-group">
+          <button
+            className={`month-nav-btn ${activeTab === 'monthly' && monthOffset === -1 ? 'active' : ''}`}
+            onClick={() => { setActiveTab('monthly'); setMonthOffset(-1); setMonthlyPage(1); }}
+          >
+            전월 ({getMonthRange(-1).month}월)
+          </button>
+          <button
+            className={`month-nav-btn ${activeTab === 'monthly' && monthOffset === 0 ? 'active' : ''}`}
+            onClick={() => { setActiveTab('monthly'); setMonthOffset(0); setMonthlyPage(1); }}
+          >
+            당월 ({getMonthRange(0).month}월)
+          </button>
+          <button
+            className={`month-nav-btn ${activeTab === 'monthly' && monthOffset === 1 ? 'active' : ''}`}
+            onClick={() => { setActiveTab('monthly'); setMonthOffset(1); setMonthlyPage(1); }}
+          >
+            차월 ({getMonthRange(1).month}월)
+          </button>
+        </div>
       </nav>
 
       {/* 콘텐츠 */}
@@ -321,10 +348,14 @@ export default function NurseReceptionPage() {
         {/* 월간 예약 탭 */}
         {activeTab === 'monthly' && (
           <div className="monthly-tab">
+            <div className="monthly-header">
+              <h4>{currentMonthInfo.year}년 {currentMonthInfo.month}월 예약 현황</h4>
+              <span className="monthly-count">총 {monthlyTotalCount}건</span>
+            </div>
             {monthlyLoading ? (
               <div className="loading">로딩 중...</div>
             ) : monthlyEncounters.length === 0 ? (
-              <div className="empty-message">이달 예약 환자가 없습니다.</div>
+              <div className="empty-message">{currentMonthInfo.month}월 예약 환자가 없습니다.</div>
             ) : (
               <>
                 <table className="reception-table">

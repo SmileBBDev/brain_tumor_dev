@@ -24,6 +24,7 @@ import {
 } from '@/types/ocs';
 import OCSDetailModal from './OCSDetailModal';
 import { useOCSEventCallback } from '@/context/OCSNotificationContext';
+import { exportOCSList } from '@/utils/exportUtils';
 import './OCSStatusPage.css';
 
 // 날짜 포맷
@@ -151,6 +152,15 @@ export default function OCSStatusPage() {
     setPage(1);
   };
 
+  // Excel 내보내기
+  const handleExportExcel = async () => {
+    try {
+      await exportOCSList(ocsList);
+    } catch (error) {
+      console.error('Excel 내보내기 실패:', error);
+    }
+  };
+
   if (!role) return <div>접근 권한 정보 없음</div>;
 
   return (
@@ -162,6 +172,11 @@ export default function OCSStatusPage() {
           <span className="subtitle">전체 OCS 현황을 확인합니다</span>
         </div>
         <div className="header-right">
+          {role === 'SYSTEMMANAGER' && (
+            <button className="btn secondary" onClick={handleExportExcel}>
+              Excel 내보내기
+            </button>
+          )}
           {(role === 'DOCTOR' || role === 'SYSTEMMANAGER') && (
             <button
               className="btn primary"

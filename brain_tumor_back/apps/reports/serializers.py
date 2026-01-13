@@ -1,7 +1,5 @@
 from rest_framework import serializers
 from .models import FinalReport, ReportAttachment, ReportLog
-from apps.patients.serializers import PatientSerializer
-from apps.accounts.serializers import UserSerializer
 
 
 class ReportAttachmentSerializer(serializers.ModelSerializer):

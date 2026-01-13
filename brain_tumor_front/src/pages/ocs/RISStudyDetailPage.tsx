@@ -22,6 +22,7 @@ import {
   removeFileFromStorage,
   migrateFilesToStorage,
 } from '@/utils/fileStorage';
+import { generateRISReportPDF } from '@/utils/exportUtils';
 import './RISStudyDetailPage.css';
 
 // 검사 결과 항목 타입
@@ -334,9 +335,28 @@ export default function RISStudyDetailPage() {
     alert('EMR 전송 기능은 준비 중입니다.');
   };
 
-  // PDF 출력 (목업)
-  const handleExportPDF = () => {
-    alert('PDF 출력 기능은 준비 중입니다.');
+  // PDF 출력
+  const handleExportPDF = async () => {
+    if (!ocsDetail) return;
+
+    try {
+      await generateRISReportPDF({
+        ocsId: ocsDetail.ocs_id,
+        patientName: ocsDetail.patient.name,
+        patientNumber: ocsDetail.patient.patient_number,
+        jobType: ocsDetail.job_type,
+        findings: findings || (ocsDetail.worker_result as RISWorkerResult)?.findings || '',
+        impression: impression || (ocsDetail.worker_result as RISWorkerResult)?.impression || '',
+        recommendation: recommendation || (ocsDetail.worker_result as RISWorkerResult)?.recommendation || '',
+        tumorDetected: tumorDetected ?? (ocsDetail.worker_result as any)?.tumorDetected ?? null,
+        doctorName: ocsDetail.doctor.name,
+        workerName: ocsDetail.worker?.name || '-',
+        createdAt: formatDate(ocsDetail.created_at),
+        confirmedAt: ocsDetail.result_ready_at ? formatDate(ocsDetail.result_ready_at) : undefined,
+      });
+    } catch (error) {
+      console.error('PDF 출력 실패:', error);
+    }
   };
 
   // DICOM Viewer 열기

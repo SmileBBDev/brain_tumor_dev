@@ -95,12 +95,40 @@ def create_database_if_not_exists():
 
 
 def run_migrations():
-    """마이그레이션 실행"""
+    """마이그레이션 생성 및 실행"""
     print("\n[1단계] 마이그레이션 실행...")
 
+    # 마이그레이션 파일 생성 (makemigrations) - --skip-checks로 URL 체크 건너뛰기
     try:
+        print("  makemigrations 실행 중...")
         result = subprocess.run(
-            [sys.executable, 'manage.py', 'migrate', '--no-input'],
+            [sys.executable, 'manage.py', 'makemigrations', '--skip-checks'],
+            cwd=str(PROJECT_ROOT),
+            capture_output=True,
+            text=True
+        )
+        if result.returncode == 0:
+            if 'No changes detected' in result.stdout:
+                print("  [OK] 변경사항 없음")
+            else:
+                print("  [OK] 마이그레이션 파일 생성 완료")
+                if result.stdout:
+                    # 생성된 마이그레이션 파일 출력
+                    for line in result.stdout.strip().split('\n'):
+                        if line.strip():
+                            print(f"    {line}")
+        else:
+            print(f"  [WARNING] makemigrations 실패 - 계속 진행합니다")
+            if result.stderr:
+                print(f"    {result.stderr[:300]}")
+    except Exception as e:
+        print(f"  [WARNING] makemigrations 실행 실패: {e}")
+
+    # 마이그레이션 적용 (migrate) - --skip-checks로 URL 체크 건너뛰기
+    try:
+        print("  migrate 실행 중...")
+        result = subprocess.run(
+            [sys.executable, 'manage.py', 'migrate', '--no-input', '--skip-checks'],
             cwd=str(PROJECT_ROOT),
             capture_output=True,
             text=True
@@ -493,6 +521,11 @@ def load_menu_permission_seed():
         ('ADMIN_MENU_PERMISSION', '메뉴 권한 관리', '메뉴 권한 관리 화면'),
         ('ADMIN_AUDIT_LOG', '접근 감사 로그', '접근 감사 로그 화면'),
         ('ADMIN_SYSTEM_MONITOR', '시스템 모니터링', '시스템 모니터링 화면'),
+        # 진료 보고서
+        ('REPORT', '진료 보고서', '진료 보고서 메뉴'),
+        ('REPORT_LIST', '보고서 목록', '보고서 목록 화면'),
+        ('REPORT_CREATE', '보고서 작성', '보고서 작성 화면'),
+        ('REPORT_DETAIL', '보고서 상세', '보고서 상세 화면'),
     ]
 
     permission_map = {}
@@ -617,6 +650,12 @@ def load_menu_permission_seed():
     create_menu(34, code='AI_REQUEST_CREATE', path='/ai/requests/create', breadcrumb_only=True, order=2, is_active=True, parent=menu_ai_request)
     create_menu(35, code='AI_REQUEST_DETAIL', path='/ai/requests/:id', breadcrumb_only=True, order=3, is_active=True, parent=menu_ai_request)
 
+    # 진료 보고서 메뉴
+    menu_report, _ = create_menu(38, code='REPORT', path=None, icon='file-text', group_label='보고서', order=8, is_active=True)
+    menu_report_list, _ = create_menu(39, code='REPORT_LIST', path='/reports', icon='list', order=1, is_active=True, parent=menu_report)
+    create_menu(40, code='REPORT_CREATE', path='/reports/create', breadcrumb_only=True, order=2, is_active=True, parent=menu_report_list)
+    create_menu(41, code='REPORT_DETAIL', path='/reports/:id', breadcrumb_only=True, order=3, is_active=True, parent=menu_report_list)
+
     print(f"  메뉴 생성: {changes['Menu']['created']}개 (전체: {Menu.objects.count()}개)")
     if menu_updates:
         print(f"  메뉴 업데이트: {len(menu_updates)}개")
@@ -710,6 +749,11 @@ def load_menu_permission_seed():
         (9, 'DEFAULT', '메뉴 권한 관리'),
         (8, 'DEFAULT', '접근 감사 로그'),
         (11, 'DEFAULT', '시스템 모니터링'),
+        # REPORT
+        (38, 'DEFAULT', '보고서'),
+        (39, 'DEFAULT', '보고서 목록'),
+        (40, 'DEFAULT', '보고서 작성'),
+        (41, 'DEFAULT', '보고서 상세'),
     ]
 
     for menu_id, role, text in menu_labels_data:
@@ -743,9 +787,10 @@ def load_menu_permission_seed():
             'LAB', 'LAB_RESULT_VIEW', 'LAB_RESULT_UPLOAD', 'LIS_PROCESS_STATUS',
             'AI_SUMMARY', 'AI_REQUEST_LIST', 'AI_REQUEST_CREATE', 'AI_REQUEST_DETAIL',
             'NURSE_RECEPTION',
+            'REPORT', 'REPORT_LIST', 'REPORT_CREATE', 'REPORT_DETAIL',
             'ADMIN', 'ADMIN_USER', 'ADMIN_USER_DETAIL', 'ADMIN_ROLE', 'ADMIN_MENU_PERMISSION', 'ADMIN_AUDIT_LOG', 'ADMIN_SYSTEM_MONITOR'
         ],
-        'DOCTOR': ['DASHBOARD', 'PATIENT_LIST', 'PATIENT_DETAIL', 'PATIENT_CARE', 'ENCOUNTER_LIST', 'OCS_STATUS', 'OCS_CREATE', 'OCS_PROCESS_STATUS', 'IMAGE_VIEWER', 'RIS_WORKLIST', 'LAB_RESULT_VIEW', 'AI_SUMMARY', 'AI_REQUEST_LIST', 'AI_REQUEST_CREATE', 'AI_REQUEST_DETAIL'],
+        'DOCTOR': ['DASHBOARD', 'PATIENT_LIST', 'PATIENT_DETAIL', 'PATIENT_CARE', 'ENCOUNTER_LIST', 'OCS_STATUS', 'OCS_CREATE', 'OCS_PROCESS_STATUS', 'IMAGE_VIEWER', 'RIS_WORKLIST', 'LAB_RESULT_VIEW', 'AI_SUMMARY', 'AI_REQUEST_LIST', 'AI_REQUEST_CREATE', 'AI_REQUEST_DETAIL', 'REPORT', 'REPORT_LIST', 'REPORT_CREATE', 'REPORT_DETAIL'],
         'NURSE': ['DASHBOARD', 'PATIENT_LIST', 'PATIENT_DETAIL', 'ENCOUNTER_LIST', 'OCS_STATUS', 'OCS_PROCESS_STATUS', 'IMAGE_VIEWER', 'LAB_RESULT_VIEW', 'NURSE_RECEPTION'],  # PATIENT_CARE 제거 (DOCTOR, SYSTEMMANAGER만)
         'RIS': ['DASHBOARD', 'IMAGE_VIEWER', 'RIS_WORKLIST', 'OCS_RIS', 'OCS_RIS_DETAIL', 'RIS_DASHBOARD', 'RIS_RESULT_UPLOAD'],
         'LIS': ['DASHBOARD', 'LAB_RESULT_VIEW', 'LAB_RESULT_UPLOAD', 'OCS_LIS', 'OCS_LIS_DETAIL', 'LIS_PROCESS_STATUS'],

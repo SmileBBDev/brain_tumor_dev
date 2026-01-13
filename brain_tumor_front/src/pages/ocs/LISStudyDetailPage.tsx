@@ -12,6 +12,7 @@ import { useAuth } from '../auth/AuthProvider';
 import { getOCS, startOCS, saveOCSResult, confirmOCS } from '@/services/ocs.api';
 import type { OCSDetail, GeneMutation, ProteinMarker } from '@/types/ocs';
 import { getLISCategory, LIS_CATEGORY_LABELS } from '@/utils/ocs.utils';
+import { generateLISReportPDF } from '@/utils/exportUtils';
 import './LISStudyDetailPage.css';
 
 // 탭 타입 - genetic, protein 탭 추가
@@ -498,6 +499,34 @@ export default function LISStudyDetailPage() {
     }
   };
 
+  // PDF 출력
+  const handleExportPDF = async () => {
+    if (!ocs) return;
+
+    try {
+      await generateLISReportPDF({
+        ocsId: ocs.ocs_id,
+        patientName: ocs.patient.name,
+        patientNumber: ocs.patient.patient_number,
+        jobType: ocs.job_type,
+        results: labResults.map(r => ({
+          itemName: r.testName,
+          value: r.value,
+          unit: r.unit,
+          refRange: r.refRange,
+          flag: r.flag,
+        })),
+        interpretation: interpretation || undefined,
+        doctorName: ocs.doctor.name,
+        workerName: ocs.worker?.name || '-',
+        createdAt: formatDate(ocs.created_at),
+        confirmedAt: ocs.result_ready_at ? formatDate(ocs.result_ready_at) : undefined,
+      });
+    } catch (error) {
+      console.error('PDF 출력 실패:', error);
+    }
+  };
+
   // 결과 제출 및 확정 (IN_PROGRESS → CONFIRMED)
   const handleSubmit = async () => {
     if (!ocs) return;
@@ -592,6 +621,11 @@ export default function LISStudyDetailPage() {
                 </button>
               )}
             </>
+          )}
+          {['RESULT_READY', 'CONFIRMED'].includes(ocs.ocs_status) && (
+            <button className="btn btn-secondary" onClick={handleExportPDF}>
+              PDF 출력
+            </button>
           )}
         </div>
       </header>
