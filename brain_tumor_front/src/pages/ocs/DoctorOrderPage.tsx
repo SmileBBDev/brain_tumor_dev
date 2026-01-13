@@ -55,6 +55,7 @@ export default function DoctorOrderPage() {
   });
 
   // OCS 액션 훅
+  // DB 트랜잭션 완료를 위해 300ms 딜레이 추가
   const { confirm: _confirm, cancel: _cancel } = useOCSActions({
     onSuccess: (action) => {
       const messages: Record<string, string> = {
@@ -62,7 +63,7 @@ export default function DoctorOrderPage() {
         cancel: '오더를 취소했습니다.',
       };
       toast.success(messages[action] || '작업이 완료되었습니다.');
-      refresh();
+      setTimeout(() => refresh(), 300);
     },
     onError: (action, _error, serverMessage) => {
       const defaultMessages: Record<string, string> = {
@@ -71,13 +72,14 @@ export default function DoctorOrderPage() {
       };
       const message = serverMessage || defaultMessages[action] || '작업에 실패했습니다.';
       toast.error(message);
-      refresh();
+      setTimeout(() => refresh(), 300);
     },
   });
 
   // WebSocket 이벤트 콜백 (전역 Context 사용)
+  // DB 트랜잭션 완료를 위해 300ms 딜레이 추가
   useOCSEventCallback({
-    autoRefresh: refresh,
+    autoRefresh: () => setTimeout(() => refresh(), 300),
   });
 
   // JobRole 필터 적용된 목록

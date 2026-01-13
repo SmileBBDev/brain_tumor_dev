@@ -34,8 +34,9 @@ export default function OCSProcessStatusPage() {
   }, []);
 
   // WebSocket 이벤트 콜백 (전역 Context 사용)
+  // DB 트랜잭션 완료를 위해 300ms 딜레이 추가
   useOCSEventCallback({
-    autoRefresh: loadData,
+    autoRefresh: () => setTimeout(() => loadData(), 300),
   });
 
   useEffect(() => {

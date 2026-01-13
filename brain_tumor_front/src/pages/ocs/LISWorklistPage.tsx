@@ -51,9 +51,10 @@ export default function LISWorklistPage() {
 
   // OCS 액션 훅
   // 성공/실패 모두 새로고침 (WebSocket 알림과 별개로 즉시 반영)
+  // DB 트랜잭션 완료를 위해 300ms 딜레이 추가
   const { accept, start } = useOCSActions({
     onSuccess: () => {
-      refresh();
+      setTimeout(() => refresh(), 300);
     },
     onError: (action, _error, serverMessage) => {
       const defaultMessages: Record<string, string> = {
@@ -62,13 +63,14 @@ export default function LISWorklistPage() {
       };
       const message = serverMessage || defaultMessages[action] || '작업에 실패했습니다.';
       alert(message);
-      refresh();
+      setTimeout(() => refresh(), 300);
     },
   });
 
   // 실시간 알림 (전역 Context 사용)
+  // DB 트랜잭션 완료를 위해 300ms 딜레이 추가
   useOCSEventCallback({
-    autoRefresh: refresh,
+    autoRefresh: () => setTimeout(() => refresh(), 300),
   });
 
   // 오더 접수
