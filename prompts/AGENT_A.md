@@ -21,147 +21,133 @@
 
 ---
 
-## 현재 작업 (2026-01-12)
+## 완료된 작업 (2026-01-12)
 
-### 작업 1: Admin Dashboard API
+### ✅ 작업 1: Admin Dashboard API - 완료
+- **파일**: `apps/common/views.py` - AdminDashboardStatsView
+- **URL**: `/api/dashboard/admin/stats/`
+- **상태**: 구현 완료, 프론트엔드 타입과 100% 일치
 
-**생성/수정 파일**: `apps/common/views.py`
+### ✅ 작업 2: External Dashboard API - 완료
+- **파일**: `apps/common/views.py` - ExternalDashboardStatsView
+- **URL**: `/api/dashboard/external/stats/`
+- **상태**: 구현 완료, 프론트엔드 타입과 100% 일치
+
+### ✅ 작업 3: URL 등록 - 완료
+- **파일**: `config/urls.py`
+- **상태**: 등록 완료
+
+### ✅ 작업 4~7: 권한, 에러처리, enum, 문서화 - 완료
+
+---
+
+## 긴급 수정 필요
+
+### 🚨 작업 8: IsExternal 권한 클래스 수정 (긴급)
+
+**문제점**: IsExternal이 RIS, LIS를 허용하고 있음 - **잘못됨**
+
+| 역할 | 설명 | 내부/외부 |
+|------|------|-----------|
+| DOCTOR | 의사 | 내부 |
+| NURSE | 간호사 | 내부 |
+| LIS | 검사실 담당자 | **내부** |
+| RIS | 영상실 담당자 | **내부** |
+| ADMIN | 관리자 | 내부 |
+| SYSTEMMANAGER | 시스템 관리자 | 내부 |
+| EXTERNAL | 외부기관 | **외부** |
+
+**수정 파일**: `apps/common/permission.py`
 
 ```python
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
-from django.utils import timezone
-from django.db.models import Count
-from datetime import timedelta
+# 현재 (잘못됨)
+class IsExternal(BasePermission):
+    def has_permission(self, request, view):
+        return request.user.role.code in ['RIS', 'LIS']  # ❌ RIS, LIS는 내부 직원
 
-from apps.accounts.models import User
-from apps.patients.models import Patient
-from apps.ocs.models import OCS
+# 수정 필요
+class IsExternal(BasePermission):
+    """EXTERNAL 역할(외부기관)만 접근 가능"""
+    def has_permission(self, request, view):
+        return request.user.is_authenticated and request.user.role.code == 'EXTERNAL'  # ✅
+```
 
+**테스트**:
+- `external1` 계정으로 `/api/dashboard/external/stats/` 접근 → 200 OK
+- `ris1`, `lis1` 계정으로 접근 → 403 Forbidden
+
+---
+
+## 개선 필요 작업 (우선순위순)
+
+### ~~작업 4~7~~ - 완료됨
+
+### 작업 9: 에러 처리 및 로깅 추가 (중간)
+
+**문제점**: try-except 블록이 없음
+
+**수정 파일**: `apps/common/views.py`
+
+```python
+import logging
+
+logger = logging.getLogger(__name__)
 
 class AdminDashboardStatsView(APIView):
-    """관리자 대시보드 통계 API"""
-    permission_classes = [IsAuthenticated]
-
     def get(self, request):
-        now = timezone.now()
-        month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-        week_ago = now - timedelta(days=7)
-
-        # 사용자 통계
-        users = User.objects.filter(is_active=True)
-        user_by_role = dict(
-            users.values('role__code')
-            .annotate(count=Count('id'))
-            .values_list('role__code', 'count')
-        )
-
-        # 환자 통계
-        patients = Patient.objects.filter(is_deleted=False)
-
-        # OCS 통계
-        ocs_all = OCS.objects.filter(is_deleted=False)
-        ocs_by_status = dict(
-            ocs_all.values('ocs_status')
-            .annotate(count=Count('id'))
-            .values_list('ocs_status', 'count')
-        )
-
-        return Response({
-            'users': {
-                'total': users.count(),
-                'by_role': user_by_role,
-                'recent_logins': users.filter(last_login__gte=week_ago).count(),
-            },
-            'patients': {
-                'total': patients.count(),
-                'new_this_month': patients.filter(created_at__gte=month_start).count(),
-            },
-            'ocs': {
-                'total': ocs_all.count(),
-                'by_status': ocs_by_status,
-                'pending_count': ocs_all.filter(
-                    ocs_status__in=['ORDERED', 'ACCEPTED', 'IN_PROGRESS']
-                ).count(),
-            },
-        })
+        try:
+            # 기존 코드...
+            return Response({...})
+        except Exception as e:
+            logger.error(f"Admin dashboard stats error: {str(e)}")
+            return Response(
+                {'error': '통계를 불러오는 중 오류가 발생했습니다.'},
+                status=500
+            )
 ```
 
 ---
 
-### 작업 2: External Dashboard API
+### 작업 6: OCS 상태 enum 사용 (낮음)
 
-**생성/수정 파일**: `apps/common/views.py`에 추가
+**문제점**: 문자열 하드코딩
+
+**수정 위치**: `apps/common/views.py` 라인 84-86
 
 ```python
-class ExternalDashboardStatsView(APIView):
-    """외부기관 대시보드 통계 API"""
-    permission_classes = [IsAuthenticated]
+# 변경 전
+'pending_count': ocs_all.filter(
+    ocs_status__in=['ORDERED', 'ACCEPTED', 'IN_PROGRESS']
+).count(),
 
-    def get(self, request):
-        now = timezone.now()
-        week_ago = now - timedelta(days=7)
+# 변경 후
+from apps.ocs.models import OCS
 
-        # 외부 LIS 업로드 (extr_ prefix)
-        lis_external = OCS.objects.filter(
-            ocs_id__startswith='extr_',
-            job_role='LIS',
-            is_deleted=False
-        )
-
-        # 외부 RIS 업로드 (risx_ prefix)
-        ris_external = OCS.objects.filter(
-            ocs_id__startswith='risx_',
-            job_role='RIS',
-            is_deleted=False
-        )
-
-        # 최근 업로드
-        from django.db.models import Q
-        recent = OCS.objects.filter(
-            Q(ocs_id__startswith='extr_') | Q(ocs_id__startswith='risx_'),
-            is_deleted=False
-        ).select_related('patient').order_by('-created_at')[:10]
-
-        return Response({
-            'lis_uploads': {
-                'pending': lis_external.filter(ocs_status='RESULT_READY').count(),
-                'completed': lis_external.filter(ocs_status='CONFIRMED').count(),
-                'total_this_week': lis_external.filter(created_at__gte=week_ago).count(),
-            },
-            'ris_uploads': {
-                'pending': ris_external.filter(ocs_status='RESULT_READY').count(),
-                'completed': ris_external.filter(ocs_status='CONFIRMED').count(),
-                'total_this_week': ris_external.filter(created_at__gte=week_ago).count(),
-            },
-            'recent_uploads': [
-                {
-                    'id': o.id,
-                    'ocs_id': o.ocs_id,
-                    'job_role': o.job_role,
-                    'status': o.ocs_status,
-                    'uploaded_at': o.created_at.isoformat(),
-                    'patient_name': o.patient.name if o.patient else '-',
-                }
-                for o in recent
-            ],
-        })
+'pending_count': ocs_all.filter(
+    ocs_status__in=[
+        OCS.OcsStatus.ORDERED,
+        OCS.OcsStatus.ACCEPTED,
+        OCS.OcsStatus.IN_PROGRESS
+    ]
+).count(),
 ```
 
 ---
 
-### 작업 3: URL 등록
+### 작업 7: API 문서화 (낮음)
 
-**수정 파일**: `config/urls.py` 또는 `apps/common/urls.py`
+**문제점**: @extend_schema 데코레이터 없음
 
 ```python
-from apps.common.views import AdminDashboardStatsView, ExternalDashboardStatsView
+from drf_spectacular.utils import extend_schema
 
-urlpatterns += [
-    path('api/dashboard/admin/stats/', AdminDashboardStatsView.as_view()),
-    path('api/dashboard/external/stats/', ExternalDashboardStatsView.as_view()),
-]
+@extend_schema(
+    tags=["Dashboard"],
+    description="관리자용 대시보드 통계를 조회합니다",
+    responses={200: ...}
+)
+class AdminDashboardStatsView(APIView):
+    # ...
 ```
 
 ---
@@ -176,7 +162,11 @@ urlpatterns += [
 
 ## 완료 기준
 
-- [ ] `apps/common/views.py`에 Dashboard API 추가
-- [ ] URL 등록
-- [ ] 테스트: `GET /api/dashboard/admin/stats/` 응답 확인
-- [ ] 테스트: `GET /api/dashboard/external/stats/` 응답 확인
+- [x] `apps/common/views.py`에 Dashboard API 추가
+- [x] URL 등록
+- [x] 테스트: `GET /api/dashboard/admin/stats/` 응답 확인
+- [x] 테스트: `GET /api/dashboard/external/stats/` 응답 확인
+- [x] 역할 기반 권한 검증 추가
+- [x] 에러 처리 추가
+- [x] OCS 상태 enum 사용
+- [ ] **🚨 IsExternal 수정: EXTERNAL 역할만 허용 (RIS, LIS 제외)**

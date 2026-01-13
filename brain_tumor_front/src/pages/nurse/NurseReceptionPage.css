@@ -87,8 +87,9 @@
 
 .nurse-reception-page .doctor-tab {
   padding: 0.5rem 1rem;
-  border: 1px solid var(--border-color, #e2e8f0);
-  background: white;
+  border: 1px solid var(--border, #e2e8f0);
+  background: var(--card-bg, white);
+  color: var(--text-main, #1f2937);
   border-radius: 20px;
   font-size: 0.875rem;
   cursor: pointer;
@@ -96,13 +97,14 @@
 }
 
 .nurse-reception-page .doctor-tab:hover {
-  border-color: var(--color-primary, #3b82f6);
-  color: var(--color-primary, #3b82f6);
+  border-color: var(--primary, #5b6fd6);
+  color: var(--primary, #5b6fd6);
+  background: var(--bg-main, #f4f6f9);
 }
 
 .nurse-reception-page .doctor-tab.active {
-  background: var(--color-primary, #3b82f6);
-  border-color: var(--color-primary, #3b82f6);
+  background: var(--primary, #5b6fd6);
+  border-color: var(--primary, #5b6fd6);
   color: white;
 }
 

@@ -1,7 +1,7 @@
 /* 공통레이아웃 */
 .page.patient-list {
   padding: 20px 24px;
-  background: #f8fafc;
+  background: var(--bg-main, #f4f6f9);
 }
 
 /*Header 영역 스타일 */
@@ -12,7 +12,7 @@
 .page.patient-list h1 {
   font-size: 22px;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--text-main, #1f2937);
 }
 
 
@@ -37,10 +37,10 @@
 
 /* 카드 스타일 */
 .card {
-  background: #ffffff;
+  background: var(--card-bg, #ffffff);
   padding: 18px 20px;
-  border-radius: 10px;
-  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
+  border-radius: var(--radius-md, 8px);
+  box-shadow: var(--shadow-card, 0 4px 12px rgba(0,0,0,0.08));
 }
 
 .card.small {
@@ -48,11 +48,11 @@
 }
 
 .card.ai {
-  border-left: 5px solid #2563eb;
+  border-left: 5px solid var(--primary, #5b6fd6);
   background: linear-gradient(
     to right,
-    rgba(37, 99, 235, 0.05),
-    #ffffff 40%
+    rgba(91, 111, 214, 0.05),
+    var(--card-bg, #ffffff) 40%
   );
 }
 
@@ -110,18 +110,18 @@
 
 /* 버튼 */
 button.primary {
-  background: #2563eb;
+  background: var(--primary, #5b6fd6);
   color: #ffffff;
   border: none;
   padding: 8px 16px;
-  border-radius: 8px;
+  border-radius: var(--radius-md, 8px);
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
 }
 
 button.primary:hover {
-  background: #1d4ed8;
+  background: var(--primary-dark, #6a7bdc);
 }
 
 /* LabResultTab styles */
@@ -144,14 +144,15 @@ button.primary:hover {
 
 .lab-table th {
   padding: 10px;
-  color: #64748b;
+  color: var(--text-sub, #6b7280);
   font-weight: 600;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--border, #e5e7eb);
 }
 
 .lab-table td {
   padding: 12px 10px;
-  border-bottom: 1px solid #e5e7eb;
+  color: var(--text-main, #1f2937);
+  border-bottom: 1px solid var(--border, #e5e7eb);
 }
 
 .lab-table tr.abnormal {
@@ -175,11 +176,12 @@ button.primary:hover {
 
 .summary-text {
   line-height: 1.7;
-  background: #f8fafc;
+  background: var(--bg-main, #f4f6f9);
   padding: 16px 18px;
-  border-left: 5px solid #2563eb;
+  border-left: 5px solid var(--primary, #5b6fd6);
   border-radius: 6px;
   font-size: 14px;
+  color: var(--text-main, #1f2937);
 }
 
 .ai-findings ul {
@@ -224,27 +226,43 @@ button.primary:hover {
   justify-content: space-between;
   align-items: center;
 
-  background: #ffffff;
+  background: var(--card-bg, #ffffff);
   padding: 12px 16px;
-  border-radius: 12px;
+  border-radius: var(--radius-md, 8px);
 
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--shadow-card, 0 4px 12px rgba(0,0,0,0.08));
   margin-bottom: 16px;
 }
 
 /* 필터 왼쪽 */
+.filter-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .filter-left input {
   width: 240px;
   padding: 8px 12px;
-
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: var(--radius-md, 8px);
   font-size: 14px;
+  background: var(--card-bg, #ffffff);
+  color: var(--text-main, #1f2937);
 }
 
 .filter-left input::placeholder {
-  color: #94a3b8;
+  color: var(--text-sub, #6b7280);
+}
+
+.filter-left select {
+  padding: 8px 10px;
+  min-width: 100px;
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: var(--radius-md, 8px);
+  font-size: 13px;
+  background: var(--card-bg, #ffffff);
+  color: var(--text-main, #1f2937);
 }
 
 /* 필터 오른쪽 */
@@ -256,22 +274,20 @@ button.primary:hover {
 .filter-right select {
   padding: 8px 10px;
   min-width: 110px;
-
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: var(--radius-md, 8px);
   font-size: 13px;
-  background: #ffffff;
-  color: #334155;
+  background: var(--card-bg, #ffffff);
+  color: var(--text-main, #1f2937);
 }
 
 /* 환자 content 영역 스타일 */
 .content {
-  background: #ffffff;
-  border-radius: 14px;
+  background: var(--card-bg, #ffffff);
+  border-radius: var(--radius-md, 8px);
   padding: 0;
 
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+  box-shadow: var(--shadow-card, 0 4px 12px rgba(0,0,0,0.08));
   overflow: hidden;
 }
 
@@ -281,8 +297,8 @@ button.primary:hover {
 }
 
 .content thead th {
-  background: #f1f5f9;
-  color: #475569;
+  background: var(--bg-main, #f4f6f9);
+  color: var(--text-sub, #6b7280);
   font-size: 13px;
   font-weight: 600;
 
@@ -293,18 +309,18 @@ button.primary:hover {
 .content tbody td {
   padding: 12px;
   font-size: 14px;
-  color: #0f172a;
+  color: var(--text-main, #1f2937);
 
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--border, #e5e7eb);
 }
 
 .content tbody tr:hover {
-  background: #f1f5ff;
+  background: var(--bg-main, #f4f6f9);
   cursor: pointer;
 }
 
 .content tbody tr.selected {
-  background: #e0ecff;
+  background: rgba(91, 111, 214, 0.1);
 }
 
 /* 상태 Badge */
@@ -329,13 +345,12 @@ button.primary:hover {
 .patient-count {
   margin-right: 16px;
   font-size: 13px;
-  color: #334155;
+  font-weight: 500;
+  color: var(--text-main, #1f2937);
+  white-space: nowrap;
 }
 
 .patient-count span {
-  color: #2563eb;
+  color: var(--primary, #5b6fd6);
   font-weight: 700;
-}
-.patient-count span:hover {
-  text-decoration: underline;
 }

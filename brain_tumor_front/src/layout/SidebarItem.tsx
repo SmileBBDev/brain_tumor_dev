@@ -19,7 +19,15 @@ export default function SidebarItem({
     menu.labels?.[roleKey] ||
     menu.labels?.['DEFAULT'] ||
     menu.code;
-  const isGroup = !menu.path && menu.children && menu.children.length > 0;
+
+  // breadcrumbOnly 메뉴는 사이드바에 표시하지 않음
+  if (menu.breadcrumbOnly) {
+    return null;
+  }
+
+  // 자식 중 breadcrumbOnly가 아닌 것만 필터링
+  const visibleChildren = menu.children?.filter(child => !child.breadcrumbOnly) || [];
+  const isGroup = !menu.path && visibleChildren.length > 0;
 
   return (
     <li className="menu-item">
@@ -48,7 +56,7 @@ export default function SidebarItem({
           {/* Children */}
           {isOpen && (
             <ul className="menu-children">
-              {menu.children!.map(child => (
+              {visibleChildren.map(child => (
                 <SidebarItem
                   key={child.id}
                   menu={child}

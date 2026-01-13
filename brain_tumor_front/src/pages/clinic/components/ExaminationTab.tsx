@@ -27,6 +27,7 @@ import type {
 import type { OCSListItem } from '@/types/ocs';
 import type { Encounter } from '@/types/encounter';
 import PrescriptionCard from './DiagnosisPrescriptionCard';
+import './ExaminationTab.css';
 
 interface ExaminationTabProps {
   patientId: number;
@@ -229,7 +230,7 @@ export default function ExaminationTab({
   const activeAlerts = alerts.filter((a) => a.is_active);
 
   return (
-    <div className="examination-tab">
+    <div className="examination-tab enhanced">
       {/* 토스트 메시지 */}
       {toastMessage && (
         <div className={`toast-message toast-${toastMessage.type}`}>
@@ -237,227 +238,220 @@ export default function ExaminationTab({
         </div>
       )}
 
-      {/* 환자 주의사항 */}
-      <section className="exam-section alert-section">
-        <div className="section-header">
-          <h4>
-            환자 주의사항
-            {activeAlerts.length > 0 && (
-              <span className="alert-count">{activeAlerts.length}</span>
-            )}
-          </h4>
-          <button className="btn btn-sm btn-outline" onClick={handleAddAlert}>
-            + 추가
-          </button>
-        </div>
-        {activeAlerts.length === 0 ? (
-          <div className="empty-message">등록된 주의사항이 없습니다.</div>
-        ) : (
-          <div className="alert-list">
-            {activeAlerts.map((alert) => (
-              <div
-                key={alert.id}
-                className="alert-item"
-                style={{ borderLeft: `4px solid ${SEVERITY_COLORS[alert.severity]}` }}
-              >
-                <span className="alert-icon">{ALERT_TYPE_ICONS[alert.alert_type]}</span>
-                <div className="alert-content">
-                  <div className="alert-title">{alert.title}</div>
-                  {alert.description && (
-                    <div className="alert-desc">{alert.description}</div>
-                  )}
-                </div>
-                <div className="alert-actions">
+      {/* 상단 요약 영역: 주의사항 + 기본정보 */}
+      <div className="top-summary-row">
+        {/* 환자 주의사항 */}
+        <section className="exam-section alert-section compact">
+          <div className="section-header">
+            <h4>
+              <span className="section-icon warning">!</span>
+              주의사항
+              {activeAlerts.length > 0 && (
+                <span className="alert-count">{activeAlerts.length}</span>
+              )}
+            </h4>
+            <button className="btn btn-sm btn-outline" onClick={handleAddAlert}>
+              + 추가
+            </button>
+          </div>
+          {activeAlerts.length === 0 ? (
+            <div className="empty-message small">등록된 주의사항이 없습니다.</div>
+          ) : (
+            <div className="alert-list horizontal">
+              {activeAlerts.slice(0, 3).map((alert) => (
+                <div
+                  key={alert.id}
+                  className="alert-chip"
+                  style={{ borderColor: SEVERITY_COLORS[alert.severity] }}
+                  onClick={() => handleEditAlert(alert)}
+                  title={alert.description || alert.title}
+                >
+                  <span className="alert-icon">{ALERT_TYPE_ICONS[alert.alert_type]}</span>
+                  <span className="alert-title">{alert.title}</span>
                   <button
-                    className="btn-icon"
-                    onClick={() => handleEditAlert(alert)}
-                    title="편집"
+                    className="btn-remove"
+                    onClick={(e) => { e.stopPropagation(); handleDeleteAlert(alert.id); }}
                   >
-                    ✏️
-                  </button>
-                  <button
-                    className="btn-icon"
-                    onClick={() => handleDeleteAlert(alert.id)}
-                    title="삭제"
-                  >
-                    🗑️
+                    ×
                   </button>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
-
-      {/* 환자 기본정보 */}
-      {summary?.patient && (
-        <section className="exam-section info-section">
-          <h4>환자 기본정보</h4>
-          <div className="info-grid">
-            <div className="info-item">
-              <span className="label">혈액형</span>
-              <span className="value">{summary.patient.blood_type || '-'}</span>
+              ))}
+              {activeAlerts.length > 3 && (
+                <span className="more-alerts">+{activeAlerts.length - 3}개</span>
+              )}
             </div>
-            <div className="info-item">
-              <span className="label">알레르기</span>
-              <span className="value">
-                {summary.patient.allergies?.length > 0
-                  ? summary.patient.allergies.join(', ')
-                  : '-'}
-              </span>
-            </div>
-            <div className="info-item">
-              <span className="label">기저질환</span>
-              <span className="value">
-                {summary.patient.chronic_diseases?.length > 0
-                  ? summary.patient.chronic_diseases.join(', ')
-                  : '-'}
-              </span>
-            </div>
-            <div className="info-item full">
-              <span className="label">주호소</span>
-              <span className="value">{chiefComplaint || '-'}</span>
-            </div>
-          </div>
+          )}
         </section>
-      )}
 
-      {/* SOAP 노트 및 최근 이력 (병렬 배치) */}
-      <div className="soap-history-grid">
-        {/* SOAP 노트 */}
-        <div className="soap-history-column">
+        {/* 환자 기본정보 - 간소화 */}
+        {summary?.patient && (
+          <section className="exam-section info-section compact">
+            <h4>
+              <span className="section-icon info">i</span>
+              기본정보
+            </h4>
+            <div className="info-chips">
+              <span className="info-chip">
+                <span className="chip-label">혈액형</span>
+                <span className="chip-value">{summary.patient.blood_type || '-'}</span>
+              </span>
+              <span className="info-chip">
+                <span className="chip-label">알레르기</span>
+                <span className="chip-value">
+                  {summary.patient.allergies?.length > 0
+                    ? summary.patient.allergies.slice(0, 2).join(', ')
+                    : '-'}
+                </span>
+              </span>
+              <span className="info-chip">
+                <span className="chip-label">기저질환</span>
+                <span className="chip-value">
+                  {summary.patient.chronic_diseases?.length > 0
+                    ? summary.patient.chronic_diseases.slice(0, 2).join(', ')
+                    : '-'}
+                </span>
+              </span>
+              {chiefComplaint && (
+                <span className="info-chip highlight">
+                  <span className="chip-label">주호소</span>
+                  <span className="chip-value">{chiefComplaint}</span>
+                </span>
+              )}
+            </div>
+          </section>
+        )}
+      </div>
+
+      {/* 메인 컨텐츠: 3컬럼 그리드 */}
+      <div className="main-content-grid three-column">
+        {/* 컬럼 1: SOAP 노트 */}
+        <div className="content-column soap-column">
           <section className="exam-section soap-section">
             <div className="section-header">
-              <h4>SOAP 노트</h4>
+              <h4>
+                <span className="section-icon edit">S</span>
+                SOAP 노트
+              </h4>
               <button
                 className={`btn btn-sm ${soapSaved ? 'btn-success' : 'btn-primary'}`}
                 onClick={handleSaveSOAP}
                 disabled={savingSOAP || !encounterId}
               >
-                {savingSOAP ? '저장 중...' : soapSaved ? '저장 완료' : 'SOAP 저장'}
+                {savingSOAP ? '저장 중...' : soapSaved ? '저장됨 ✓' : '저장'}
               </button>
             </div>
             {!encounterId ? (
-              <div className="empty-message">진료를 시작한 후 SOAP 노트를 작성할 수 있습니다.</div>
+              <div className="empty-message">진료 시작 후 작성 가능</div>
             ) : (
-              <div className="soap-form">
+              <div className="soap-form compact">
                 <div className="soap-field">
-                  <label>S - Subjective (주관적 소견)</label>
+                  <label>S - 주관적 소견</label>
                   <textarea
                     value={soapData.subjective}
                     onChange={(e) => setSOAPData({ ...soapData, subjective: e.target.value })}
                     placeholder="환자가 호소하는 증상..."
-                    rows={3}
+                    rows={2}
                   />
                 </div>
                 <div className="soap-field">
-                  <label>O - Objective (객관적 소견)</label>
+                  <label>O - 객관적 소견</label>
                   <textarea
                     value={soapData.objective}
                     onChange={(e) => setSOAPData({ ...soapData, objective: e.target.value })}
                     placeholder="검사 결과, 관찰 소견..."
-                    rows={3}
+                    rows={2}
                   />
                 </div>
                 <div className="soap-field">
-                  <label>A - Assessment (평가)</label>
+                  <label>A - 평가</label>
                   <textarea
                     value={soapData.assessment}
                     onChange={(e) => setSOAPData({ ...soapData, assessment: e.target.value })}
                     placeholder="진단, 감별진단..."
-                    rows={3}
+                    rows={2}
                   />
                 </div>
                 <div className="soap-field">
-                  <label>P - Plan (계획)</label>
+                  <label>P - 계획</label>
                   <textarea
                     value={soapData.plan}
                     onChange={(e) => setSOAPData({ ...soapData, plan: e.target.value })}
                     placeholder="치료 계획, 처방..."
-                    rows={3}
+                    rows={2}
                   />
                 </div>
               </div>
             )}
           </section>
+
+          {/* AI 분석 요약 - SOAP 아래로 이동 */}
+          {summary?.ai_summary && (
+            <section className="exam-section ai-section">
+              <h4>
+                <span className="section-icon ai">AI</span>
+                AI 분석 요약
+              </h4>
+              <div className="ai-summary compact">
+                <div className="ai-meta">
+                  분석일: {summary.ai_summary.created_at?.split('T')[0]}
+                </div>
+                <pre className="ai-result">
+                  {JSON.stringify(summary.ai_summary.result, null, 2)}
+                </pre>
+              </div>
+            </section>
+          )}
         </div>
 
-        {/* 최근 이력 */}
-        <div className="soap-history-column">
-          {summary && (
-            <section className="exam-section history-section">
-              <h4>최근 이력</h4>
-              <div className="history-grid-inner">
-                {/* 최근 진료 */}
-                <div className="history-column">
-                  <h5>최근 진료 ({summary.recent_encounters?.length || 0}건)</h5>
-                  {summary.recent_encounters?.length === 0 ? (
-                    <div className="empty-message">진료 기록 없음</div>
-                  ) : (
-                    <ul className="history-list">
-                      {summary.recent_encounters?.slice(0, 5).map((enc) => (
-                        <li key={enc.id}>
-                          <span className="date">{enc.encounter_date?.split('T')[0]}</span>
-                          <span className="type">{enc.encounter_type_display}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
+        {/* 컬럼 2: 처방 + 최근 이력 */}
+        <div className="content-column middle-column">
+          <PrescriptionCard
+            patientId={patientId}
+            encounter={encounter}
+          />
 
-                {/* 최근 검사 */}
-                <div className="history-column">
-                  <h5>최근 검사</h5>
-                  <div className="ocs-group">
-                    <div className="ocs-label">RIS ({summary.recent_ocs?.ris?.length || 0})</div>
-                    {summary.recent_ocs?.ris?.slice(0, 3).map((ocs) => (
-                      <div key={ocs.id} className="ocs-item">
-                        {ocs.job_type} - {ocs.ocs_status_display}
-                      </div>
-                    ))}
+          {/* 최근 이력 */}
+          {summary && (
+            <section className="exam-section history-section compact">
+              <h4>
+                <span className="section-icon history">H</span>
+                최근 이력
+              </h4>
+              <div className="history-tabs">
+                <div className="history-tab-content">
+                  {/* 최근 진료 */}
+                  <div className="history-mini-list">
+                    <h5>진료 ({summary.recent_encounters?.length || 0})</h5>
+                    {summary.recent_encounters?.length === 0 ? (
+                      <div className="empty-message small">기록 없음</div>
+                    ) : (
+                      <ul className="history-list mini">
+                        {summary.recent_encounters?.slice(0, 3).map((enc) => (
+                          <li key={enc.id}>
+                            <span className="date">{enc.encounter_date?.split('T')[0]}</span>
+                            <span className="type">{enc.encounter_type_display}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                   </div>
-                  <div className="ocs-group">
-                    <div className="ocs-label">LIS ({summary.recent_ocs?.lis?.length || 0})</div>
-                    {summary.recent_ocs?.lis?.slice(0, 3).map((ocs) => (
-                      <div key={ocs.id} className="ocs-item">
-                        {ocs.job_type} - {ocs.ocs_status_display}
-                      </div>
-                    ))}
+
+                  {/* 최근 검사 */}
+                  <div className="history-mini-list">
+                    <h5>검사</h5>
+                    <div className="ocs-inline">
+                      <span className="ocs-badge ris">RIS {summary.recent_ocs?.ris?.length || 0}</span>
+                      <span className="ocs-badge lis">LIS {summary.recent_ocs?.lis?.length || 0}</span>
+                    </div>
                   </div>
                 </div>
               </div>
             </section>
           )}
         </div>
-      </div>
 
-      {/* AI 요약 */}
-      {summary?.ai_summary && (
-        <section className="exam-section ai-section">
-          <h4>AI 분석 요약</h4>
-          <div className="ai-summary">
-            <div className="ai-meta">
-              분석일: {summary.ai_summary.created_at?.split('T')[0]}
-            </div>
-            <pre className="ai-result">
-              {JSON.stringify(summary.ai_summary.result, null, 2)}
-            </pre>
-          </div>
-        </section>
-      )}
-
-      {/* 처방 및 오더 섹션 */}
-      <div className="order-section-grid">
-        {/* 처방 카드 */}
-        <div className="order-column">
-          <PrescriptionCard
-            patientId={patientId}
-            encounter={encounter}
-          />
-        </div>
-
-        {/* 오더 및 검사결과 */}
-        <div className="order-column">
+        {/* 컬럼 3: 검사 오더 + 결과 + AI 요청 */}
+        <div className="content-column order-column">
           {/* 검사 오더 */}
           <section className="exam-section order-card">
             <div className="section-header">
@@ -599,471 +593,6 @@ export default function ExaminationTab({
           onSave={handleSaveAlert}
         />
       )}
-
-      <style>{`
-        .examination-tab {
-          display: flex;
-          flex-direction: column;
-          gap: 16px;
-          padding: 16px;
-        }
-        .examination-tab.loading {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          min-height: 200px;
-          color: var(--text-secondary, #666);
-        }
-        .exam-section {
-          background: var(--bg-primary, #fff);
-          border: 1px solid var(--border-color, #e0e0e0);
-          border-radius: 8px;
-          padding: 16px;
-        }
-        .exam-section h4 {
-          margin: 0 0 12px 0;
-          font-size: 15px;
-          font-weight: 600;
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        }
-        .section-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 12px;
-        }
-        .section-header h4 {
-          margin: 0;
-        }
-
-        /* Alert Section */
-        .alert-count {
-          background: #f44336;
-          color: #fff;
-          font-size: 11px;
-          padding: 2px 6px;
-          border-radius: 10px;
-        }
-        .alert-list {
-          display: flex;
-          flex-direction: column;
-          gap: 8px;
-        }
-        .alert-item {
-          display: flex;
-          align-items: flex-start;
-          gap: 10px;
-          padding: 10px;
-          background: var(--bg-secondary, #f5f5f5);
-          border-radius: 6px;
-        }
-        .alert-icon {
-          font-size: 18px;
-        }
-        .alert-content {
-          flex: 1;
-        }
-        .alert-title {
-          font-weight: 500;
-          font-size: 13px;
-        }
-        .alert-desc {
-          font-size: 12px;
-          color: var(--text-secondary, #666);
-          margin-top: 2px;
-        }
-        .alert-actions {
-          display: flex;
-          gap: 4px;
-        }
-        .btn-icon {
-          background: none;
-          border: none;
-          cursor: pointer;
-          padding: 4px;
-          font-size: 14px;
-          opacity: 0.6;
-        }
-        .btn-icon:hover {
-          opacity: 1;
-        }
-
-        /* Info Section */
-        .info-grid {
-          display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          gap: 12px;
-        }
-        .info-item {
-          display: flex;
-          flex-direction: column;
-          gap: 4px;
-        }
-        .info-item.full {
-          grid-column: span 3;
-        }
-        .info-item .label {
-          font-size: 11px;
-          color: var(--text-secondary, #666);
-        }
-        .info-item .value {
-          font-size: 13px;
-          font-weight: 500;
-        }
-
-        /* SOAP Section */
-        .soap-form {
-          display: flex;
-          flex-direction: column;
-          gap: 12px;
-        }
-        .soap-field label {
-          display: block;
-          font-size: 12px;
-          font-weight: 600;
-          color: var(--text-secondary, #666);
-          margin-bottom: 4px;
-        }
-        .soap-field textarea {
-          width: 100%;
-          padding: 10px;
-          border: 1px solid var(--border-color, #e0e0e0);
-          border-radius: 6px;
-          font-size: 13px;
-          font-family: inherit;
-          resize: vertical;
-        }
-        .soap-field textarea:focus {
-          outline: none;
-          border-color: var(--primary, #1976d2);
-        }
-
-        /* SOAP & History Grid (병렬 배치) */
-        .soap-history-grid {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 16px;
-        }
-        .soap-history-column {
-          display: flex;
-          flex-direction: column;
-        }
-        .soap-history-column .exam-section {
-          flex: 1;
-          height: 100%;
-        }
-
-        /* History Section */
-        .history-grid-inner {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 16px;
-        }
-        .history-grid {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 16px;
-        }
-        .history-column h5 {
-          margin: 0 0 8px 0;
-          font-size: 13px;
-          color: var(--text-secondary, #666);
-        }
-        .history-list {
-          list-style: none;
-          margin: 0;
-          padding: 0;
-        }
-        .history-list li {
-          display: flex;
-          gap: 8px;
-          padding: 6px 0;
-          font-size: 12px;
-          border-bottom: 1px solid var(--border-color, #e0e0e0);
-        }
-        .history-list .date {
-          color: var(--text-secondary, #666);
-        }
-        .ocs-group {
-          margin-bottom: 8px;
-        }
-        .ocs-label {
-          font-size: 11px;
-          font-weight: 600;
-          color: var(--text-secondary, #666);
-          margin-bottom: 4px;
-        }
-        .ocs-item {
-          font-size: 12px;
-          padding: 4px 0;
-        }
-
-        /* AI Section */
-        .ai-meta {
-          font-size: 11px;
-          color: var(--text-secondary, #666);
-          margin-bottom: 8px;
-        }
-        .ai-result {
-          background: var(--bg-secondary, #f5f5f5);
-          padding: 12px;
-          border-radius: 6px;
-          font-size: 11px;
-          overflow-x: auto;
-          margin: 0;
-        }
-
-        .empty-message {
-          padding: 16px;
-          text-align: center;
-          color: var(--text-secondary, #666);
-          font-size: 13px;
-        }
-
-        .btn-outline {
-          background: transparent;
-          border: 1px solid var(--border-color, #e0e0e0);
-          color: var(--text-primary, #1a1a1a);
-          padding: 4px 12px;
-          border-radius: 4px;
-          cursor: pointer;
-          font-size: 12px;
-        }
-        .btn-outline:hover {
-          background: var(--bg-secondary, #f5f5f5);
-        }
-
-        /* Toast Messages */
-        .toast-message {
-          position: sticky;
-          top: 0;
-          padding: 10px 16px;
-          border-radius: 6px;
-          font-size: 13px;
-          font-weight: 500;
-          animation: slideIn 0.3s ease;
-          z-index: 100;
-        }
-        .toast-success {
-          background: #e8f5e9;
-          color: #2e7d32;
-          border: 1px solid #a5d6a7;
-        }
-        .toast-error {
-          background: #ffebee;
-          color: #c62828;
-          border: 1px solid #ef9a9a;
-        }
-        @keyframes slideIn {
-          from { opacity: 0; transform: translateY(-10px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* Success Button */
-        .btn-success {
-          background: #4caf50 !important;
-          border-color: #4caf50 !important;
-          color: white !important;
-        }
-
-        /* Button Secondary */
-        .btn-secondary {
-          background: #f5f5f5;
-          border: 1px solid #e0e0e0;
-          color: #333;
-          padding: 4px 12px;
-          border-radius: 4px;
-          cursor: pointer;
-          font-size: 12px;
-        }
-        .btn-secondary:hover {
-          background: #e0e0e0;
-        }
-
-        /* Order Section Grid */
-        .order-section-grid {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 16px;
-        }
-        .order-column {
-          display: flex;
-          flex-direction: column;
-          gap: 16px;
-        }
-
-        /* Order Card */
-        .order-card .card-icon,
-        .result-card .card-icon {
-          margin-right: 6px;
-        }
-        .order-counts {
-          font-size: 12px;
-          font-weight: normal;
-          color: var(--text-secondary, #666);
-          margin-left: 8px;
-        }
-        .pending-count {
-          color: var(--warning, #f57c00);
-        }
-        .completed-count {
-          color: var(--success, #2e7d32);
-        }
-        .result-count {
-          font-size: 12px;
-          font-weight: normal;
-          color: var(--text-secondary, #666);
-          margin-left: 4px;
-        }
-
-        .order-list,
-        .result-list {
-          display: flex;
-          flex-direction: column;
-        }
-        .order-item,
-        .result-item {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          padding: 10px 0;
-          border-bottom: 1px solid var(--border-color, #e0e0e0);
-          cursor: pointer;
-          transition: background 0.15s ease;
-        }
-        .order-item:hover,
-        .result-item:hover {
-          background: var(--bg-secondary, #f5f5f5);
-          margin: 0 -16px;
-          padding: 10px 16px;
-        }
-        .order-item:last-child,
-        .result-item:last-child {
-          border-bottom: none;
-        }
-        .order-item-content,
-        .result-item-content {
-          flex: 1;
-        }
-        .order-item-title,
-        .result-item-title {
-          font-size: 13px;
-          font-weight: 500;
-          display: flex;
-          align-items: center;
-        }
-        .order-item-subtitle,
-        .result-item-subtitle {
-          font-size: 11px;
-          color: var(--text-secondary, #666);
-          margin-top: 2px;
-        }
-
-        .job-role-badge {
-          display: inline-block;
-          padding: 2px 6px;
-          border-radius: 4px;
-          font-size: 10px;
-          font-weight: 600;
-          margin-right: 6px;
-        }
-        .job-role-badge.ris {
-          background: #e3f2fd;
-          color: #1565c0;
-        }
-        .job-role-badge.lis {
-          background: #f3e5f5;
-          color: #7b1fa2;
-        }
-
-        .status-badge {
-          font-size: 11px;
-          padding: 3px 8px;
-          border-radius: 4px;
-          font-weight: 500;
-        }
-        .status-badge.ordered {
-          background: #fff3e0;
-          color: #ef6c00;
-        }
-        .status-badge.accepted {
-          background: #e3f2fd;
-          color: #1565c0;
-        }
-        .status-badge.in_progress {
-          background: #e8f5e9;
-          color: #2e7d32;
-        }
-        .status-badge.result_ready {
-          background: #f3e5f5;
-          color: #7b1fa2;
-        }
-        .status-badge.confirmed {
-          background: #e8f5e9;
-          color: #1b5e20;
-        }
-        .status-badge.cancelled {
-          background: #ffebee;
-          color: #c62828;
-        }
-
-        .more-link {
-          padding: 12px 0;
-          text-align: center;
-          font-size: 12px;
-          color: var(--primary, #1976d2);
-          cursor: pointer;
-        }
-        .more-link:hover {
-          text-decoration: underline;
-        }
-
-        /* AI Request Card */
-        .ai-request-card {
-          background: linear-gradient(135deg, #f5f7ff 0%, #fff 100%);
-          border: 1px solid #e3e8ff;
-        }
-
-        .ai-model-info {
-          padding: 12px 0;
-        }
-
-        .ai-model-info .info-text {
-          font-size: 13px;
-          color: #666;
-          margin-bottom: 12px;
-        }
-
-        .model-badges {
-          display: flex;
-          gap: 8px;
-          flex-wrap: wrap;
-        }
-
-        .model-badge {
-          display: inline-block;
-          padding: 4px 12px;
-          background: #e3f2fd;
-          color: #1565c0;
-          border-radius: 16px;
-          font-size: 12px;
-          cursor: help;
-        }
-
-        @media (max-width: 768px) {
-          .soap-history-grid {
-            grid-template-columns: 1fr;
-          }
-          .order-section-grid {
-            grid-template-columns: 1fr;
-          }
-          .history-grid-inner {
-            grid-template-columns: 1fr;
-          }
-        }
-      `}</style>
     </div>
   );
 }
@@ -1147,55 +676,6 @@ function AlertModal({ alertData, onClose, onSave }: AlertModalProps) {
             </button>
           </div>
         </form>
-
-        <style>{`
-          .modal-backdrop {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0,0,0,0.5);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-          }
-          .modal-content {
-            background: #fff;
-            border-radius: 8px;
-            padding: 20px;
-            width: 100%;
-            max-width: 400px;
-          }
-          .modal-content h3 {
-            margin: 0 0 16px 0;
-          }
-          .form-group {
-            margin-bottom: 12px;
-          }
-          .form-group label {
-            display: block;
-            font-size: 12px;
-            font-weight: 600;
-            margin-bottom: 4px;
-          }
-          .form-group input,
-          .form-group select,
-          .form-group textarea {
-            width: 100%;
-            padding: 8px;
-            border: 1px solid var(--border-color, #e0e0e0);
-            border-radius: 4px;
-            font-size: 13px;
-          }
-          .modal-actions {
-            display: flex;
-            justify-content: flex-end;
-            gap: 8px;
-            margin-top: 16px;
-          }
-        `}</style>
       </div>
     </div>
   );

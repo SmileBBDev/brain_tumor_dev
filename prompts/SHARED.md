@@ -43,10 +43,13 @@ ORDERED → ACCEPTED → IN_PROGRESS → RESULT_READY → CONFIRMED
 | `/patients` | 환자 목록 |
 | `/patients/:id` | 환자 상세 (읽기 전용) |
 | `/patientsCare` | 진료 화면 (DOCTOR, SYSTEMMANAGER) |
+| `/encounters` | 진료 목록 |
+| `/ocs/manage` | OCS 관리 (의사용) |
 | `/ocs/ris` | RIS Worklist |
 | `/ocs/ris/process-status` | RIS 전체 현황 |
 | `/ocs/lis` | LIS Worklist |
 | `/ocs/lis/process-status` | LIS 전체 현황 |
+| `/nurse/reception` | 간호사 접수 |
 
 ## 역할 (Role)
 | 코드 | 설명 | 주요 메뉴 |
@@ -62,3 +65,17 @@ ORDERED → ACCEPTED → IN_PROGRESS → RESULT_READY → CONFIRMED
 ## API 규칙
 - 목록 API: 페이지네이션 `{ count, results: [...] }`
 - 프론트엔드 방어적 처리: `Array.isArray(data) ? data : data?.results || []`
+
+## CSS 변수 (variables.css)
+```css
+--card-bg: #ffffff;       /* 카드 배경 */
+--text-main: #1f2937;     /* 주 텍스트 */
+--text-sub: #6b7280;      /* 부 텍스트 */
+--bg-main: #f4f6f9;       /* 메인 배경 */
+--border: #e5e7eb;        /* 테두리 */
+--primary: #5b6fd6;       /* 주 색상 */
+--success: #5fb3a2;       /* 성공 */
+--warning: #f2a65a;       /* 경고 */
+--danger: #e56b6f;        /* 위험 */
+--info: #5b8def;          /* 정보 */
+```

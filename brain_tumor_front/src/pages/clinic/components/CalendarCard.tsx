@@ -185,18 +185,20 @@ export default function CalendarCard({
         .nav-btn {
           width: 28px;
           height: 28px;
-          border: 1px solid var(--border-color, #e0e0e0);
-          background: white;
+          border: 1px solid var(--border, #e5e7eb);
+          background: var(--card-bg, white);
+          color: var(--text-main, #1f2937);
           border-radius: 4px;
           cursor: pointer;
           font-size: 14px;
         }
         .nav-btn:hover {
-          background: var(--bg-secondary, #f5f5f5);
+          background: var(--bg-main, #f4f6f9);
         }
         .nav-title {
           font-size: 14px;
           font-weight: 600;
+          color: var(--text-main, #1f2937);
         }
         .calendar-weekdays {
           display: grid;
@@ -207,11 +209,11 @@ export default function CalendarCard({
         .weekday {
           font-size: 11px;
           font-weight: 500;
-          color: var(--text-secondary, #666);
+          color: var(--text-sub, #6b7280);
           padding: 4px;
         }
-        .weekday.sun { color: #e53935; }
-        .weekday.sat { color: #1976d2; }
+        .weekday.sun { color: var(--danger, #e56b6f); }
+        .weekday.sat { color: var(--info, #5b8def); }
         .calendar-grid {
           display: grid;
           grid-template-columns: repeat(7, 1fr);
@@ -227,12 +229,13 @@ export default function CalendarCard({
           border-radius: 4px;
           cursor: default;
           position: relative;
+          color: var(--text-main, #1f2937);
         }
         .calendar-day.empty {
           background: transparent;
         }
         .calendar-day.today {
-          background: var(--primary, #1976d2);
+          background: var(--primary, #5b6fd6);
           color: white;
         }
         .calendar-day.has-event .day-number {
@@ -251,13 +254,13 @@ export default function CalendarCard({
           border-radius: 50%;
         }
         .event-dot.scheduled {
-          background: #ff9800;
+          background: var(--warning, #f2a65a);
         }
         .event-dot.in_progress {
-          background: #2196f3;
+          background: var(--info, #5b8def);
         }
         .event-dot.completed {
-          background: #4caf50;
+          background: var(--success, #5fb3a2);
         }
         .calendar-legend {
           display: flex;
@@ -265,14 +268,14 @@ export default function CalendarCard({
           gap: 16px;
           margin-top: 12px;
           padding-top: 8px;
-          border-top: 1px solid var(--border-color, #e0e0e0);
+          border-top: 1px solid var(--border, #e5e7eb);
         }
         .legend-item {
           display: flex;
           align-items: center;
           gap: 4px;
           font-size: 11px;
-          color: var(--text-secondary, #666);
+          color: var(--text-sub, #6b7280);
         }
       `}</style>
     </div>

@@ -95,26 +95,23 @@ export default function PatientListPage() {
   return (
     <div className="page patient-list">
       {/* 검색 / 필터 영역 (환자 외의 역할에만 표시) */}
-       {role !== 'PATIENT' && (
-        <section  className="filter-bar">
+      {role !== 'PATIENT' && (
+        <section className="filter-bar">
           <div className="filter-left">
             <strong className="patient-count">
-              총 <span>{totalCount}</span>명의 환자가 있습니다.&nbsp;&nbsp;
+              총 <span>{totalCount}</span>명의 환자
             </strong>
             <input
               placeholder="환자명 / 환자번호 / 전화번호"
               value={searchQuery}
               onChange={handleSearch}
             />
-          </div>
-          <div className="filter-right">
             <select value={statusFilter} onChange={handleStatusChange}>
               <option value="">전체 상태</option>
               <option value="active">활성</option>
               <option value="inactive">비활성</option>
               <option value="deceased">사망</option>
             </select>
-
             <select value={genderFilter} onChange={handleGenderChange}>
               <option value="">전체 성별</option>
               <option value="M">남성</option>
@@ -122,16 +119,14 @@ export default function PatientListPage() {
               <option value="O">기타</option>
             </select>
           </div>
-        </section >
-      )}
-
-      {/* 환자 등록 버튼 */}
-      {(role === 'DOCTOR' || role === 'NURSE' || isSystemManager) && (
-        <div className="header-right">
-          <button className="btn primary" onClick={() => setIsCreateModalOpen(true)}>
-            환자 등록
-          </button>
-        </div>
+          <div className="filter-right">
+            {(role === 'DOCTOR' || role === 'NURSE' || isSystemManager) && (
+              <button className="btn primary" onClick={() => setIsCreateModalOpen(true)}>
+                환자 등록
+              </button>
+            )}
+          </div>
+        </section>
       )}
 
       {/* 환자 리스트 테이블 */}

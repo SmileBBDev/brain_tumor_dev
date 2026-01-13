@@ -204,14 +204,17 @@ export default function ClinicPage() {
 
   return (
     <div className="page clinic-page">
-      {/* 환자 정보 헤더 */}
-      <header className="patient-header">
+      {/* 환자 정보 헤더 - 개선됨 */}
+      <header className="patient-header enhanced">
         <div className="patient-info">
           <div className="patient-avatar">
             {patient.gender === 'M' ? '👨' : '👩'}
           </div>
           <div className="patient-details">
-            <h1 className="patient-name">{patient.name}</h1>
+            <div className="patient-name-row">
+              <h1 className="patient-name">{patient.name}</h1>
+              {activeEncounter && <span className="encounter-status-badge">진료 중</span>}
+            </div>
             <div className="patient-meta">
               <span className="patient-number">{patient.patient_number}</span>
               <span className="divider">|</span>
@@ -227,20 +230,38 @@ export default function ClinicPage() {
             </div>
           </div>
         </div>
-        <div className="header-actions">
-          {!activeEncounter && isDoctor && (
-            <button className="btn btn-primary" onClick={handleStartEncounter}>
-              진료 시작
-            </button>
-          )}
-          {activeEncounter && isDoctor && (
-            <>
-              <span className="encounter-badge active">진료 중</span>
+
+        {/* 퀵 액션 및 요약 */}
+        <div className="header-right">
+          <div className="quick-stats">
+            <div className="stat-item">
+              <span className="stat-label">진료 기록</span>
+              <span className="stat-value">{encounters.length}회</span>
+            </div>
+            <div className="stat-item">
+              <span className="stat-label">검사 오더</span>
+              <span className="stat-value">{ocsList.length}건</span>
+            </div>
+          </div>
+          <div className="header-actions">
+            {!activeEncounter && isDoctor && (
+              <button className="btn btn-primary" onClick={handleStartEncounter}>
+                진료 시작
+              </button>
+            )}
+            {activeEncounter && isDoctor && (
               <button className="btn btn-success" onClick={handleEndEncounter}>
                 진료 종료
               </button>
-            </>
-          )}
+            )}
+            <button
+              className="btn btn-secondary btn-icon-text"
+              onClick={() => navigate(`/patients/${patient.id}`)}
+              title="환자 상세 정보"
+            >
+              <span>상세 보기</span>
+            </button>
+          </div>
         </div>
       </header>
 

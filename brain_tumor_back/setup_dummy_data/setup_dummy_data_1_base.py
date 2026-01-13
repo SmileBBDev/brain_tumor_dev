@@ -530,6 +530,16 @@ def load_menu_permission_seed():
                 menu.order = kwargs['order']
                 update_fields.append('order')
                 update_details.append(f"order: {old_order} → {kwargs['order']}")
+            if 'breadcrumb_only' in kwargs and menu.breadcrumb_only != kwargs['breadcrumb_only']:
+                old_val = menu.breadcrumb_only
+                menu.breadcrumb_only = kwargs['breadcrumb_only']
+                update_fields.append('breadcrumb_only')
+                update_details.append(f"breadcrumb_only: {old_val} → {kwargs['breadcrumb_only']}")
+            if 'is_active' in kwargs and menu.is_active != kwargs['is_active']:
+                old_val = menu.is_active
+                menu.is_active = kwargs['is_active']
+                update_fields.append('is_active')
+                update_details.append(f"is_active: {old_val} → {kwargs['is_active']}")
             if update_fields:
                 menu.save(update_fields=update_fields)
                 changes['Menu']['updated'] = changes['Menu'].get('updated', 0) + 1
@@ -562,7 +572,7 @@ def load_menu_permission_seed():
     create_menu(17, code='LAB_RESULT_VIEW', path='/lab', icon='book', order=1, is_active=True, parent=menu_lab)
 
     # OCS 하위 (검사 오더)
-    create_menu(18, code='OCS_CREATE', path='/ocs/create', breadcrumb_only=True, order=2, is_active=True, parent=menu_ocs)
+    create_menu(18, code='OCS_CREATE', path='/ocs/create', breadcrumb_only=True, order=2, is_active=True, parent=23)
     create_menu(19, code='OCS_STATUS', path='/ocs/status', icon='clipboard', order=1, is_active=True, parent=menu_ocs)
     menu_ocs_manage, _ = create_menu(23, code='OCS_MANAGE', path='/ocs/manage', icon='file-medical', order=3, is_active=True, parent=menu_ocs)
 

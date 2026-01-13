@@ -1,40 +1,61 @@
 # Brain Tumor CDSS - 미완료 작업 백로그
 
 > **최종 업데이트**: 2026-01-12
-> **현재 상태**: Phase 4 완료, Phase 5 준비 중
+> **현재 상태**: Phase 4 진행 중
 
 ---
 
 ## 최근 완료 작업 (2026-01-12)
 
-### Process Status 기간 필터 추가 ✅
+### 페이지 UI 개선 ✅
+- [x] `/patients`: filter-bar 레이아웃 통합, CSS 변수 적용
+- [x] `/encounters`: `<h1>진료 목록</h1>` 삭제
+- [x] `/ocs/manage`: CSS 변수 적용, 테이블 스타일 (status/priority badge)
+- [x] `/nurse/reception`: 의사선택 doctor-tab 흰글씨 문제 수정
+- [x] 환자진료 캘린더: CalendarCard CSS 변수 적용 (흰글씨 문제)
+
+### Dashboard 구현 ✅
+- [x] AdminDashboard, ExternalDashboard 컴포넌트
+- [x] SystemManagerDashboard 기능 구현
+- [x] DashboardRouter 수정
+
+### Process Status 기간 필터 ✅
 - [x] RIS/LIS ProcessStatusPage에 기간 필터 드롭다운 추가
 - [x] 필터 옵션: 전체/1주일/1개월/6개월
-- [x] 통계, 차트, 지연테이블 모두 필터 반영
 
 ### LIS 더미데이터 확장 ✅
 - [x] LIS OCS 20건 → 30건 (+10개)
 - [x] 날짜 분포: 0~180일 (6개월)
-- [x] 상태별 타임스탬프 설정
 
-### RIS/LIS Process Status 페이지 통일 ✅
-- [x] RISDashboardPage → RISProcessStatusPage 리네이밍
-- [x] 컬럼 용어 통일: 담당자→작업자, 처방의사→요청의사
+### AI 추론 수동 요청 버튼 ✅
+- [x] `ExaminationTab.tsx`: AI 추론 요청 섹션 추가
 
 ---
 
 ## 1. 백엔드 작업 (A)
 
-### 1.1 worker_result 필드 확장 (RIS)
+### 1.1 IsExternal 권한 클래스 수정 (긴급)
+
+**문제점**: IsExternal이 RIS, LIS를 허용 중 - **잘못됨**
+
+**수정 파일**: `apps/common/permission.py`
+
+```python
+# 수정 필요: EXTERNAL 역할만 허용
+class IsExternal(BasePermission):
+    def has_permission(self, request, view):
+        return request.user.is_authenticated and request.user.role.code == 'EXTERNAL'
+```
+
+### 1.2 worker_result 필드 확장 (RIS)
 
 **우선순위**: 높음
 
-**작업 내용**:
 - `apps/ocs/models.py`: RIS 템플릿에 series_id, series_type 추가
 - `apps/orthancproxy/views.py`: Orthanc API에서 시리즈 정보 추출
 - SeriesDescription에서 유형 파싱 (T1, T2, T1C, FLAIR)
 
-### 1.2 AI 추론 자동 요청 시스템
+### 1.3 AI 추론 자동 요청 시스템
 
 **우선순위**: 중간
 
@@ -51,12 +72,6 @@
 
 - `PacsSelector.css`: select 옵션 텍스트 말줄임
 - `PacsSelector.jsx`: 긴 텍스트 JavaScript 처리
-
-### 2.2 AI 추론 수동 요청 버튼
-
-**우선순위**: 중간
-
-- `PatientDetailPage.tsx`: 'AI 추론 요청' 버튼 추가
 
 ---
 
@@ -82,5 +97,6 @@
 
 ## 참고
 
-- AI 모델: M1 (MRI), MG (유전자), MM (멀티모달)
-- 프로젝트 구조는 `PROJECT_DOCS.md` 참조
+- AI 모델: M1 (MRI), MG (유전자), MM (멀티모달) - `AI_MODELS.md` 참조
+- 프로젝트 구조: `PROJECT_DOCS.md` 참조
+- CSS 변수: `src/assets/style/variables.css` 참조

@@ -132,10 +132,6 @@ export default function EncounterListPage() {
 
   return (
     <div className="page">
-      <div className="page-header">
-        <h1>진료 목록</h1>
-      </div>
-
       <div className="content">
         {/* Filter Bar */}
         <div className="filter-bar">
