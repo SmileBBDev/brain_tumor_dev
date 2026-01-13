@@ -3,7 +3,7 @@
  * - 접수, 시작, 저장, 제출, 확정, 취소 등
  * - 에러 처리 및 성공/실패 콜백 통합
  */
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import {
   acceptOCS,
   startOCS,
@@ -48,6 +48,12 @@ export function useOCSActions(options: UseOCSActionsOptions = {}): UseOCSActions
   const [loading, setLoading] = useState(false);
   const [currentAction, setCurrentAction] = useState<string | null>(null);
 
+  // useRef로 콜백 참조를 안정화 (무한 루프 방지)
+  const callbacksRef = useRef({ onSuccess, onError, onRefresh });
+  useEffect(() => {
+    callbacksRef.current = { onSuccess, onError, onRefresh };
+  }, [onSuccess, onError, onRefresh]);
+
   const executeAction = useCallback(
     async <T>(
       actionName: string,
@@ -59,19 +65,19 @@ export function useOCSActions(options: UseOCSActionsOptions = {}): UseOCSActions
 
       try {
         await apiCall();
-        onSuccess?.(actionName, ocsId);
-        onRefresh?.();
+        callbacksRef.current.onSuccess?.(actionName, ocsId);
+        callbacksRef.current.onRefresh?.();
         return true;
       } catch (error) {
         console.error(`[useOCSActions] ${actionName} failed:`, error);
-        onError?.(actionName, error);
+        callbacksRef.current.onError?.(actionName, error);
         return false;
       } finally {
         setLoading(false);
         setCurrentAction(null);
       }
     },
-    [onSuccess, onError, onRefresh]
+    [] // 의존성 배열 비움 - ref를 사용하므로 안정적
   );
 
   const accept = useCallback(

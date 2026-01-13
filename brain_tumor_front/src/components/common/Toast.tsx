@@ -90,7 +90,7 @@ export function useToast() {
 
   const success = useCallback(
     (message: string, title?: string) => addToast('success', message, title),
-    []
+    [addToast]
   );
 
   const error = useCallback(

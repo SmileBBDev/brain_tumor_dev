@@ -202,23 +202,27 @@ export function useOCSEventCallback(callbacks: EventCallbacks & { autoRefresh?: 
   const { addEventCallback, removeEventCallback } = useOCSNotificationContext();
   const callbackIdRef = useRef<string | null>(null);
 
+  // useRef로 콜백 참조를 안정화 (무한 루프 방지)
+  const callbacksRef = useRef(callbacks);
+  callbacksRef.current = callbacks;
+
   useEffect(() => {
     const id = `callback-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     callbackIdRef.current = id;
 
-    // autoRefresh를 각 이벤트에 연결
+    // autoRefresh를 각 이벤트에 연결 (ref를 통해 최신 콜백 참조)
     const wrappedCallbacks: EventCallbacks = {
       onStatusChanged: (event) => {
-        callbacks.onStatusChanged?.(event);
-        callbacks.autoRefresh?.();
+        callbacksRef.current.onStatusChanged?.(event);
+        callbacksRef.current.autoRefresh?.();
       },
       onCreated: (event) => {
-        callbacks.onCreated?.(event);
-        callbacks.autoRefresh?.();
+        callbacksRef.current.onCreated?.(event);
+        callbacksRef.current.autoRefresh?.();
       },
       onCancelled: (event) => {
-        callbacks.onCancelled?.(event);
-        callbacks.autoRefresh?.();
+        callbacksRef.current.onCancelled?.(event);
+        callbacksRef.current.autoRefresh?.();
       },
     };
 
@@ -230,5 +234,5 @@ export function useOCSEventCallback(callbacks: EventCallbacks & { autoRefresh?: 
         callbackIdRef.current = null;
       }
     };
-  }, [addEventCallback, removeEventCallback, callbacks.autoRefresh]);
+  }, [addEventCallback, removeEventCallback]); // callbacks 의존성 제거
 }

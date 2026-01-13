@@ -49,13 +49,28 @@ class OCSConsumer(AsyncWebsocketConsumer):
             await self.channel_layer.group_add("ocs_all", self.channel_name)
             self.groups_joined.append("ocs_all")
 
-        if role_code in ['SYSTEMMANAGER', 'ADMIN', 'RIS']:
+        if role_code in ['SYSTEMMANAGER', 'ADMIN']:
+            # 관리자는 역할별 그룹 구독 (모든 알림 수신)
             await self.channel_layer.group_add("ocs_ris", self.channel_name)
             self.groups_joined.append("ocs_ris")
-
-        if role_code in ['SYSTEMMANAGER', 'ADMIN', 'LIS']:
             await self.channel_layer.group_add("ocs_lis", self.channel_name)
             self.groups_joined.append("ocs_lis")
+
+        if role_code == 'RIS':
+            # RIS 작업자는 역할별 + 개인별 그룹 구독
+            await self.channel_layer.group_add("ocs_ris", self.channel_name)
+            self.groups_joined.append("ocs_ris")
+            ris_personal_group = f"ocs_ris_{self.user.id}"
+            await self.channel_layer.group_add(ris_personal_group, self.channel_name)
+            self.groups_joined.append(ris_personal_group)
+
+        if role_code == 'LIS':
+            # LIS 작업자는 역할별 + 개인별 그룹 구독
+            await self.channel_layer.group_add("ocs_lis", self.channel_name)
+            self.groups_joined.append("ocs_lis")
+            lis_personal_group = f"ocs_lis_{self.user.id}"
+            await self.channel_layer.group_add(lis_personal_group, self.channel_name)
+            self.groups_joined.append(lis_personal_group)
 
         if role_code == 'DOCTOR':
             # 의사는 자신의 오더 알림만 수신

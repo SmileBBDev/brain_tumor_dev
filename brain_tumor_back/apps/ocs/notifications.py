@@ -47,21 +47,14 @@ def notify_ocs_status_changed(ocs, from_status, to_status, actor):
         'timestamp': timestamp,
     }
 
-    # 역할별 그룹에 알림
+    # 담당 작업자에게 알림 (RIS/LIS 개인별 그룹)
     job_role_lower = ocs.job_role.lower() if ocs.job_role else ''
-    if job_role_lower in ['ris', 'lis']:
-        async_to_sync(channel_layer.group_send)(f"ocs_{job_role_lower}", event_data)
+    if job_role_lower in ['ris', 'lis'] and ocs.worker_id:
+        async_to_sync(channel_layer.group_send)(f"ocs_{job_role_lower}_{ocs.worker_id}", event_data)
 
-    # 처방 의사에게 알림
+    # 처방 의사에게 알림 (의사 전용 그룹)
     if ocs.doctor_id:
         async_to_sync(channel_layer.group_send)(f"ocs_doctor_{ocs.doctor_id}", event_data)
-
-    # 작업자에게 알림 (있는 경우)
-    if ocs.worker_id:
-        async_to_sync(channel_layer.group_send)(f"ocs_user_{ocs.worker_id}", event_data)
-
-    # 관리자/간호사 그룹에 알림
-    async_to_sync(channel_layer.group_send)("ocs_all", event_data)
 
 
 def notify_ocs_created(ocs, doctor):
@@ -94,13 +87,15 @@ def notify_ocs_created(ocs, doctor):
         'timestamp': timestamp,
     }
 
-    # 역할별 그룹에 알림
+    # 담당 작업자에게 알림 (RIS/LIS 개인별 그룹)
+    # 새로 생성된 OCS는 아직 worker가 없으므로 역할별 그룹으로 전송
     job_role_lower = ocs.job_role.lower() if ocs.job_role else ''
     if job_role_lower in ['ris', 'lis']:
-        async_to_sync(channel_layer.group_send)(f"ocs_{job_role_lower}", event_data)
-
-    # 관리자/간호사 그룹에 알림
-    async_to_sync(channel_layer.group_send)("ocs_all", event_data)
+        if ocs.worker_id:
+            async_to_sync(channel_layer.group_send)(f"ocs_{job_role_lower}_{ocs.worker_id}", event_data)
+        else:
+            # 아직 담당자 미배정 → 역할별 그룹으로 전송 (모든 해당 역할 작업자가 수신)
+            async_to_sync(channel_layer.group_send)(f"ocs_{job_role_lower}", event_data)
 
 
 def notify_ocs_cancelled(ocs, actor, reason=''):
@@ -131,18 +126,11 @@ def notify_ocs_cancelled(ocs, actor, reason=''):
         'timestamp': timestamp,
     }
 
-    # 역할별 그룹에 알림
+    # 담당 작업자에게 알림 (RIS/LIS 개인별 그룹)
     job_role_lower = ocs.job_role.lower() if ocs.job_role else ''
-    if job_role_lower in ['ris', 'lis']:
-        async_to_sync(channel_layer.group_send)(f"ocs_{job_role_lower}", event_data)
+    if job_role_lower in ['ris', 'lis'] and ocs.worker_id:
+        async_to_sync(channel_layer.group_send)(f"ocs_{job_role_lower}_{ocs.worker_id}", event_data)
 
-    # 처방 의사에게 알림
+    # 처방 의사에게 알림 (의사 전용 그룹)
     if ocs.doctor_id:
         async_to_sync(channel_layer.group_send)(f"ocs_doctor_{ocs.doctor_id}", event_data)
-
-    # 작업자에게 알림 (있는 경우)
-    if ocs.worker_id:
-        async_to_sync(channel_layer.group_send)(f"ocs_user_{ocs.worker_id}", event_data)
-
-    # 관리자/간호사 그룹에 알림
-    async_to_sync(channel_layer.group_send)("ocs_all", event_data)

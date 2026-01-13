@@ -11,7 +11,7 @@ import Pagination from '@/layout/Pagination';
 import { useOCSList } from '@/hooks/useOCSList';
 import { useOCSActions } from '@/hooks/useOCSActions';
 import { useOCSEventCallback } from '@/context/OCSNotificationContext';
-import { LoadingSpinner, EmptyState, useToast } from '@/components/common';
+import { LoadingSpinner, EmptyState } from '@/components/common';
 import {
   formatDate,
   getStatusClass,
@@ -25,7 +25,6 @@ import './LISWorklistPage.css';
 export default function LISWorklistPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const toast = useToast();
 
   // 검색 입력 상태
   const [searchInput, setSearchInput] = useState('');
@@ -51,21 +50,14 @@ export default function LISWorklistPage() {
   } = useOCSList(user?.id, { jobRole: 'LIS' });
 
   // OCS 액션 훅
+  // 성공: WebSocket 알림에서 처리, 실패: alert로 표시
   const { accept, start } = useOCSActions({
-    onSuccess: (action) => {
-      const messages: Record<string, string> = {
-        accept: '오더를 접수했습니다.',
-        start: '작업을 시작합니다.',
-      };
-      toast.success(messages[action] || '작업이 완료되었습니다.');
-      refresh();
-    },
     onError: (action) => {
       const messages: Record<string, string> = {
         accept: '접수에 실패했습니다.',
         start: '작업 시작에 실패했습니다.',
       };
-      toast.error(messages[action] || '작업에 실패했습니다.');
+      alert(messages[action] || '작업에 실패했습니다.');
     },
   });
 
@@ -341,9 +333,6 @@ export default function LISWorklistPage() {
       </section>
 
       {/* OCS 실시간 알림 Toast는 AppLayout에서 전역 렌더링 */}
-
-      {/* Toast 컨테이너 */}
-      <toast.ToastContainer position="top-right" />
     </div>
   );
 }
