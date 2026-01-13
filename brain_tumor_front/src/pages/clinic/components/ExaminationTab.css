@@ -768,6 +768,167 @@
   cursor: help;
 }
 
+/* 통합 결과 섹션 스타일 */
+.unified-results {
+  padding: 12px;
+}
+
+.unified-results .section-header {
+  margin-bottom: 12px;
+}
+
+.result-subsection {
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border, #e5e7eb);
+}
+
+.result-subsection:last-of-type {
+  border-bottom: none;
+  margin-bottom: 8px;
+}
+
+.subsection-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-main);
+  margin: 0 0 8px 0;
+}
+
+.subsection-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 16px;
+  border-radius: 3px;
+  font-size: 9px;
+  font-weight: 700;
+  color: white;
+}
+
+.subsection-icon.ris {
+  background: #7c4dff;
+}
+
+.subsection-icon.lis {
+  background: #00bcd4;
+}
+
+.subsection-icon.ai {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.subsection-count {
+  font-size: 10px;
+  color: var(--text-sub);
+  font-weight: 400;
+}
+
+.result-list.compact {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.result-list.compact .result-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 8px;
+  background: var(--bg-main, #f4f6f9);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.result-list.compact .result-item:hover {
+  background: var(--bg-hover, #e8eaed);
+}
+
+.result-item-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.result-type {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-main);
+}
+
+.result-date {
+  font-size: 10px;
+  color: var(--text-sub);
+}
+
+.status-badge.mini {
+  font-size: 9px;
+  padding: 2px 6px;
+}
+
+/* AI 결과 카드 */
+.ai-result-card {
+  background: linear-gradient(135deg, #f5f7fa 0%, #e8eaed 100%);
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 6px;
+  padding: 10px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.ai-result-card:hover {
+  border-color: #667eea;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.15);
+}
+
+.ai-result-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.ai-model-name {
+  font-size: 11px;
+  font-weight: 600;
+  color: #667eea;
+}
+
+.ai-date {
+  font-size: 10px;
+  color: var(--text-sub);
+}
+
+.ai-result-preview {
+  font-size: 10px;
+  color: var(--text-sub);
+  font-family: monospace;
+  white-space: pre-wrap;
+  word-break: break-all;
+  max-height: 40px;
+  overflow: hidden;
+}
+
+/* AI 모델 안내 (컴팩트) */
+.ai-model-info.compact {
+  padding-top: 8px;
+}
+
+.ai-model-info.compact .model-badges {
+  justify-content: center;
+  gap: 6px;
+}
+
+.ai-model-info.compact .model-badge {
+  padding: 2px 8px;
+  font-size: 10px;
+}
+
 /* Modal Styles */
 .modal-backdrop {
   position: fixed;
@@ -854,6 +1015,41 @@
 
 .past-column .clinic-card {
   margin-bottom: 0;
+}
+
+/* 캘린더 카드 - 스크롤바 없이 고정 높이 */
+.past-column .clinic-card .calendar-body {
+  padding: 8px;
+  overflow: hidden;
+}
+
+.past-column .clinic-card .calendar-nav {
+  margin-bottom: 6px;
+}
+
+.past-column .clinic-card .calendar-grid {
+  gap: 1px;
+}
+
+.past-column .clinic-card .calendar-day {
+  font-size: 10px;
+  min-height: 22px;
+  aspect-ratio: unset;
+}
+
+.past-column .clinic-card .calendar-legend {
+  margin-top: 6px;
+  padding-top: 6px;
+  gap: 8px;
+}
+
+.past-column .clinic-card .legend-item {
+  font-size: 9px;
+}
+
+.past-column .clinic-card .event-dot {
+  width: 4px;
+  height: 4px;
 }
 
 /* 과거 기록 컬럼 내부 카드 축소 */

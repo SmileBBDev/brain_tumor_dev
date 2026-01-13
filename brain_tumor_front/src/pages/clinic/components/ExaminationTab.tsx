@@ -466,54 +466,12 @@ export default function ExaminationTab({
             )}
           </section>
 
-          {/* 검사 결과 - 최근 이력 위치로 이동 */}
-          <section className="exam-section result-card">
-            <h4>
-              <span className="card-icon">🔬</span>
-              검사 결과
-              <span className="result-count">
-                ({ocsList.filter(o => o.job_role === 'LIS' && ['RESULT_READY', 'CONFIRMED'].includes(o.ocs_status)).length})
-              </span>
-            </h4>
-            {(() => {
-              const lisResults = ocsList.filter(o => o.job_role === 'LIS');
-              const confirmedResults = lisResults.filter(o => ['RESULT_READY', 'CONFIRMED'].includes(o.ocs_status));
-
-              if (confirmedResults.length === 0) {
-                return <div className="empty-message">검사 결과가 없습니다.</div>;
-              }
-
-              return (
-                <div className="result-list">
-                  {confirmedResults.slice(0, 5).map((result) => (
-                    <div
-                      key={result.id}
-                      className="result-item"
-                      onClick={() => navigate(`/ocs/lis/${result.id}`)}
-                    >
-                      <div className="result-item-content">
-                        <div className="result-item-title">
-                          {JOB_TYPE_LABELS[result.job_type] || result.job_type}
-                        </div>
-                        <div className="result-item-subtitle">
-                          {result.ocs_id} | {result.created_at?.slice(0, 10)}
-                        </div>
-                      </div>
-                      <span className={`status-badge ${result.ocs_status.toLowerCase()}`}>
-                        {OCS_STATUS_LABELS[result.ocs_status] || result.ocs_status}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              );
-            })()}
-          </section>
-          {/* AI 추론 요청 섹션 */}
-          <section className="exam-section ai-request-card">
+          {/* 통합 결과 섹션: RIS + LIS + AI */}
+          <section className="exam-section result-card unified-results">
             <div className="section-header">
               <h4>
-                <span className="card-icon">🤖</span>
-                AI 추론 요청
+                <span className="card-icon">📊</span>
+                검사/분석 결과
               </h4>
               <button
                 className="btn btn-sm btn-primary"
@@ -523,33 +481,102 @@ export default function ExaminationTab({
                 AI 추론 요청
               </button>
             </div>
-            <div className="ai-model-info">
-              <p className="info-text">환자의 검사 데이터를 기반으로 AI 분석을 요청합니다.</p>
-              <div className="model-badges">
-                <span className="model-badge" title="MRI 4-Channel (T1, T2, T1C, FLAIR)">M1 - MRI 분석</span>
-                <span className="model-badge" title="Genetic Analysis (RNA_seq)">MG - 유전자 분석</span>
-                <span className="model-badge" title="Multimodal (MRI + 유전 + 단백질)">MM - 멀티모달</span>
-              </div>
+
+            {/* RIS 결과 (영상검사) */}
+            {(() => {
+              const risResults = ocsList.filter(o => o.job_role === 'RIS' && ['RESULT_READY', 'CONFIRMED'].includes(o.ocs_status));
+              return (
+                <div className="result-subsection">
+                  <h5 className="subsection-title">
+                    <span className="subsection-icon ris">RIS</span>
+                    영상검사
+                    <span className="subsection-count">({risResults.length})</span>
+                  </h5>
+                  {risResults.length === 0 ? (
+                    <div className="empty-message small">영상검사 결과 없음</div>
+                  ) : (
+                    <div className="result-list compact">
+                      {risResults.slice(0, 3).map((result) => (
+                        <div
+                          key={result.id}
+                          className="result-item"
+                          onClick={() => navigate(`/ocs/ris/${result.id}`)}
+                        >
+                          <div className="result-item-content">
+                            <span className="result-type">{JOB_TYPE_LABELS[result.job_type] || result.job_type}</span>
+                            <span className="result-date">{result.created_at?.slice(0, 10)}</span>
+                          </div>
+                          <span className={`status-badge mini ${result.ocs_status.toLowerCase()}`}>
+                            {OCS_STATUS_LABELS[result.ocs_status] || result.ocs_status}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+
+            {/* LIS 결과 (검체검사) */}
+            {(() => {
+              const lisResults = ocsList.filter(o => o.job_role === 'LIS' && ['RESULT_READY', 'CONFIRMED'].includes(o.ocs_status));
+              return (
+                <div className="result-subsection">
+                  <h5 className="subsection-title">
+                    <span className="subsection-icon lis">LIS</span>
+                    검체검사
+                    <span className="subsection-count">({lisResults.length})</span>
+                  </h5>
+                  {lisResults.length === 0 ? (
+                    <div className="empty-message small">검체검사 결과 없음</div>
+                  ) : (
+                    <div className="result-list compact">
+                      {lisResults.slice(0, 3).map((result) => (
+                        <div
+                          key={result.id}
+                          className="result-item"
+                          onClick={() => navigate(`/ocs/lis/${result.id}`)}
+                        >
+                          <div className="result-item-content">
+                            <span className="result-type">{JOB_TYPE_LABELS[result.job_type] || result.job_type}</span>
+                            <span className="result-date">{result.created_at?.slice(0, 10)}</span>
+                          </div>
+                          <span className={`status-badge mini ${result.ocs_status.toLowerCase()}`}>
+                            {OCS_STATUS_LABELS[result.ocs_status] || result.ocs_status}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+
+            {/* AI 분석 결과 */}
+            <div className="result-subsection">
+              <h5 className="subsection-title">
+                <span className="subsection-icon ai">AI</span>
+                AI 분석
+                <span className="subsection-count">({summary?.ai_summary ? 1 : 0})</span>
+              </h5>
+              {!summary?.ai_summary ? (
+                <div className="empty-message small">AI 분석 결과 없음</div>
+              ) : (
+                <div className="ai-result-card" onClick={() => navigate(`/ai/requests?patientId=${patientId}`)}>
+                  <div className="ai-result-header">
+                    <span className="ai-model-name">AI 분석 #{summary.ai_summary.id}</span>
+                    <span className="ai-date">{summary.ai_summary.created_at?.split('T')[0]}</span>
+                  </div>
+                  <div className="ai-result-preview">
+                    {typeof summary.ai_summary.result === 'object'
+                      ? JSON.stringify(summary.ai_summary.result, null, 2).slice(0, 100) + '...'
+                      : String(summary.ai_summary.result).slice(0, 100) + '...'
+                    }
+                  </div>
+                </div>
+              )}
             </div>
           </section>
-
-          {/* AI 분석 요약 */}
-          {summary?.ai_summary && (
-            <section className="exam-section ai-section">
-              <h4>
-                <span className="section-icon ai">AI</span>
-                AI 분석 요약
-              </h4>
-              <div className="ai-summary compact">
-                <div className="ai-meta">
-                  분석일: {summary.ai_summary.created_at?.split('T')[0]}
-                </div>
-                <pre className="ai-result">
-                  {JSON.stringify(summary.ai_summary.result, null, 2)}
-                </pre>
-              </div>
-            </section>
-          )}
         </div>
 
         <div className="content-column middle-column">
