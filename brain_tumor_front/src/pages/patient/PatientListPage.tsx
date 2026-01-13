@@ -6,7 +6,6 @@ import PatientDeleteModal from './PatientDeleteModal';
 import Pagination from '@/layout/Pagination';
 import { useAuth } from '../auth/AuthProvider';
 import { getPatients } from '@/services/patient.api';
-import { exportPatientList } from '@/utils/exportUtils';
 import type { Patient, PatientSearchParams, Gender, PatientStatus } from '@/types/patient';
 
 export default function PatientListPage() {
@@ -96,9 +95,11 @@ export default function PatientListPage() {
   // Excel 내보내기
   const handleExportExcel = async () => {
     try {
+      const { exportPatientList } = await import('@/utils/exportUtils');
       await exportPatientList(patients);
     } catch (error) {
       console.error('Excel 내보내기 실패:', error);
+      alert('Excel 내보내기에 실패했습니다. xlsx 패키지가 설치되어 있는지 확인하세요.');
     }
   };
 

@@ -4,11 +4,44 @@
  * 필요 패키지 설치:
  * npm install jspdf jspdf-autotable xlsx file-saver
  * npm install -D @types/file-saver
+ *
+ * 참고: 패키지가 설치되지 않은 경우에도 앱이 정상 동작하도록
+ * 동적 import를 사용하며, 실패 시 사용자에게 안내합니다.
  */
 
 // ============================================
 // PDF 출력 유틸리티
 // ============================================
+
+// 패키지 설치 여부 확인용 플래그
+let jspdfAvailable: boolean | null = null;
+let xlsxAvailable: boolean | null = null;
+
+// jspdf 사용 가능 여부 확인
+const checkJspdfAvailable = async (): Promise<boolean> => {
+  if (jspdfAvailable !== null) return jspdfAvailable;
+  try {
+    await import('jspdf');
+    jspdfAvailable = true;
+    return true;
+  } catch {
+    jspdfAvailable = false;
+    return false;
+  }
+};
+
+// xlsx 사용 가능 여부 확인
+const checkXlsxAvailable = async (): Promise<boolean> => {
+  if (xlsxAvailable !== null) return xlsxAvailable;
+  try {
+    await import('xlsx');
+    xlsxAvailable = true;
+    return true;
+  } catch {
+    xlsxAvailable = false;
+    return false;
+  }
+};
 
 interface PDFReportData {
   title: string;

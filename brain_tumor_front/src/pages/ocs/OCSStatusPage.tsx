@@ -24,7 +24,6 @@ import {
 } from '@/types/ocs';
 import OCSDetailModal from './OCSDetailModal';
 import { useOCSEventCallback } from '@/context/OCSNotificationContext';
-import { exportOCSList } from '@/utils/exportUtils';
 import './OCSStatusPage.css';
 
 // 날짜 포맷
@@ -155,9 +154,12 @@ export default function OCSStatusPage() {
   // Excel 내보내기
   const handleExportExcel = async () => {
     try {
+      // 동적 import로 패키지 미설치 시에도 앱 동작하도록 함
+      const { exportOCSList } = await import('@/utils/exportUtils');
       await exportOCSList(ocsList);
     } catch (error) {
       console.error('Excel 내보내기 실패:', error);
+      alert('Excel 내보내기에 실패했습니다. xlsx 패키지가 설치되어 있는지 확인하세요.');
     }
   };
 

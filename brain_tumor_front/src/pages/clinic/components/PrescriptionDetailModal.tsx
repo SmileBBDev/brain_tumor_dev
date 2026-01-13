@@ -447,7 +447,7 @@ export default function PrescriptionDetailModal({
         }
         .modal-header h2 {
           margin: 0;
-          font-size: 18px;
+          font-size: 14px;
         }
         .modal-actions {
           display: flex;
@@ -474,8 +474,9 @@ export default function PrescriptionDetailModal({
         /* 처방전 미리보기 */
         .prescription-preview {
           background: #fff;
-          padding: 30px;
+          padding: 20px;
           box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+          font-size: 11px;
         }
         .prescription-form {
           font-family: 'Malgun Gothic', '맑은 고딕', sans-serif;
@@ -485,53 +486,53 @@ export default function PrescriptionDetailModal({
         .prescription-header {
           text-align: center;
           border-bottom: 2px solid #333;
-          padding-bottom: 15px;
-          margin-bottom: 20px;
+          padding-bottom: 12px;
+          margin-bottom: 16px;
         }
         .prescription-title {
-          font-size: 28px;
+          font-size: 20px;
           font-weight: bold;
-          letter-spacing: 15px;
-          margin-bottom: 5px;
+          letter-spacing: 10px;
+          margin-bottom: 4px;
         }
         .prescription-subtitle {
-          font-size: 12px;
+          font-size: 10px;
           color: #666;
-          letter-spacing: 3px;
+          letter-spacing: 2px;
         }
         .prescription-number {
-          margin-top: 10px;
-          font-size: 13px;
+          margin-top: 8px;
+          font-size: 11px;
           color: #666;
         }
 
         /* 정보 섹션 */
         .info-section {
           display: flex;
-          gap: 20px;
-          margin-bottom: 20px;
+          gap: 16px;
+          margin-bottom: 16px;
         }
         .info-column {
           flex: 1;
           border: 1px solid #ddd;
           border-radius: 6px;
-          padding: 15px;
+          padding: 12px;
         }
         .column-title {
-          font-size: 13px;
+          font-size: 11px;
           font-weight: 600;
           color: #333;
-          margin-bottom: 12px;
-          padding-bottom: 8px;
+          margin-bottom: 10px;
+          padding-bottom: 6px;
           border-bottom: 1px solid #eee;
         }
         .info-row {
           display: flex;
-          margin-bottom: 8px;
-          font-size: 13px;
+          margin-bottom: 6px;
+          font-size: 11px;
         }
         .info-label {
-          width: 70px;
+          width: 60px;
           color: #666;
           flex-shrink: 0;
         }
@@ -557,35 +558,35 @@ export default function PrescriptionDetailModal({
         .diagnosis-section {
           border: 1px solid #ddd;
           border-radius: 6px;
-          padding: 15px;
-          margin-bottom: 20px;
+          padding: 12px;
+          margin-bottom: 16px;
         }
         .diagnosis-section h3,
         .medication-section h3,
         .notes-section h3 {
-          font-size: 13px;
+          font-size: 11px;
           font-weight: 600;
           color: #333;
-          margin: 0 0 10px 0;
+          margin: 0 0 8px 0;
         }
         .diagnosis-content {
-          font-size: 14px;
+          font-size: 11px;
           color: #1a1a1a;
         }
 
         /* 약품 테이블 */
         .medication-section {
-          margin-bottom: 20px;
+          margin-bottom: 16px;
         }
         .medication-table {
           width: 100%;
           border-collapse: collapse;
-          font-size: 13px;
+          font-size: 10px;
         }
         .medication-table th,
         .medication-table td {
           border: 1px solid #ddd;
-          padding: 10px 8px;
+          padding: 6px 4px;
           text-align: center;
         }
         .medication-table th {
@@ -597,9 +598,9 @@ export default function PrescriptionDetailModal({
           text-align: left;
         }
         .med-instructions {
-          font-size: 11px;
+          font-size: 9px;
           color: #666;
-          margin-top: 4px;
+          margin-top: 2px;
         }
         .empty-row {
           color: #999;
@@ -610,11 +611,11 @@ export default function PrescriptionDetailModal({
         .notes-section {
           border: 1px solid #ddd;
           border-radius: 6px;
-          padding: 15px;
-          margin-bottom: 20px;
+          padding: 12px;
+          margin-bottom: 16px;
         }
         .notes-content {
-          font-size: 13px;
+          font-size: 11px;
           color: #1a1a1a;
           white-space: pre-wrap;
         }
@@ -624,14 +625,14 @@ export default function PrescriptionDetailModal({
           display: flex;
           justify-content: space-between;
           align-items: flex-end;
-          padding-top: 20px;
-          margin-top: 20px;
+          padding-top: 16px;
+          margin-top: 16px;
           border-top: 1px solid #ddd;
         }
         .issue-info {
-          font-size: 12px;
+          font-size: 10px;
           color: #666;
-          line-height: 1.8;
+          line-height: 1.6;
         }
         .cancelled-info {
           color: #c62828;
@@ -640,13 +641,13 @@ export default function PrescriptionDetailModal({
           text-align: center;
         }
         .doctor-name {
-          font-size: 16px;
+          font-size: 12px;
           font-weight: 600;
-          margin-bottom: 10px;
+          margin-bottom: 8px;
         }
         .stamp-placeholder {
-          width: 60px;
-          height: 60px;
+          width: 50px;
+          height: 50px;
           border: 2px dashed #ccc;
           border-radius: 50%;
           display: flex;
@@ -654,29 +655,29 @@ export default function PrescriptionDetailModal({
           justify-content: center;
           margin: 0 auto;
           color: #999;
-          font-size: 14px;
+          font-size: 11px;
         }
 
         /* 병원 정보 */
         .hospital-footer {
           text-align: center;
-          margin-top: 25px;
-          padding-top: 15px;
+          margin-top: 20px;
+          padding-top: 12px;
           border-top: 1px solid #eee;
-          font-size: 12px;
+          font-size: 10px;
           color: #666;
         }
         .hospital-name {
           font-weight: 600;
           color: #333;
-          margin-bottom: 4px;
+          margin-bottom: 2px;
         }
 
         /* 버튼 */
         .btn {
-          padding: 8px 16px;
+          padding: 6px 12px;
           border-radius: 6px;
-          font-size: 13px;
+          font-size: 11px;
           font-weight: 500;
           cursor: pointer;
           border: none;

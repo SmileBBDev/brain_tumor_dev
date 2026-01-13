@@ -8,11 +8,15 @@ import type { Encounter } from '@/types/encounter';
 interface CalendarCardProps {
   patientId: number;
   encounters: Encounter[];
+  onDateSelect?: (date: string | null) => void;
+  selectedDate?: string | null;
 }
 
 export default function CalendarCard({
   patientId: _patientId,
   encounters,
+  onDateSelect,
+  selectedDate,
 }: CalendarCardProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
 
@@ -29,20 +33,34 @@ export default function CalendarCard({
     };
   }, [currentDate]);
 
+  // 진료 날짜 추출 헬퍼 (admission_date 사용, encounter_date는 폴백)
+  const getEncounterDate = (e: Encounter): string | null => {
+    // admission_date: "2026-01-13T09:00:00Z" 또는 "2026-01-13"
+    const dateStr = e.admission_date || e.encounter_date;
+    if (!dateStr) return null;
+    // ISO 형식에서 날짜 부분만 추출 (YYYY-MM-DD)
+    return dateStr.slice(0, 10);
+  };
+
   // 해당 월의 진료 일정
   const monthEncounters = useMemo(() => {
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
     const monthStr = `${year}-${String(month + 1).padStart(2, '0')}`;
 
-    return encounters.filter((e) => e.encounter_date?.startsWith(monthStr));
+    return encounters.filter((e) => {
+      const dateStr = getEncounterDate(e);
+      return dateStr?.startsWith(monthStr);
+    });
   }, [currentDate, encounters]);
 
   // 날짜별 진료 맵
   const encountersByDate = useMemo(() => {
     const map: Record<string, Encounter[]> = {};
     monthEncounters.forEach((e) => {
-      const day = parseInt(e.encounter_date?.split('-')[2] || '0', 10);
+      const dateStr = getEncounterDate(e);
+      if (!dateStr) return;
+      const day = parseInt(dateStr.split('-')[2] || '0', 10);
       if (!map[day]) map[day] = [];
       map[day].push(e);
     });
@@ -93,6 +111,27 @@ export default function CalendarCard({
     );
   };
 
+  // 선택된 날짜인지 확인
+  const isSelected = (day: number) => {
+    if (!selectedDate) return false;
+    const dateStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    return dateStr === selectedDate;
+  };
+
+  // 날짜 클릭 핸들러
+  const handleDayClick = (day: number) => {
+    if (!day || !encountersByDate[day]) return;
+
+    const dateStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+
+    if (selectedDate === dateStr) {
+      // 이미 선택된 날짜 클릭 시 선택 해제
+      onDateSelect?.(null);
+    } else {
+      onDateSelect?.(dateStr);
+    }
+  };
+
   return (
     <div className="clinic-card">
       <div className="clinic-card-header">
@@ -132,8 +171,9 @@ export default function CalendarCard({
             <div
               key={idx}
               className={`calendar-day ${day ? '' : 'empty'} ${day && isToday(day) ? 'today' : ''} ${
-                day && encountersByDate[day] ? 'has-event' : ''
-              }`}
+                day && encountersByDate[day] ? 'has-event clickable' : ''
+              } ${day && isSelected(day) ? 'selected' : ''}`}
+              onClick={() => day && handleDayClick(day)}
             >
               {day && (
                 <>
@@ -240,6 +280,19 @@ export default function CalendarCard({
         }
         .calendar-day.has-event .day-number {
           font-weight: 600;
+        }
+        .calendar-day.clickable {
+          cursor: pointer;
+        }
+        .calendar-day.clickable:hover {
+          background: var(--bg-main, #f4f6f9);
+        }
+        .calendar-day.selected {
+          background: var(--info, #5b8def);
+          color: white;
+        }
+        .calendar-day.selected:hover {
+          background: var(--info, #5b8def);
         }
         .day-number {
           margin-bottom: 2px;

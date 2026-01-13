@@ -12,7 +12,6 @@ import { useAuth } from '../auth/AuthProvider';
 import { getOCS, startOCS, saveOCSResult, confirmOCS } from '@/services/ocs.api';
 import type { OCSDetail, GeneMutation, ProteinMarker } from '@/types/ocs';
 import { getLISCategory, LIS_CATEGORY_LABELS } from '@/utils/ocs.utils';
-import { generateLISReportPDF } from '@/utils/exportUtils';
 import './LISStudyDetailPage.css';
 
 // 탭 타입 - genetic, protein 탭 추가
@@ -504,6 +503,7 @@ export default function LISStudyDetailPage() {
     if (!ocs) return;
 
     try {
+      const { generateLISReportPDF } = await import('@/utils/exportUtils');
       await generateLISReportPDF({
         ocsId: ocs.ocs_id,
         patientName: ocs.patient.name,
@@ -524,6 +524,7 @@ export default function LISStudyDetailPage() {
       });
     } catch (error) {
       console.error('PDF 출력 실패:', error);
+      alert('PDF 출력에 실패했습니다. jspdf 패키지가 설치되어 있는지 확인하세요.');
     }
   };
 

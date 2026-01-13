@@ -9,16 +9,10 @@ import { getOCSByPatient } from '@/services/ocs.api';
 import { getEncounters, createEncounter, completeEncounter } from '@/services/encounter.api';
 import { LoadingSpinner, useToast } from '@/components/common';
 import { useAuth } from '@/pages/auth/AuthProvider';
-import PastRecordCard from './components/PastRecordCard';
-import CalendarCard from './components/CalendarCard';
-import TodayAppointmentCard from './components/TodayAppointmentCard';
-import PastPrescriptionCard from './components/PastPrescriptionCard';
 import ExaminationTab from './components/ExaminationTab';
 import type { OCSListItem } from '@/types/ocs';
 import type { Encounter } from '@/types/encounter';
 import './ClinicPage.css';
-
-type ClinicTab = 'examination' | 'history';
 
 interface Patient {
   id: number;
@@ -40,10 +34,18 @@ export default function ClinicPage() {
 
   // URL에서 환자 ID 추출
   const patientIdParam = searchParams.get('patientId');
-  // patientId=null 또는 patientId 없음 → 환자 미선택 상태
+
+  // /patientsCare → /patientsCare?patientId=null 로 리다이렉트
+  useEffect(() => {
+    if (patientIdParam === null) {
+      navigate('/patientsCare?patientId=null', { replace: true });
+    }
+  }, [patientIdParam, navigate]);
+
+  // patientId=null → 환자 미선택 상태
   const isPatientSelected = patientIdParam && patientIdParam !== 'null';
 
-  // 환자 선택 해제 (금일 예약 목록으로 돌아가기)
+  // 환자 선택하지 않기 (OCS 등에서 돌아올 때 사용)
   const handleClearPatient = () => {
     navigate('/patientsCare?patientId=null');
   };
@@ -54,7 +56,6 @@ export default function ClinicPage() {
   const [encounters, setEncounters] = useState<Encounter[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeEncounter, setActiveEncounter] = useState<Encounter | null>(null);
-  const [activeTab, setActiveTab] = useState<ClinicTab>('examination');
 
   // 환자 데이터 로드
   const loadPatientData = useCallback(async (patientId: number) => {
@@ -163,41 +164,7 @@ export default function ClinicPage() {
     return age;
   };
 
-  // 환자 선택 안됨 (patientId 없음 또는 patientId=null) - 금일 예약 목록 표시
-  if (!isPatientSelected) {
-    return (
-      <div className="page clinic-page">
-        <header className="patient-header">
-          <div className="patient-info">
-            <div className="patient-avatar">📋</div>
-            <div className="patient-details">
-              <h1 className="patient-name">환자 진료</h1>
-              <div className="patient-meta">
-                <span>
-                  {patientIdParam === 'null'
-                    ? '환자 ID 조회 필요 - 아래 예약 목록에서 환자를 선택하세요.'
-                    : '금일 예약된 환자를 선택하거나, 환자 목록에서 검색하세요.'}
-                </span>
-              </div>
-            </div>
-          </div>
-          <div className="header-actions">
-            <button className="btn btn-secondary" onClick={() => navigate('/patients')}>
-              환자 목록
-            </button>
-          </div>
-        </header>
-
-        <div className="clinic-grid">
-          <div className="clinic-column column-full">
-            <TodayAppointmentCard />
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (loading) {
+  if (loading && isPatientSelected) {
     return (
       <div className="page clinic-page">
         <LoadingSpinner text="환자 정보를 불러오는 중..." />
@@ -205,7 +172,8 @@ export default function ClinicPage() {
     );
   }
 
-  if (!patient) {
+  // 환자 ID가 있는데 환자를 찾을 수 없는 경우 (잘못된 ID)
+  if (isPatientSelected && !patient) {
     return (
       <div className="page clinic-page">
         <div className="no-patient">
@@ -218,30 +186,49 @@ export default function ClinicPage() {
     );
   }
 
+  // 환자 미선택 상태용 더미 데이터
+  const displayPatient = patient || {
+    id: 0,
+    patient_number: '-',
+    name: '환자 ID 조회필요',
+    birth_date: '-',
+    gender: '',
+    phone: '',
+  };
+
   return (
     <div className="page clinic-page">
-      {/* 환자 정보 헤더 - 개선됨 */}
+      {/* 환자 정보 헤더 */}
       <header className="patient-header enhanced">
         <div className="patient-info">
-          <div className="patient-avatar">
-            {patient.gender === 'M' ? '👨' : '👩'}
+          <div className={`patient-avatar ${!patient ? 'patient-avatar-empty' : ''}`}>
+            {patient
+              ? (patient.gender === 'M' ? '👨' : '👩')
+              : '❓'}
           </div>
           <div className="patient-details">
             <div className="patient-name-row">
-              <h1 className="patient-name">{patient.name}</h1>
-              {activeEncounter && <span className="encounter-status-badge">진료 중</span>}
+              <h1 className="patient-name">{displayPatient.name}</h1>
+              {!patient && <span className="patient-status-badge">미선택</span>}
+              {patient && activeEncounter && <span className="encounter-status-badge">진료 중</span>}
             </div>
             <div className="patient-meta">
-              <span className="patient-number">{patient.patient_number}</span>
-              <span className="divider">|</span>
-              <span>{patient.birth_date} ({calculateAge(patient.birth_date)}세)</span>
-              <span className="divider">|</span>
-              <span>{patient.gender === 'M' ? '남성' : '여성'}</span>
-              {patient.phone && (
+              {patient ? (
                 <>
+                  <span className="patient-number">{patient.patient_number}</span>
                   <span className="divider">|</span>
-                  <span>{patient.phone}</span>
+                  <span>{patient.birth_date} ({calculateAge(patient.birth_date)}세)</span>
+                  <span className="divider">|</span>
+                  <span>{patient.gender === 'M' ? '남성' : '여성'}</span>
+                  {patient.phone && (
+                    <>
+                      <span className="divider">|</span>
+                      <span>{patient.phone}</span>
+                    </>
+                  )}
                 </>
+              ) : (
+                <span>예약 목록에서 환자를 선택하거나 환자 목록에서 검색하세요.</span>
               )}
             </div>
           </div>
@@ -249,100 +236,62 @@ export default function ClinicPage() {
 
         {/* 퀵 액션 및 요약 */}
         <div className="header-right">
-          <div className="quick-stats">
-            <div className="stat-item">
-              <span className="stat-label">진료 기록</span>
-              <span className="stat-value">{encounters.length}회</span>
+          {patient && (
+            <div className="quick-stats">
+              <div className="stat-item">
+                <span className="stat-label">진료 기록</span>
+                <span className="stat-value">{encounters.length}회</span>
+              </div>
+              <div className="stat-item">
+                <span className="stat-label">검사 오더</span>
+                <span className="stat-value">{ocsList.length}건</span>
+              </div>
             </div>
-            <div className="stat-item">
-              <span className="stat-label">검사 오더</span>
-              <span className="stat-value">{ocsList.length}건</span>
-            </div>
-          </div>
+          )}
           <div className="header-actions">
-            {!activeEncounter && isDoctor && (
+            {patient && !activeEncounter && isDoctor && (
               <button className="btn btn-primary" onClick={handleStartEncounter}>
                 진료 시작
               </button>
             )}
-            {activeEncounter && isDoctor && (
+            {patient && activeEncounter && isDoctor && (
               <button className="btn btn-success" onClick={handleEndEncounter}>
                 진료 종료
               </button>
             )}
-            <button
-              className="btn btn-secondary btn-icon-text"
-              onClick={() => navigate(`/patients/${patient.id}`)}
-              title="환자 상세 정보"
-            >
-              <span>상세 보기</span>
-            </button>
-            <button
-              className="btn btn-outline"
-              onClick={handleClearPatient}
-              title="금일 예약 목록으로 돌아가기"
-            >
-              환자 선택 해제
-            </button>
+            {patient && (
+              <>
+                <button
+                  className="btn btn-secondary btn-icon-text"
+                  onClick={() => navigate(`/patients/${patient.id}`)}
+                  title="환자 상세 정보"
+                >
+                  <span>상세 보기</span>
+                </button>
+                <button
+                  className="btn btn-outline"
+                  onClick={handleClearPatient}
+                  title="환자 선택하지 않기"
+                >
+                  환자 선택 해제
+                </button>
+              </>
+            )}
           </div>
         </div>
       </header>
 
-      {/* 탭 네비게이션 */}
-      <div className="clinic-tabs">
-        <button
-          className={`clinic-tab ${activeTab === 'examination' ? 'active' : ''}`}
-          onClick={() => setActiveTab('examination')}
-        >
-          진찰
-        </button>
-        <button
-          className={`clinic-tab ${activeTab === 'history' ? 'active' : ''}`}
-          onClick={() => setActiveTab('history')}
-        >
-          과거 기록
-        </button>
+      {/* 진찰 컨텐츠 */}
+      <div className="clinic-tab-content">
+        <ExaminationTab
+          patientId={patient?.id || 0}
+          encounterId={activeEncounter?.id || null}
+          encounter={activeEncounter}
+          ocsList={ocsList}
+          encounters={encounters}
+          onUpdate={() => patient && loadPatientData(patient.id)}
+        />
       </div>
-
-      {/* 탭 컨텐츠 */}
-      {activeTab === 'examination' && (
-        <div className="clinic-tab-content">
-          <ExaminationTab
-            patientId={patient.id}
-            encounterId={activeEncounter?.id || null}
-            encounter={activeEncounter}
-            ocsList={ocsList}
-            onUpdate={() => loadPatientData(patient.id)}
-          />
-        </div>
-      )}
-
-      {activeTab === 'history' && (
-        <div className="clinic-grid">
-          {/* 컬럼 1: 과거 기록 */}
-          <div className="clinic-column column-1">
-            <PastRecordCard
-              patientId={patient.id}
-              encounters={encounters}
-            />
-          </div>
-
-          {/* 컬럼 2: 캘린더 */}
-          <div className="clinic-column column-2">
-            <CalendarCard
-              patientId={patient.id}
-              encounters={encounters}
-            />
-          </div>
-
-          {/* 컬럼 3: 과거 처방 */}
-          <div className="clinic-column column-3">
-            <PastPrescriptionCard
-              patientId={patient.id}
-            />
-          </div>
-        </div>
-      )}
     </div>
   );
 }

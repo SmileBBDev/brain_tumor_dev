@@ -14,6 +14,7 @@ import { FREQUENCY_LABELS, ROUTE_LABELS } from '@/types/prescription';
 interface PastRecordCardProps {
   patientId: number;
   encounters: Encounter[];
+  highlightDate?: string | null;
 }
 
 // 진료 유형
@@ -31,9 +32,17 @@ const STATUS_LABELS: Record<string, string> = {
   CANCELLED: '취소됨',
 };
 
+// 진료 날짜 추출 헬퍼 (admission_date 사용, encounter_date는 폴백)
+const getEncounterDate = (e: Encounter): string => {
+  const dateStr = e.admission_date || e.encounter_date || '';
+  // ISO 형식에서 날짜 부분만 추출 (YYYY-MM-DD)
+  return dateStr.slice(0, 10);
+};
+
 export default function PastRecordCard({
   patientId: _patientId,
   encounters,
+  highlightDate,
 }: PastRecordCardProps) {
   // 상세 보기 모달 상태
   const [selectedRecord, setSelectedRecord] = useState<Encounter | null>(null);
@@ -45,7 +54,11 @@ export default function PastRecordCard({
   const pastRecords = useMemo(() => {
     return encounters
       .filter((e) => e.status === 'completed')
-      .sort((a, b) => new Date(b.encounter_date || '').getTime() - new Date(a.encounter_date || '').getTime())
+      .sort((a, b) => {
+        const dateA = a.admission_date || a.encounter_date || '';
+        const dateB = b.admission_date || b.encounter_date || '';
+        return new Date(dateB).getTime() - new Date(dateA).getTime();
+      })
       .slice(0, 10);
   }, [encounters]);
 
@@ -82,6 +95,12 @@ export default function PastRecordCard({
     return hasSOAP(record) || record.chief_complaint || record.primary_diagnosis;
   };
 
+  // 해당 날짜에 강조 표시 여부
+  const isHighlighted = (record: Encounter) => {
+    if (!highlightDate) return false;
+    return getEncounterDate(record) === highlightDate;
+  };
+
   return (
     <div className="clinic-card">
       <div className="clinic-card-header">
@@ -102,11 +121,11 @@ export default function PastRecordCard({
             {pastRecords.map((record) => (
               <div
                 key={record.id}
-                className={`record-item ${canViewDetail(record) ? 'clickable' : ''}`}
+                className={`record-item ${canViewDetail(record) ? 'clickable' : ''} ${isHighlighted(record) ? 'highlighted' : ''}`}
                 onClick={() => canViewDetail(record) && setSelectedRecord(record)}
               >
                 <div className="record-date">
-                  <span className="date-main">{record.encounter_date?.split('T')[0]}</span>
+                  <span className="date-main">{getEncounterDate(record)}</span>
                   <div className="date-badges">
                     <span className="date-type">
                       {TYPE_LABELS[record.encounter_type] || record.encounter_type}
@@ -154,7 +173,7 @@ export default function PastRecordCard({
                 <button className="close-btn" onClick={() => setSelectedRecord(null)}>×</button>
               </div>
               <div className="soap-modal-meta">
-                <span className="meta-date">{selectedRecord.encounter_date?.split('T')[0]}</span>
+                <span className="meta-date">{getEncounterDate(selectedRecord)}</span>
                 <span className="meta-type">
                   {TYPE_LABELS[selectedRecord.encounter_type] || selectedRecord.encounter_type}
                 </span>
@@ -325,6 +344,17 @@ export default function PastRecordCard({
         }
         .record-item.clickable:hover {
           background: var(--bg-hover, #f8f9fa);
+        }
+
+        /* Highlighted record (selected from calendar) */
+        .record-item.highlighted {
+          background: #e3f2fd;
+          border-left: 3px solid var(--info, #5b8def);
+          animation: highlight-pulse 0.5s ease;
+        }
+        @keyframes highlight-pulse {
+          0% { background: #bbdefb; }
+          100% { background: #e3f2fd; }
         }
 
         /* Date badges */

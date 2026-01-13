@@ -84,6 +84,24 @@
   50% { opacity: 0.8; }
 }
 
+/* 환자 미선택 상태 배지 */
+.patient-status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--warning, #ff9800);
+  color: white;
+}
+
+/* 환자 미선택 아바타 */
+.patient-avatar-empty {
+  background: #fff3e0;
+  border-color: var(--warning, #ff9800);
+}
+
 .patient-meta {
   display: flex;
   align-items: center;
@@ -426,6 +444,29 @@
   font-size: 12px;
 }
 
+/* 버튼 비활성화 스타일 */
+.btn:disabled,
+.btn[disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+  background: var(--text-sub);
+  color: var(--bg-main);
+  border-color: var(--text-sub);
+}
+
+.btn-primary:disabled,
+.btn-primary[disabled] {
+  background: #a0a0a0;
+}
+
+.btn-outline:disabled,
+.btn-outline[disabled] {
+  background: transparent;
+  color: var(--text-sub);
+  border-color: var(--border);
+}
+
 .btn-icon {
   display: flex;
   align-items: center;
@@ -575,4 +616,49 @@
 
 .empty-state-text {
   font-size: 13px;
+}
+
+/* ----------------------------------------------------------------------------- */
+/* 금일 예약 환자 목록 컨테이너                                                     */
+/* ----------------------------------------------------------------------------- */
+.appointment-list-container {
+  padding: 16px 24px;
+  background: var(--bg-main);
+  border-bottom: 1px solid var(--border);
+  animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    max-height: 0;
+  }
+  to {
+    opacity: 1;
+    max-height: 500px;
+  }
+}
+
+.appointment-list-container .clinic-card {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+/* 예약 목록 버튼 활성 상태 */
+.clinic-page .btn-outline.active {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+
+.clinic-page .btn-outline.active:hover {
+  background: var(--primary-dark);
+  border-color: var(--primary-dark);
+}
+
+/* 반응형: 작은 화면에서 사이드바 전체 너비 */
+@media (max-width: 480px) {
+  .appointment-sidebar {
+    width: 100%;
+  }
 }

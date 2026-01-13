@@ -27,6 +27,10 @@ import type {
 import type { OCSListItem } from '@/types/ocs';
 import type { Encounter } from '@/types/encounter';
 import PrescriptionCard from './DiagnosisPrescriptionCard';
+import TodayAppointmentCard from './TodayAppointmentCard';
+import PastRecordCard from './PastRecordCard';
+import CalendarCard from './CalendarCard';
+import PastPrescriptionCard from './PastPrescriptionCard';
 import './ExaminationTab.css';
 
 interface ExaminationTabProps {
@@ -34,6 +38,7 @@ interface ExaminationTabProps {
   encounterId: number | null;
   encounter: Encounter | null;
   ocsList: OCSListItem[];
+  encounters: Encounter[];
   onUpdate: () => void;
 }
 
@@ -89,9 +94,13 @@ export default function ExaminationTab({
   encounterId,
   encounter,
   ocsList,
+  encounters,
   onUpdate,
 }: ExaminationTabProps) {
   const navigate = useNavigate();
+
+  // 캘린더에서 선택한 날짜 (과거 진료 기록 강조용)
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [summary, setSummary] = useState<ExaminationSummary | null>(null);
   const [alerts, setAlerts] = useState<PatientAlert[]>([]);
@@ -122,6 +131,14 @@ export default function ExaminationTab({
 
   // 데이터 로드
   const loadData = useCallback(async () => {
+    // patientId가 유효하지 않으면 API 호출하지 않음
+    if (!patientId || patientId <= 0) {
+      setLoading(false);
+      setSummary(null);
+      setAlerts([]);
+      return;
+    }
+
     setLoading(true);
     try {
       const [summaryData, alertsData] = await Promise.all([
@@ -250,7 +267,11 @@ export default function ExaminationTab({
                 <span className="alert-count">{activeAlerts.length}</span>
               )}
             </h4>
-            <button className="btn btn-sm btn-outline" onClick={handleAddAlert}>
+            <button
+              className="btn btn-sm btn-outline"
+              onClick={handleAddAlert}
+              disabled={!patientId || patientId <= 0}
+            >
               + 추가
             </button>
           </div>
@@ -324,7 +345,7 @@ export default function ExaminationTab({
 
       {/* 메인 컨텐츠: 3컬럼 그리드 */}
       <div className="main-content-grid three-column">
-        {/* 컬럼 1: SOAP 노트 */}
+        {/* 컬럼 1: SOAP 노트 + 검사 오더 */}
         <div className="content-column soap-column">
           <section className="exam-section soap-section">
             <div className="section-header">
@@ -350,7 +371,6 @@ export default function ExaminationTab({
                     value={soapData.subjective}
                     onChange={(e) => setSOAPData({ ...soapData, subjective: e.target.value })}
                     placeholder="환자가 호소하는 증상..."
-                    rows={2}
                   />
                 </div>
                 <div className="soap-field">
@@ -359,7 +379,6 @@ export default function ExaminationTab({
                     value={soapData.objective}
                     onChange={(e) => setSOAPData({ ...soapData, objective: e.target.value })}
                     placeholder="검사 결과, 관찰 소견..."
-                    rows={2}
                   />
                 </div>
                 <div className="soap-field">
@@ -368,7 +387,6 @@ export default function ExaminationTab({
                     value={soapData.assessment}
                     onChange={(e) => setSOAPData({ ...soapData, assessment: e.target.value })}
                     placeholder="진단, 감별진단..."
-                    rows={2}
                   />
                 </div>
                 <div className="soap-field">
@@ -377,82 +395,13 @@ export default function ExaminationTab({
                     value={soapData.plan}
                     onChange={(e) => setSOAPData({ ...soapData, plan: e.target.value })}
                     placeholder="치료 계획, 처방..."
-                    rows={2}
                   />
                 </div>
               </div>
             )}
           </section>
 
-          {/* AI 분석 요약 - SOAP 아래로 이동 */}
-          {summary?.ai_summary && (
-            <section className="exam-section ai-section">
-              <h4>
-                <span className="section-icon ai">AI</span>
-                AI 분석 요약
-              </h4>
-              <div className="ai-summary compact">
-                <div className="ai-meta">
-                  분석일: {summary.ai_summary.created_at?.split('T')[0]}
-                </div>
-                <pre className="ai-result">
-                  {JSON.stringify(summary.ai_summary.result, null, 2)}
-                </pre>
-              </div>
-            </section>
-          )}
-        </div>
-
-        {/* 컬럼 2: 처방 + 최근 이력 */}
-        <div className="content-column middle-column">
-          <PrescriptionCard
-            patientId={patientId}
-            encounter={encounter}
-          />
-
-          {/* 최근 이력 */}
-          {summary && (
-            <section className="exam-section history-section compact">
-              <h4>
-                <span className="section-icon history">H</span>
-                최근 이력
-              </h4>
-              <div className="history-tabs">
-                <div className="history-tab-content">
-                  {/* 최근 진료 */}
-                  <div className="history-mini-list">
-                    <h5>진료 ({summary.recent_encounters?.length || 0})</h5>
-                    {summary.recent_encounters?.length === 0 ? (
-                      <div className="empty-message small">기록 없음</div>
-                    ) : (
-                      <ul className="history-list mini">
-                        {summary.recent_encounters?.slice(0, 3).map((enc) => (
-                          <li key={enc.id}>
-                            <span className="date">{enc.encounter_date?.split('T')[0]}</span>
-                            <span className="type">{enc.encounter_type_display}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
-
-                  {/* 최근 검사 */}
-                  <div className="history-mini-list">
-                    <h5>검사</h5>
-                    <div className="ocs-inline">
-                      <span className="ocs-badge ris">RIS {summary.recent_ocs?.ris?.length || 0}</span>
-                      <span className="ocs-badge lis">LIS {summary.recent_ocs?.lis?.length || 0}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </section>
-          )}
-        </div>
-
-        {/* 컬럼 3: 검사 오더 + 결과 + AI 요청 */}
-        <div className="content-column order-column">
-          {/* 검사 오더 */}
+          {/* 검사 오더 - SOAP 아래로 이동 */}
           <section className="exam-section order-card">
             <div className="section-header">
               <h4>
@@ -471,6 +420,7 @@ export default function ExaminationTab({
               <button
                 className="btn btn-sm btn-primary"
                 onClick={() => navigate(`/ocs/create?patientId=${patientId}`)}
+                disabled={!patientId || patientId <= 0}
               >
                 + 새 오더
               </button>
@@ -516,31 +466,7 @@ export default function ExaminationTab({
             )}
           </section>
 
-          {/* AI 추론 요청 섹션 */}
-          <section className="exam-section ai-request-card">
-            <div className="section-header">
-              <h4>
-                <span className="card-icon">🤖</span>
-                AI 추론 요청
-              </h4>
-              <button
-                className="btn btn-sm btn-primary"
-                onClick={() => navigate(`/ai/requests/create?patientId=${patientId}`)}
-              >
-                AI 추론 요청
-              </button>
-            </div>
-            <div className="ai-model-info">
-              <p className="info-text">환자의 검사 데이터를 기반으로 AI 분석을 요청합니다.</p>
-              <div className="model-badges">
-                <span className="model-badge" title="MRI 4-Channel (T1, T2, T1C, FLAIR)">M1 - MRI 분석</span>
-                <span className="model-badge" title="Genetic Analysis (RNA_seq)">MG - 유전자 분석</span>
-                <span className="model-badge" title="Multimodal (MRI + 유전 + 단백질)">MM - 멀티모달</span>
-              </div>
-            </div>
-          </section>
-
-          {/* 검사 결과 (LIS) */}
+          {/* 검사 결과 - 최근 이력 위치로 이동 */}
           <section className="exam-section result-card">
             <h4>
               <span className="card-icon">🔬</span>
@@ -582,7 +508,139 @@ export default function ExaminationTab({
               );
             })()}
           </section>
+          {/* AI 추론 요청 섹션 */}
+          <section className="exam-section ai-request-card">
+            <div className="section-header">
+              <h4>
+                <span className="card-icon">🤖</span>
+                AI 추론 요청
+              </h4>
+              <button
+                className="btn btn-sm btn-primary"
+                onClick={() => navigate(`/ai/requests/create?patientId=${patientId}`)}
+                disabled={!patientId || patientId <= 0}
+              >
+                AI 추론 요청
+              </button>
+            </div>
+            <div className="ai-model-info">
+              <p className="info-text">환자의 검사 데이터를 기반으로 AI 분석을 요청합니다.</p>
+              <div className="model-badges">
+                <span className="model-badge" title="MRI 4-Channel (T1, T2, T1C, FLAIR)">M1 - MRI 분석</span>
+                <span className="model-badge" title="Genetic Analysis (RNA_seq)">MG - 유전자 분석</span>
+                <span className="model-badge" title="Multimodal (MRI + 유전 + 단백질)">MM - 멀티모달</span>
+              </div>
+            </div>
+          </section>
+
+          {/* AI 분석 요약 */}
+          {summary?.ai_summary && (
+            <section className="exam-section ai-section">
+              <h4>
+                <span className="section-icon ai">AI</span>
+                AI 분석 요약
+              </h4>
+              <div className="ai-summary compact">
+                <div className="ai-meta">
+                  분석일: {summary.ai_summary.created_at?.split('T')[0]}
+                </div>
+                <pre className="ai-result">
+                  {JSON.stringify(summary.ai_summary.result, null, 2)}
+                </pre>
+              </div>
+            </section>
+          )}
         </div>
+
+        <div className="content-column middle-column">
+          {/* 처방 카드 */}
+          <PrescriptionCard
+            patientId={patientId}
+            encounter={encounter}
+          />
+
+          
+          {/* 최근 이력 - 검사 오더 위치로 이동 */}
+          {summary && (
+            <section className="exam-section history-section compact">
+              <h4>
+                <span className="section-icon history">H</span>
+                최근 이력
+              </h4>
+              <div className="history-tabs">
+                <div className="history-tab-content">
+                  {/* 최근 진료 */}
+                  <div className="history-mini-list">
+                    <h5>진료 ({summary.recent_encounters?.length || 0})</h5>
+                    {summary.recent_encounters?.length === 0 ? (
+                      <div className="empty-message small">기록 없음</div>
+                    ) : (
+                      <ul className="history-list mini">
+                        {summary.recent_encounters?.slice(0, 3).map((enc) => (
+                          <li key={enc.id}>
+                            <span className="date">{enc.encounter_date?.split('T')[0]}</span>
+                            <span className="type">{enc.encounter_type_display}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+
+                  {/* 최근 검사 */}
+                  <div className="history-mini-list">
+                    <h5>검사</h5>
+                    <div className="ocs-inline">
+                      <span className="ocs-badge ris">RIS {summary.recent_ocs?.ris?.length || 0}</span>
+                      <span className="ocs-badge lis">LIS {summary.recent_ocs?.lis?.length || 0}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+          )}  
+          
+        </div>
+
+        <div className="content-column past-column">
+          
+          {/* 진료 캘린더 */}
+          <CalendarCard
+            patientId={patientId}
+            encounters={encounters}
+            onDateSelect={setSelectedDate}
+            selectedDate={selectedDate}
+          />
+          
+          <div className="past-column-header">
+            <h4>과거 기록</h4>
+          </div>
+          {patientId > 0 ? (
+            <>
+              {/* 과거 진료 기록 */}
+              <PastRecordCard
+                patientId={patientId}
+                encounters={encounters}
+                highlightDate={selectedDate}
+              />
+
+              {/* 과거 처방 기록 */}
+              <PastPrescriptionCard patientId={patientId} />
+            </>
+          ) : (
+            <div className="empty-column-message">
+              환자를 선택하면 과거 기록이 표시됩니다.
+            </div>
+          )}
+        </div>
+        
+        <div className="content-column order-column">
+          {/* 금일 예약 환자 목록 */}
+          <section className="exam-section appointment-card">
+            <TodayAppointmentCard />
+          </section>
+        
+        </div>
+
       </div>
 
       {/* Alert 추가/편집 모달 */}

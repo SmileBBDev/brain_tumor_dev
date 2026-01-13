@@ -3,11 +3,12 @@
 Brain Tumor CDSS - 더미 데이터 설정 스크립트 (통합 래퍼)
 
 이 스크립트는 더미 데이터 스크립트를 순차 실행합니다:
-1. setup_dummy_data_1_base.py - 기본 데이터 (메뉴/권한, 환자, 진료, OCS, 영상, AI모델)
+1. setup_dummy_data_1_base.py - 기본 데이터 (메뉴/권한, 환자 30명, 진료, OCS, 영상, AI모델)
 2. setup_dummy_data_2_add.py  - 추가 데이터 (치료계획, 경과추적, AI요청)
 3. setup_dummy_data_3_prescriptions.py - 처방 데이터
-4. 추가 사용자 생성 (각 역할별 2명 추가)
-5. 환자 계정-데이터 연결
+4. setup_dummy_data_4_extended.py - 확장 데이터 (환자 +20명, 오늘 예약 진료, 과거 기록)
+5. 추가 사용자 생성 (각 역할별 2명 추가)
+6. 환자 계정-데이터 연결
 
 사용법:
     python -m setup_dummy_data          # 기존 데이터 유지, 부족분만 추가
@@ -16,6 +17,7 @@ Brain Tumor CDSS - 더미 데이터 설정 스크립트 (통합 래퍼)
     python -m setup_dummy_data --base   # 기본 데이터만 생성
     python -m setup_dummy_data --add    # 추가 데이터만 생성
     python -m setup_dummy_data --prescriptions  # 처방 데이터만 생성
+    python -m setup_dummy_data --extended       # 확장 데이터만 생성 (환자 추가, 오늘 예약)
     python -m setup_dummy_data --menu   # 메뉴/권한만 업데이트 (네비게이션 바 반영)
 
 선행 조건:
@@ -25,6 +27,7 @@ Brain Tumor CDSS - 더미 데이터 설정 스크립트 (통합 래퍼)
     python setup_dummy_data/setup_dummy_data_1_base.py [--reset] [--force]
     python setup_dummy_data/setup_dummy_data_2_add.py [--reset] [--force]
     python setup_dummy_data/setup_dummy_data_3_prescriptions.py [--reset] [--force]
+    python setup_dummy_data/setup_dummy_data_4_extended.py
 """
 
 import os
@@ -78,6 +81,7 @@ def print_final_summary():
     import django
     django.setup()
 
+    from django.utils import timezone
     from apps.patients.models import Patient
     from apps.encounters.models import Encounter
     from apps.imaging.models import ImagingStudy
@@ -100,6 +104,13 @@ def print_final_summary():
         count = User.objects.filter(role=role).count()
         print(f"  - {role.name}: {count}명")
 
+    # 오늘 예약 진료 수
+    today = timezone.now().date()
+    today_scheduled = Encounter.objects.filter(
+        admission_date__date=today,
+        status='scheduled'
+    ).count()
+
     print(f"\n[데이터 통계]")
     print(f"  - 메뉴: {Menu.objects.count()}개")
     print(f"  - 메뉴 라벨: {MenuLabel.objects.count()}개")
@@ -107,7 +118,8 @@ def print_final_summary():
     print(f"  - 권한: {Permission.objects.count()}개")
     print(f"  - 환자: {Patient.objects.filter(is_deleted=False).count()}명")
     print(f"  - 환자-계정 연결: {Patient.objects.filter(user__isnull=False).count()}명")
-    print(f"  - 진료: {Encounter.objects.count()}건")
+    print(f"  - 진료 (전체): {Encounter.objects.count()}건")
+    print(f"  - 진료 (오늘 예약): {today_scheduled}건")
     print(f"  - OCS (RIS): {OCS.objects.filter(job_role='RIS').count()}건")
     print(f"  - OCS (LIS): {OCS.objects.filter(job_role='LIS').count()}건")
     print(f"  - 영상 검사: {ImagingStudy.objects.count()}건")
@@ -266,6 +278,7 @@ def main():
     parser.add_argument('--base', action='store_true', help='기본 데이터만 생성 (1_base)')
     parser.add_argument('--add', action='store_true', help='추가 데이터만 생성 (2_add)')
     parser.add_argument('--prescriptions', action='store_true', help='처방 데이터만 생성 (3_prescriptions)')
+    parser.add_argument('--extended', action='store_true', help='확장 데이터만 생성 (4_extended: 환자 추가, 오늘 예약)')
     parser.add_argument('--menu', action='store_true', help='메뉴/권한만 업데이트 (네비게이션 바 반영)')
     parser.add_argument('-y', '--yes', action='store_true', help='확인 없이 자동 실행 (비대화형 모드)')
     args = parser.parse_args()
@@ -299,6 +312,15 @@ def main():
         )
         return
 
+    # --extended 옵션: 확장 데이터만 생성 (환자 추가, 오늘 예약 진료, 과거 기록)
+    if args.extended:
+        run_script(
+            'setup_dummy_data_4_extended.py',
+            [],
+            '확장 더미 데이터 생성 (환자 추가, 오늘 예약, 과거 기록)'
+        )
+        return
+
     # 실행할 스크립트 결정
     run_base = not args.add  # --add만 지정하면 base 스킵
     run_add = not args.base   # --base만 지정하면 add 스킵
@@ -319,7 +341,7 @@ def main():
         if not run_script(
             'setup_dummy_data_1_base.py',
             script_args,
-            '기본 더미 데이터 생성 (1/5)'
+            '기본 더미 데이터 생성 (1/6)'
         ):
             print("\n[WARNING] 기본 데이터 생성에 문제가 있습니다.")
             success = False
@@ -329,7 +351,7 @@ def main():
         if not run_script(
             'setup_dummy_data_2_add.py',
             script_args,
-            '추가 더미 데이터 생성 (2/5)'
+            '추가 더미 데이터 생성 (2/6)'
         ):
             print("\n[WARNING] 추가 데이터 생성에 문제가 있습니다.")
             success = False
@@ -339,12 +361,22 @@ def main():
         if not run_script(
             'setup_dummy_data_3_prescriptions.py',
             script_args,
-            '처방 더미 데이터 생성 (3/5)'
+            '처방 더미 데이터 생성 (3/6)'
         ):
             print("\n[WARNING] 처방 데이터 생성에 문제가 있습니다.")
             success = False
 
-    # 4. 추가 사용자 생성 (system, doctor 제외 각 역할별 2명 추가)
+    # 4. 확장 데이터 생성 (환자 추가, 오늘 예약 진료, 과거 기록)
+    if run_add:
+        if not run_script(
+            'setup_dummy_data_4_extended.py',
+            [],
+            '확장 더미 데이터 생성 (4/6)'
+        ):
+            print("\n[WARNING] 확장 데이터 생성에 문제가 있습니다.")
+            success = False
+
+    # 5. 추가 사용자 생성 (system, doctor 제외 각 역할별 2명 추가)
     if run_base:
         try:
             create_additional_users(reset=args.reset)
@@ -352,7 +384,7 @@ def main():
             print(f"\n[WARNING] 추가 사용자 생성에 문제가 있습니다: {e}")
             success = False
 
-    # 5. 환자 계정-데이터 연결
+    # 6. 환자 계정-데이터 연결
     if run_base:
         try:
             link_patient_accounts(reset=args.reset)

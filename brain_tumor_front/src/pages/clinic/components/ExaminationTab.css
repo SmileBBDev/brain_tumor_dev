@@ -5,11 +5,13 @@
   flex-direction: column;
   gap: 16px;
   padding: 16px;
+  font-size: 11px;
 }
 
 .examination-tab.enhanced {
   gap: 12px;
   padding: 16px 20px;
+  font-size: 11px;
 }
 
 .examination-tab.loading {
@@ -288,10 +290,10 @@
   color: var(--text-main);
 }
 
-/* 3컬럼 메인 그리드 */
+/* 4컬럼 메인 그리드 */
 .main-content-grid.three-column {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-columns: 1fr 1fr 1fr 280px;
   gap: 16px;
   min-height: 0;
 }
@@ -336,11 +338,14 @@
   padding: 10px;
   border: 1px solid var(--border);
   border-radius: 6px;
-  font-size: 13px;
+  font-size: 11px;
   font-family: inherit;
-  resize: vertical;
+  resize: none;
   background: var(--card-bg);
   color: var(--text-main);
+  min-height: 40px;
+  overflow-y: hidden;
+  field-sizing: content;
 }
 
 .soap-field textarea:focus {
@@ -821,7 +826,78 @@
   margin-top: 16px;
 }
 
+/* 과거 기록 컬럼 */
+.content-column.past-column {
+  gap: 8px;
+}
+
+.past-column-header {
+  padding: 8px 12px;
+  background: var(--bg-main);
+  border-radius: 6px;
+  margin-bottom: 4px;
+}
+
+.past-column-header h4 {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-main);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.past-column-header h4::before {
+  content: '📁';
+}
+
+.past-column .clinic-card {
+  margin-bottom: 0;
+}
+
+/* 과거 기록 컬럼 내부 카드 축소 */
+.past-column .clinic-card-header h3 {
+  font-size: 12px;
+}
+
+.past-column .clinic-card-body {
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+/* 빈 컬럼 메시지 (환자 미선택 시) */
+.empty-column-message {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 150px;
+  color: var(--text-sub, #6b7280);
+  font-size: 12px;
+  text-align: center;
+  background: var(--bg-main, #f4f6f9);
+  border-radius: var(--radius-md, 8px);
+  border: 1px dashed var(--border, #e5e7eb);
+}
+
 /* Responsive - 태블릿 */
+@media (max-width: 1400px) {
+  .main-content-grid.three-column {
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+
+  .content-column.past-column {
+    grid-column: span 3;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+
+  .past-column-header {
+    grid-column: span 3;
+  }
+}
+
 @media (max-width: 1200px) {
   .main-content-grid.three-column {
     grid-template-columns: 1fr 1fr;
@@ -832,6 +908,15 @@
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 12px;
+  }
+
+  .content-column.past-column {
+    grid-column: span 2;
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .past-column-header {
+    grid-column: span 3;
   }
 
   .top-summary-row {
@@ -848,6 +933,15 @@
   .content-column.order-column {
     grid-column: span 1;
     grid-template-columns: 1fr;
+  }
+
+  .content-column.past-column {
+    grid-column: span 1;
+    grid-template-columns: 1fr;
+  }
+
+  .past-column-header {
+    grid-column: span 1;
   }
 
   .soap-history-grid {
@@ -878,3 +972,5 @@
     flex-direction: column;
   }
 }
+
+/* 과거 기록 섹션 - 이제 4번째 컬럼으로 통합됨 */

@@ -17,7 +17,11 @@ interface Doctor {
   name: string;
 }
 
-export default function TodayAppointmentCard() {
+interface TodayAppointmentCardProps {
+  compact?: boolean; // 사이드바용 컴팩트 모드
+}
+
+export default function TodayAppointmentCard({ compact = false }: TodayAppointmentCardProps) {
   const navigate = useNavigate();
   const { user, role } = useAuth();
 

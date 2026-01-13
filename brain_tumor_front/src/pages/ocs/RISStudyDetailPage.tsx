@@ -22,7 +22,6 @@ import {
   removeFileFromStorage,
   migrateFilesToStorage,
 } from '@/utils/fileStorage';
-import { generateRISReportPDF } from '@/utils/exportUtils';
 import './RISStudyDetailPage.css';
 
 // 검사 결과 항목 타입
@@ -340,6 +339,7 @@ export default function RISStudyDetailPage() {
     if (!ocsDetail) return;
 
     try {
+      const { generateRISReportPDF } = await import('@/utils/exportUtils');
       await generateRISReportPDF({
         ocsId: ocsDetail.ocs_id,
         patientName: ocsDetail.patient.name,
@@ -356,6 +356,7 @@ export default function RISStudyDetailPage() {
       });
     } catch (error) {
       console.error('PDF 출력 실패:', error);
+      alert('PDF 출력에 실패했습니다. jspdf 패키지가 설치되어 있는지 확인하세요.');
     }
   };
 
