@@ -1,6 +1,6 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import OCSViewSet
+from .views import OCSViewSet, OCSProcessStatusView
 
 
 # =============================================================================
@@ -13,12 +13,15 @@ router = DefaultRouter()
 router.register(r'', OCSViewSet, basename='ocs')
 
 urlpatterns = [
+    # OCS 처리 현황 API (RIS + LIS 통합)
+    path('process-status/', OCSProcessStatusView.as_view(), name='ocs-process-status'),
     path('', include(router.urls)),
 ]
 
 # =============================================================================
 # 생성된 URL 패턴:
 # =============================================================================
+# GET    /api/ocs/process-status/      - OCS 처리 현황 (RIS + LIS 통합)
 # GET    /api/ocs/                     - OCS 목록 조회
 # POST   /api/ocs/                     - OCS 생성
 # GET    /api/ocs/{id}/                - OCS 상세 조회

@@ -1038,3 +1038,104 @@ class OCSViewSet(viewsets.ModelViewSet):
             'external_source': external_source,
             'ocs': OCSDetailSerializer(ocs).data
         }, status=status.HTTP_201_CREATED)
+
+
+# =============================================================================
+# OCS 처리 현황 API
+# =============================================================================
+
+from rest_framework.views import APIView
+from django.db.models import Count, Q
+from datetime import timedelta
+import logging
+
+logger = logging.getLogger(__name__)
+
+
+class OCSProcessStatusView(APIView):
+    """
+    OCS 통합 처리 현황 API
+
+    RIS, LIS의 처리 현황을 통합하여 반환합니다.
+    - pending: 대기 중 (ORDERED, ACCEPTED)
+    - in_progress: 진행 중 (IN_PROGRESS)
+    - completed: 완료 (RESULT_READY, CONFIRMED)
+    """
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        tags=["OCS"],
+        summary="OCS 처리 현황 조회",
+        description="RIS + LIS 통합 처리 현황을 조회합니다.",
+        responses={
+            200: {
+                "type": "object",
+                "properties": {
+                    "ris": {"type": "object"},
+                    "lis": {"type": "object"},
+                    "combined": {"type": "object"}
+                }
+            }
+        }
+    )
+    def get(self, request):
+        try:
+            now = timezone.now()
+            today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+
+            # 공통 필터: 삭제되지 않은 OCS
+            base_qs = OCS.objects.filter(is_deleted=False)
+
+            # RIS 통계
+            ris_qs = base_qs.filter(job_role='RIS')
+            ris_stats = self._get_job_stats(ris_qs, today_start)
+
+            # LIS 통계
+            lis_qs = base_qs.filter(job_role='LIS')
+            lis_stats = self._get_job_stats(lis_qs, today_start)
+
+            # 통합 통계
+            combined = {
+                'total_pending': ris_stats['pending'] + lis_stats['pending'],
+                'total_in_progress': ris_stats['in_progress'] + lis_stats['in_progress'],
+                'total_completed': ris_stats['completed'] + lis_stats['completed'],
+                'total_today': ris_stats['total_today'] + lis_stats['total_today'],
+            }
+
+            return Response({
+                'ris': ris_stats,
+                'lis': lis_stats,
+                'combined': combined,
+            })
+
+        except Exception as e:
+            logger.error(f"OCS process status error: {str(e)}")
+            return Response(
+                {'error': '처리 현황을 불러오는 중 오류가 발생했습니다.'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+    def _get_job_stats(self, queryset, today_start):
+        """job_role별 통계 계산"""
+        # 상태별 카운트
+        pending = queryset.filter(
+            ocs_status__in=[OCS.OcsStatus.ORDERED, OCS.OcsStatus.ACCEPTED]
+        ).count()
+
+        in_progress = queryset.filter(
+            ocs_status=OCS.OcsStatus.IN_PROGRESS
+        ).count()
+
+        completed = queryset.filter(
+            ocs_status__in=[OCS.OcsStatus.RESULT_READY, OCS.OcsStatus.CONFIRMED]
+        ).count()
+
+        # 오늘 생성된 OCS 수
+        total_today = queryset.filter(created_at__gte=today_start).count()
+
+        return {
+            'pending': pending,
+            'in_progress': in_progress,
+            'completed': completed,
+            'total_today': total_today,
+        }

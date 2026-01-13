@@ -31,3 +31,13 @@ class IsExternal(BasePermission):
         if not request.user.role:
             return False
         return request.user.role.code == 'EXTERNAL'
+
+
+class IsDoctor(BasePermission):
+    """DOCTOR 역할만 접근 가능"""
+    def has_permission(self, request, view):
+        if not request.user.is_authenticated:
+            return False
+        if not request.user.role:
+            return False
+        return request.user.role.code == 'DOCTOR'

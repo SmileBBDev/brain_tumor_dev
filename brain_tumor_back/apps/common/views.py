@@ -11,7 +11,8 @@ from drf_spectacular.utils import extend_schema, OpenApiResponse
 from apps.accounts.models import User
 from apps.patients.models import Patient
 from apps.ocs.models import OCS
-from apps.common.permission import IsAdmin, IsExternal
+from apps.common.permission import IsAdmin, IsExternal, IsDoctor
+from apps.encounters.models import Encounter
 
 logger = logging.getLogger(__name__)
 

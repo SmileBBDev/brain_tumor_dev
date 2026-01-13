@@ -32,6 +32,18 @@ export default function PacsSelector({ onChange, ocsInfo, initialSelection }) {
   // OCS 연동 모드인지 확인
   const isOcsMode = Boolean(ocsInfo?.patientNumber);
 
+  // initialSelection 복원 useEffect (복수 화면 전환 시 데이터 유지)
+  useEffect(() => {
+    if (initialSelection?.baseSeriesId) {
+      setBaseSeriesId(initialSelection.baseSeriesId);
+      setBaseSeriesName(initialSelection.baseSeriesName || "");
+    }
+    if (initialSelection?.overlaySeriesId) {
+      setOverlaySeriesId(initialSelection.overlaySeriesId);
+      setOverlaySeriesName(initialSelection.overlaySeriesName || "");
+    }
+  }, [initialSelection?.baseSeriesId, initialSelection?.overlaySeriesId]);
+
   // 환자 목록 로드 + initialSelection/OCS 자동 선택
   useEffect(() => {
     (async () => {
