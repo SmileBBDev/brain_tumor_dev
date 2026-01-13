@@ -47,3 +47,11 @@ export const updateRolePermissions = (roleId : number, permissionIds : number[])
   api.put(`/auth/roles/${roleId}/menus/`, {
     permission_ids : permissionIds,
   })
+
+
+  export async function fetchPermissionHistory(roleId: number) {
+  const res = await api.get(
+    `/api/admin/roles/${roleId}/permission-history/`
+  );
+  return res.data;
+}

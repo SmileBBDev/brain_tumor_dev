@@ -14,6 +14,7 @@ from django.utils import timezone
 from apps.accounts.models.role import Role
 from apps.accounts.models.role_permission import RolePermission
 from apps.accounts.models.permission import Permission
+from apps.accounts.models.role_permission_history import RolePermissionHistory
 from apps.accounts.models.user import User
 from apps.common.pagination import UserPagination
 from apps.common.utils import get_client_ip
@@ -23,7 +24,7 @@ from apps.audit.services import create_audit_log # # Audit Log 기록 유틸
 from apps.menus.models import Menu
 from apps.menus.serializers import MenuSerializer
 
-from .serializers import LoginSerializer, MeSerializer, CustomTokenObtainPairSerializer, RoleSerializer
+from .serializers import LoginSerializer, MeSerializer, CustomTokenObtainPairSerializer, RoleSerializer, RolePermissionHistorySerializer
 
 # JWT 토큰 발급 View
 class LoginView(APIView):
@@ -248,7 +249,37 @@ class RoleViewSet(ModelViewSet): # - ModelViewSet을 상속하면 기본적으�
 
         # RolePermission.permission은 Menu를 참조함
         valid_menus = Menu.objects.filter(id__in=menu_ids)
+        
+        
+        # 이력 저장용 비교 (삭제 전에!)
+        existing_menu_ids = set(
+            RolePermission.objects.filter(role=role)
+            .values_list("permission_id", flat=True)  # 또는 menu_id
+        )
+        new_menu_ids = set(menu_ids)
 
+        added = new_menu_ids - existing_menu_ids
+        removed = existing_menu_ids - new_menu_ids
+
+        # 이력 기록
+        history = []
+        for menu_id in added:
+            history.append(RolePermissionHistory(
+                role=role,
+                menu_id=menu_id,
+                action="ADD",
+                changed_by=request.user
+            ))
+        for menu_id in removed:
+            history.append(RolePermissionHistory(
+                role=role,
+                menu_id=menu_id,
+                action="REMOVE",
+                changed_by=request.user
+            ))
+        RolePermissionHistory.objects.bulk_create(history)
+
+        # 기존 권한 삭제 후 새로 생성 - 실제 권한 반영
         RolePermission.objects.filter(role=role).delete()
 
         RolePermission.objects.bulk_create([
@@ -272,35 +303,49 @@ class RoleViewSet(ModelViewSet): # - ModelViewSet을 상속하면 기본적으�
                 valid_menus.values_list("id", flat=True)
             )
         })
+    
+    @action(
+        detail=True,
+        methods=["get"],
+        url_path="permission-history"
+    )
+    def permission_history(self, request, pk=None):
+        role = self.get_object()
 
-    # @action(detail=True, methods=["put"], url_path="menus")
-    # def update_menus(self, request, pk=None):
-    #     role = self.get_object()
-    #     permission_ids = request.data.get("permission_ids", [])
+        qs = RolePermissionHistory.objects.filter(role=role)
 
-    #     # # 🔥 실제 Permission 테이블에 존재하는 것만 필터
-    #     # valid_permissions = Permission.objects.filter(id__in=permission_ids)
+        # 필터
+        action = request.query_params.get("action")
+        if action:
+            qs = qs.filter(action=action)
 
-    #     # 기존 삭제
-    #     RolePermission.objects.filter(role=role).delete()
+        date_from = request.query_params.get("from")
+        date_to = request.query_params.get("to")
 
-    #     menus = Menu.objects.filter(id__in=permission_ids)
+        if date_from:
+            qs = qs.filter(changed_at__date__gte=date_from)
+        if date_to:
+            qs = qs.filter(changed_at__date__lte=date_to)
 
-    #     # 다시 저장 (FK 안전)
-    #     RolePermission.objects.bulk_create([
-    #         RolePermission(
-    #             role=role,
-    #             permission=perm
-    #         )
-    #         for perm in menus
-    #     ])
+        qs = qs.select_related(
+            "role", "menu", "changed_by"
+        ).order_by("-changed_at")
 
-    #     return Response({
-    #     "saved_permission_ids": list(
-    #         valid_permissions.values_list("id", flat=True)
-    #     )
-    # })
+        page = self.paginate_queryset(qs)
 
+        if page is not None:
+            serializer = RolePermissionHistorySerializer(page, many=True)
+            # ✅ 핵심 2: self.get_paginated_response 사용
+            return self.get_paginated_response(serializer.data)
+
+        # (fallback: pagination 비활성일 때)
+        serializer = RolePermissionHistorySerializer(qs, many=True)
+        return Response(serializer.data)
+
+        # (페이징 미사용 시 fallback)
+    
+        # serializer = RolePermissionHistorySerializer(qs, many=True)
+        # return Response(serializer.data)
 
 
 

@@ -8,6 +8,7 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.utils import timezone
 from django.db.models import F
 
+from apps.accounts.models.role_permission_history import RolePermissionHistory
 from apps.audit.services import create_audit_log
 from apps.menus.models import MenuPermission
 from apps.accounts.models import RolePermission
@@ -230,3 +231,25 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
             "must_change_password": self.user.must_change_password,
         }
         return data
+
+
+# 역할별 메뉴 접근 변환 이력 관리
+class RolePermissionHistorySerializer(serializers.ModelSerializer):
+    role_name = serializers.CharField(source="role.name", read_only=True)
+    menu_name = serializers.CharField(source="menu.code", read_only=True)
+    changed_by_name = serializers.CharField(
+        source="changed_by.login_id",
+        read_only=True
+    )
+
+    class Meta:
+        model = RolePermissionHistory
+        fields = [
+            "id",
+            "role_name",
+            "menu_name",
+            "action",
+            "changed_by_name",
+            "changed_at",
+            "reason",
+        ]
