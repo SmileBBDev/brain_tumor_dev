@@ -214,27 +214,30 @@ export default function ImagingListTable({ role, studies, onEdit, onDelete, onRe
                   )}
                 </td>
                 <td>
-                  <div className="action-buttons" style={{ display: 'flex', gap: '0.25rem', flexWrap: 'wrap' }}>
-                    {canEdit && study.status !== 'cancelled' && (
+                  <div className="action-buttons" style={{ display: 'flex', gap: '0.25rem', flexWrap: 'nowrap' }}>
+                    {canEdit && study.status !== 'cancelled' ? (
                       <>
-                        {study.status === 'in_progress' && (
-                          <button
-                            className="btn small"
-                            onClick={() => handleComplete(study)}
-                            style={{ fontSize: '0.75rem', backgroundColor: '#4caf50', color: 'white' }}
-                          >
-                            완료
-                          </button>
-                        )}
-                        {(study.status === 'ordered' || study.status === 'scheduled') && (
-                          <button
-                            className="btn small btn-danger"
-                            onClick={() => handleCancel(study)}
-                            style={{ fontSize: '0.75rem' }}
-                          >
-                            취소
-                          </button>
-                        )}
+                        {/* 완료/취소 버튼 영역 - 고정 너비로 정렬 유지 */}
+                        <span style={{ minWidth: '45px', display: 'inline-block' }}>
+                          {study.status === 'in_progress' && (
+                            <button
+                              className="btn small"
+                              onClick={() => handleComplete(study)}
+                              style={{ fontSize: '0.75rem', backgroundColor: '#4caf50', color: 'white' }}
+                            >
+                              완료
+                            </button>
+                          )}
+                          {(study.status === 'ordered' || study.status === 'scheduled') && (
+                            <button
+                              className="btn small btn-danger"
+                              onClick={() => handleCancel(study)}
+                              style={{ fontSize: '0.75rem' }}
+                            >
+                              취소
+                            </button>
+                          )}
+                        </span>
                         <button
                           className="btn small primary"
                           onClick={() => onEdit(study)}
@@ -252,7 +255,7 @@ export default function ImagingListTable({ role, studies, onEdit, onDelete, onRe
                           </button>
                         )}
                       </>
-                    )}
+                    ) : null}
                   </div>
                 </td>
               </tr>

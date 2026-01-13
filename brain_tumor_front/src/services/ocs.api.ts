@@ -400,23 +400,29 @@ export const createExternalRIS = async (
 // OCS 처리 현황 API
 // =============================================================================
 
+// OCS 처리 현황 - 부서별 상태 타입
+export type OCSJobStats = {
+  ordered: number;      // 오더 생성
+  accepted: number;     // 접수 완료
+  in_progress: number;  // 진행 중
+  result_ready: number; // 결과 대기
+  confirmed: number;    // 확정 완료
+  cancelled: number;    // 취소됨
+  total_today: number;  // 오늘 생성된 건수
+};
+
 // OCS 처리 현황 응답 타입
 export type OCSProcessStatus = {
-  ris: {
-    pending: number;
-    in_progress: number;
-    completed: number;
-    total_today: number;
-  };
-  lis: {
-    pending: number;
-    in_progress: number;
-    completed: number;
-    total_today: number;
-  };
+  ris: OCSJobStats;
+  lis: OCSJobStats;
   combined: {
-    total_pending: number;
-    total_completed: number;
+    total_ordered: number;
+    total_accepted: number;
+    total_in_progress: number;
+    total_result_ready: number;
+    total_confirmed: number;
+    total_cancelled: number;
+    total_today: number;
   };
 };
 

@@ -1,15 +1,27 @@
 /**
  * OCS 통합 처리 현황 대시보드
  * - RIS + LIS 통합 현황 요약
- * - 각 부서별 진행 상황 분포
- * - 전체 Pending/Completed 현황
+ * - 각 부서별 진행 상황 분포 (6개 상태)
+ * - 전체 상태별 현황
  */
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getOCSProcessStatus } from '@/services/ocs.api';
-import type { OCSProcessStatus } from '@/services/ocs.api';
+import type { OCSProcessStatus, OCSJobStats } from '@/services/ocs.api';
 import { useOCSEventCallback } from '@/context/OCSNotificationContext';
 import './OCSProcessStatusPage.css';
+
+// 상태 정보 정의
+const STATUS_INFO = {
+  ordered: { label: '오더생성', className: 'ordered' },
+  accepted: { label: '접수완료', className: 'accepted' },
+  in_progress: { label: '진행중', className: 'in-progress' },
+  result_ready: { label: '결과대기', className: 'result-ready' },
+  confirmed: { label: '확정완료', className: 'confirmed' },
+  cancelled: { label: '취소', className: 'cancelled' },
+} as const;
+
+type StatusKey = keyof typeof STATUS_INFO;
 
 export default function OCSProcessStatusPage() {
   const navigate = useNavigate();
@@ -49,6 +61,11 @@ export default function OCSProcessStatusPage() {
     return Math.round((value / total) * 100);
   };
 
+  // 부서별 총합 계산 (cancelled 제외)
+  const getJobTotal = (stats: OCSJobStats): number => {
+    return stats.ordered + stats.accepted + stats.in_progress + stats.result_ready + stats.confirmed;
+  };
+
   // 부서별 상세 페이지로 이동
   const handleNavigateToDetail = (type: 'ris' | 'lis') => {
     navigate(`/ocs/${type}/process-status`);
@@ -73,20 +90,42 @@ export default function OCSProcessStatusPage() {
 
       {status && (
         <>
-          {/* 통합 요약 카드 */}
+          {/* 통합 요약 카드 - 6개 상태 */}
           <section className="combined-summary">
-            <div className="summary-card pending">
-              <span className="card-icon">⏳</span>
+            <div className="summary-card ordered">
               <div className="card-content">
-                <span className="card-label">전체 대기중</span>
-                <span className="card-value">{status.combined.total_pending}</span>
+                <span className="card-label">오더생성</span>
+                <span className="card-value">{status.combined.total_ordered}</span>
               </div>
             </div>
-            <div className="summary-card completed">
-              <span className="card-icon">✅</span>
+            <div className="summary-card accepted">
               <div className="card-content">
-                <span className="card-label">전체 완료</span>
-                <span className="card-value">{status.combined.total_completed}</span>
+                <span className="card-label">접수완료</span>
+                <span className="card-value">{status.combined.total_accepted}</span>
+              </div>
+            </div>
+            <div className="summary-card in-progress">
+              <div className="card-content">
+                <span className="card-label">진행중</span>
+                <span className="card-value">{status.combined.total_in_progress}</span>
+              </div>
+            </div>
+            <div className="summary-card result-ready">
+              <div className="card-content">
+                <span className="card-label">결과대기</span>
+                <span className="card-value">{status.combined.total_result_ready}</span>
+              </div>
+            </div>
+            <div className="summary-card confirmed">
+              <div className="card-content">
+                <span className="card-label">확정완료</span>
+                <span className="card-value">{status.combined.total_confirmed}</span>
+              </div>
+            </div>
+            <div className="summary-card cancelled">
+              <div className="card-content">
+                <span className="card-label">취소</span>
+                <span className="card-value">{status.combined.total_cancelled}</span>
               </div>
             </div>
           </section>
@@ -104,54 +143,26 @@ export default function OCSProcessStatusPage() {
               </div>
 
               <div className="stats-grid">
-                <div className="stat-item pending">
-                  <span className="stat-label">대기</span>
-                  <span className="stat-value">{status.ris.pending}</span>
-                </div>
-                <div className="stat-item in-progress">
-                  <span className="stat-label">진행중</span>
-                  <span className="stat-value">{status.ris.in_progress}</span>
-                </div>
-                <div className="stat-item completed">
-                  <span className="stat-label">완료</span>
-                  <span className="stat-value">{status.ris.completed}</span>
-                </div>
+                {(Object.keys(STATUS_INFO) as StatusKey[]).map((key) => (
+                  <div key={key} className={`stat-item ${STATUS_INFO[key].className}`}>
+                    <span className="stat-label">{STATUS_INFO[key].label}</span>
+                    <span className="stat-value">{status.ris[key]}</span>
+                  </div>
+                ))}
               </div>
 
               <div className="progress-bar">
-                {status.ris.pending > 0 && (
-                  <div
-                    className="progress-segment pending"
-                    style={{
-                      width: `${getPercentage(
-                        status.ris.pending,
-                        status.ris.pending + status.ris.in_progress + status.ris.completed
-                      )}%`,
-                    }}
-                  />
-                )}
-                {status.ris.in_progress > 0 && (
-                  <div
-                    className="progress-segment in-progress"
-                    style={{
-                      width: `${getPercentage(
-                        status.ris.in_progress,
-                        status.ris.pending + status.ris.in_progress + status.ris.completed
-                      )}%`,
-                    }}
-                  />
-                )}
-                {status.ris.completed > 0 && (
-                  <div
-                    className="progress-segment completed"
-                    style={{
-                      width: `${getPercentage(
-                        status.ris.completed,
-                        status.ris.pending + status.ris.in_progress + status.ris.completed
-                      )}%`,
-                    }}
-                  />
-                )}
+                {(Object.keys(STATUS_INFO) as StatusKey[])
+                  .filter((key) => key !== 'cancelled' && status.ris[key] > 0)
+                  .map((key) => (
+                    <div
+                      key={key}
+                      className={`progress-segment ${STATUS_INFO[key].className}`}
+                      style={{
+                        width: `${getPercentage(status.ris[key], getJobTotal(status.ris))}%`,
+                      }}
+                    />
+                  ))}
               </div>
 
               <div className="view-detail">상세보기 →</div>
@@ -168,54 +179,26 @@ export default function OCSProcessStatusPage() {
               </div>
 
               <div className="stats-grid">
-                <div className="stat-item pending">
-                  <span className="stat-label">대기</span>
-                  <span className="stat-value">{status.lis.pending}</span>
-                </div>
-                <div className="stat-item in-progress">
-                  <span className="stat-label">진행중</span>
-                  <span className="stat-value">{status.lis.in_progress}</span>
-                </div>
-                <div className="stat-item completed">
-                  <span className="stat-label">완료</span>
-                  <span className="stat-value">{status.lis.completed}</span>
-                </div>
+                {(Object.keys(STATUS_INFO) as StatusKey[]).map((key) => (
+                  <div key={key} className={`stat-item ${STATUS_INFO[key].className}`}>
+                    <span className="stat-label">{STATUS_INFO[key].label}</span>
+                    <span className="stat-value">{status.lis[key]}</span>
+                  </div>
+                ))}
               </div>
 
               <div className="progress-bar">
-                {status.lis.pending > 0 && (
-                  <div
-                    className="progress-segment pending"
-                    style={{
-                      width: `${getPercentage(
-                        status.lis.pending,
-                        status.lis.pending + status.lis.in_progress + status.lis.completed
-                      )}%`,
-                    }}
-                  />
-                )}
-                {status.lis.in_progress > 0 && (
-                  <div
-                    className="progress-segment in-progress"
-                    style={{
-                      width: `${getPercentage(
-                        status.lis.in_progress,
-                        status.lis.pending + status.lis.in_progress + status.lis.completed
-                      )}%`,
-                    }}
-                  />
-                )}
-                {status.lis.completed > 0 && (
-                  <div
-                    className="progress-segment completed"
-                    style={{
-                      width: `${getPercentage(
-                        status.lis.completed,
-                        status.lis.pending + status.lis.in_progress + status.lis.completed
-                      )}%`,
-                    }}
-                  />
-                )}
+                {(Object.keys(STATUS_INFO) as StatusKey[])
+                  .filter((key) => key !== 'cancelled' && status.lis[key] > 0)
+                  .map((key) => (
+                    <div
+                      key={key}
+                      className={`progress-segment ${STATUS_INFO[key].className}`}
+                      style={{
+                        width: `${getPercentage(status.lis[key], getJobTotal(status.lis))}%`,
+                      }}
+                    />
+                  ))}
               </div>
 
               <div className="view-detail">상세보기 →</div>
@@ -224,18 +207,12 @@ export default function OCSProcessStatusPage() {
 
           {/* 범례 */}
           <section className="legend-section">
-            <div className="legend-item">
-              <span className="legend-color pending" />
-              <span>대기중</span>
-            </div>
-            <div className="legend-item">
-              <span className="legend-color in-progress" />
-              <span>진행중</span>
-            </div>
-            <div className="legend-item">
-              <span className="legend-color completed" />
-              <span>완료</span>
-            </div>
+            {(Object.keys(STATUS_INFO) as StatusKey[]).map((key) => (
+              <div key={key} className="legend-item">
+                <span className={`legend-color ${STATUS_INFO[key].className}`} />
+                <span>{STATUS_INFO[key].label}</span>
+              </div>
+            ))}
           </section>
         </>
       )}

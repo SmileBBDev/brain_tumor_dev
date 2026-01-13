@@ -1110,9 +1110,12 @@ class OCSProcessStatusView(APIView):
 
             # 통합 통계
             combined = {
-                'total_pending': ris_stats['pending'] + lis_stats['pending'],
+                'total_ordered': ris_stats['ordered'] + lis_stats['ordered'],
+                'total_accepted': ris_stats['accepted'] + lis_stats['accepted'],
                 'total_in_progress': ris_stats['in_progress'] + lis_stats['in_progress'],
-                'total_completed': ris_stats['completed'] + lis_stats['completed'],
+                'total_result_ready': ris_stats['result_ready'] + lis_stats['result_ready'],
+                'total_confirmed': ris_stats['confirmed'] + lis_stats['confirmed'],
+                'total_cancelled': ris_stats['cancelled'] + lis_stats['cancelled'],
                 'total_today': ris_stats['total_today'] + lis_stats['total_today'],
             }
 
@@ -1130,26 +1133,24 @@ class OCSProcessStatusView(APIView):
             )
 
     def _get_job_stats(self, queryset, today_start):
-        """job_role별 통계 계산"""
-        # 상태별 카운트
-        pending = queryset.filter(
-            ocs_status__in=[OCS.OcsStatus.ORDERED, OCS.OcsStatus.ACCEPTED]
-        ).count()
-
-        in_progress = queryset.filter(
-            ocs_status=OCS.OcsStatus.IN_PROGRESS
-        ).count()
-
-        completed = queryset.filter(
-            ocs_status__in=[OCS.OcsStatus.RESULT_READY, OCS.OcsStatus.CONFIRMED]
-        ).count()
+        """job_role별 통계 계산 - 모든 상태별 카운트"""
+        # 개별 상태별 카운트
+        ordered = queryset.filter(ocs_status=OCS.OcsStatus.ORDERED).count()
+        accepted = queryset.filter(ocs_status=OCS.OcsStatus.ACCEPTED).count()
+        in_progress = queryset.filter(ocs_status=OCS.OcsStatus.IN_PROGRESS).count()
+        result_ready = queryset.filter(ocs_status=OCS.OcsStatus.RESULT_READY).count()
+        confirmed = queryset.filter(ocs_status=OCS.OcsStatus.CONFIRMED).count()
+        cancelled = queryset.filter(ocs_status=OCS.OcsStatus.CANCELLED).count()
 
         # 오늘 생성된 OCS 수
         total_today = queryset.filter(created_at__gte=today_start).count()
 
         return {
-            'pending': pending,
+            'ordered': ordered,
+            'accepted': accepted,
             'in_progress': in_progress,
-            'completed': completed,
+            'result_ready': result_ready,
+            'confirmed': confirmed,
+            'cancelled': cancelled,
             'total_today': total_today,
         }

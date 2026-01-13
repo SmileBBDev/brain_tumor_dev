@@ -312,6 +312,12 @@
   font-weight: 600;
 }
 
+/* 작업/판독 열 우측 정렬 (마지막 2개 열) */
+.table th:nth-last-child(-n+2),
+.table td:nth-last-child(-n+2) {
+  text-align: right;
+}
+
 /* ============================================
    5. Badges (배지)
    ============================================ */
@@ -619,7 +625,7 @@
 .action-buttons {
   display: flex;
   gap: 0.5rem;
-  justify-content: center;
+  justify-content: flex-end;
 }
 
 .action-buttons .btn {
