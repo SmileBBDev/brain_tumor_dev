@@ -461,7 +461,6 @@ def load_menu_permission_seed():
     ├── IMAGING: IMAGE_VIEWER, OCS_RIS, OCS_RIS_DETAIL, RIS_DASHBOARD, RIS_RESULT_UPLOAD
     ├── LAB: LAB_RESULT_VIEW, LAB_RESULT_UPLOAD, OCS_LIS, OCS_LIS_DETAIL, LIS_PROCESS_STATUS
     ├── AI_SUMMARY: AI_REQUEST_LIST, AI_REQUEST_CREATE, AI_REQUEST_DETAIL
-    ├── NURSE_RECEPTION
     └── ADMIN: ADMIN_USER, ADMIN_USER_DETAIL, ADMIN_ROLE, ADMIN_MENU_PERMISSION, ADMIN_AUDIT_LOG, ADMIN_SYSTEM_MONITOR
     """
     print("\n[1단계] 메뉴/권한 시드 데이터 로드...")
@@ -503,7 +502,6 @@ def load_menu_permission_seed():
         ('OCS_LIS', '검사 워크리스트', 'LIS 작업자용 검사 오더 처리'),
         ('OCS_LIS_DETAIL', '검사 결과 상세', 'LIS 검사 결과 상세 페이지'),
         ('LIS_PROCESS_STATUS', '결과 처리 상태', 'LIS 업로드 데이터 처리 상태 모니터링'),
-        ('NURSE_RECEPTION', '진료 접수 현황', '간호사용 진료 접수 현황 페이지'),
         ('IMAGING', '영상', '영상 메뉴'),
         ('IMAGE_VIEWER', '영상 조회', '영상 조회 화면'),
         ('RIS_WORKLIST', '판독 Worklist', 'RIS 판독 Worklist 화면'),
@@ -629,9 +627,6 @@ def load_menu_permission_seed():
     # OCS 상세 페이지 메뉴 (breadcrumb_only)
     create_menu(26, code='OCS_RIS_DETAIL', path='/ocs/ris/:ocsId', icon='x-ray', breadcrumb_only=True, order=1, is_active=True, parent=menu_ocs_ris)
     create_menu(27, code='OCS_LIS_DETAIL', path='/ocs/lis/:ocsId', icon='flask', breadcrumb_only=True, order=1, is_active=True, parent=menu_ocs_lis)
-
-    # 간호사 진료 접수 메뉴
-    create_menu(28, code='NURSE_RECEPTION', path='/nurse/reception', icon='clipboard-list', order=30, is_active=True, parent=None)
 
     # RIS Dashboard 메뉴 (IMAGING 그룹) - process-status로 경로 통일
     create_menu(30, code='RIS_DASHBOARD', path='/ocs/ris/process-status', icon='chart-bar', order=4, is_active=True, parent=menu_imaging)
@@ -786,12 +781,11 @@ def load_menu_permission_seed():
             'IMAGING', 'IMAGE_VIEWER', 'RIS_WORKLIST', 'RIS_DASHBOARD', 'RIS_RESULT_UPLOAD',
             'LAB', 'LAB_RESULT_VIEW', 'LAB_RESULT_UPLOAD', 'LIS_PROCESS_STATUS',
             'AI_SUMMARY', 'AI_REQUEST_LIST', 'AI_REQUEST_CREATE', 'AI_REQUEST_DETAIL',
-            'NURSE_RECEPTION',
             'REPORT', 'REPORT_LIST', 'REPORT_CREATE', 'REPORT_DETAIL',
             'ADMIN', 'ADMIN_USER', 'ADMIN_USER_DETAIL', 'ADMIN_ROLE', 'ADMIN_MENU_PERMISSION', 'ADMIN_AUDIT_LOG', 'ADMIN_SYSTEM_MONITOR'
         ],
         'DOCTOR': ['DASHBOARD', 'PATIENT_LIST', 'PATIENT_DETAIL', 'PATIENT_CARE', 'ENCOUNTER_LIST', 'OCS_STATUS', 'OCS_CREATE', 'OCS_PROCESS_STATUS', 'IMAGE_VIEWER', 'RIS_WORKLIST', 'LAB_RESULT_VIEW', 'AI_SUMMARY', 'AI_REQUEST_LIST', 'AI_REQUEST_CREATE', 'AI_REQUEST_DETAIL', 'REPORT', 'REPORT_LIST', 'REPORT_CREATE', 'REPORT_DETAIL'],
-        'NURSE': ['DASHBOARD', 'PATIENT_LIST', 'PATIENT_DETAIL', 'ENCOUNTER_LIST', 'OCS_STATUS', 'OCS_PROCESS_STATUS', 'IMAGE_VIEWER', 'LAB_RESULT_VIEW', 'NURSE_RECEPTION'],  # PATIENT_CARE 제거 (DOCTOR, SYSTEMMANAGER만)
+        'NURSE': ['DASHBOARD', 'PATIENT_LIST', 'PATIENT_DETAIL', 'ENCOUNTER_LIST', 'OCS_STATUS', 'OCS_PROCESS_STATUS', 'IMAGE_VIEWER', 'LAB_RESULT_VIEW'],  # PATIENT_CARE 제거 (DOCTOR, SYSTEMMANAGER만), NURSE_RECEPTION은 Dashboard로 통합됨
         'RIS': ['DASHBOARD', 'IMAGE_VIEWER', 'RIS_WORKLIST', 'OCS_RIS', 'OCS_RIS_DETAIL', 'RIS_DASHBOARD', 'RIS_RESULT_UPLOAD'],
         'LIS': ['DASHBOARD', 'LAB_RESULT_VIEW', 'LAB_RESULT_UPLOAD', 'OCS_LIS', 'OCS_LIS_DETAIL', 'LIS_PROCESS_STATUS'],
     }

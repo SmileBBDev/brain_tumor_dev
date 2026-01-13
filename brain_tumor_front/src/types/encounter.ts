@@ -51,6 +51,14 @@ export interface EncounterListResponse {
   results: Encounter[];
 }
 
+export type SortField = 'admission_date' | 'status';
+export type SortDirection = 'asc' | 'desc';
+
+export interface SortConfig {
+  field: SortField;
+  direction: SortDirection;
+}
+
 export interface EncounterSearchParams {
   q?: string;
   encounter_type?: EncounterType;
@@ -63,6 +71,7 @@ export interface EncounterSearchParams {
   end_date?: string;
   page?: number;
   page_size?: number;
+  ordering?: string;
 }
 
 export interface EncounterCreateData {

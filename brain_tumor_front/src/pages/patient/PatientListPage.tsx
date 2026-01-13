@@ -7,6 +7,7 @@ import Pagination from '@/layout/Pagination';
 import { useAuth } from '../auth/AuthProvider';
 import { getPatients } from '@/services/patient.api';
 import type { Patient, PatientSearchParams, Gender, PatientStatus } from '@/types/patient';
+import '@/assets/style/patientListView.css';
 
 export default function PatientListPage() {
   const { role } = useAuth();
@@ -74,6 +75,14 @@ export default function PatientListPage() {
 
   const handleGenderChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setGenderFilter(e.target.value as Gender | '');
+    setPage(1);
+  };
+
+  // 필터 초기화
+  const handleResetFilters = () => {
+    setSearchQuery('');
+    setStatusFilter('');
+    setGenderFilter('');
     setPage(1);
   };
 
@@ -155,6 +164,7 @@ export default function PatientListPage() {
             patients={patients}
             onEdit={handleEdit}
             onDelete={handleDelete}
+            onResetFilters={handleResetFilters}
           />
         )}
       </section>

@@ -176,36 +176,20 @@ class DoctorDashboardStatsView(APIView):
             today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
             today_end = today_start + timedelta(days=1)
 
-            # 현재 로그인한 의사의 금일 예약환자 조회
-            today_appointments = Encounter.objects.filter(
-                attending_doctor=request.user,
-                admission_date__gte=today_start,
-                admission_date__lt=today_end,
-                status='scheduled',
-                is_deleted=False
-            ).select_related('patient').order_by('admission_date')
-
-            # 전체 금일 예약 수
-            total_today = today_appointments.count()
-
-            # 현재 시간 이후의 예약만 (가까운 순서로 5개)
-            upcoming = today_appointments.filter(
-                admission_date__gte=now
-            )[:5]
-
-            # 남은 예약 수
-            remaining = today_appointments.filter(admission_date__gte=now).count()
-
-            # 전체 금일 통계 (상태별)
+            # 전체 금일 통계 (상태별) - cancelled 제외
             all_today = Encounter.objects.filter(
                 attending_doctor=request.user,
                 admission_date__gte=today_start,
                 admission_date__lt=today_end,
                 is_deleted=False
-            )
+            ).exclude(status='cancelled')
+
             waiting = all_today.filter(status='scheduled').count()
             in_progress = all_today.filter(status='in_progress').count()
             completed = all_today.filter(status='completed').count()
+
+            # 금일 예약환자 5명 (시간순, 취소 제외)
+            today_appointments = all_today.select_related('patient').order_by('admission_date')[:5]
 
             return Response({
                 'today_appointments': [
@@ -221,7 +205,7 @@ class DoctorDashboardStatsView(APIView):
                         'reason': enc.chief_complaint or '',
                         'department': enc.department,
                     }
-                    for enc in upcoming
+                    for enc in today_appointments
                 ],
                 'stats': {
                     'total_today': all_today.count(),
@@ -229,8 +213,6 @@ class DoctorDashboardStatsView(APIView):
                     'in_progress': in_progress,
                     'completed': completed,
                 },
-                'total_today': total_today,
-                'remaining': remaining,
             })
 
         except Exception as e:

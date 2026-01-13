@@ -45,7 +45,7 @@ export default function EncounterDeleteModal({ isOpen, onClose, onSuccess, encou
         {error && <div className="error-message">{error}</div>}
 
         <div className="form-section">
-          <p>다음 진료를 삭제하시겠습니까?</p>
+          <p style={{ fontSize: '1.05rem', marginBottom: '1rem' }}>해당 진료 기록을 삭제하시겠습니까?</p>
           <div style={{ marginTop: '1rem', padding: '1rem', background: '#f8fafc', borderRadius: '4px' }}>
             <p><strong>환자:</strong> {encounter.patient_name} ({encounter.patient_number})</p>
             <p><strong>진료유형:</strong> {encounter.encounter_type_display}</p>
@@ -54,8 +54,8 @@ export default function EncounterDeleteModal({ isOpen, onClose, onSuccess, encou
             <p><strong>입원일시:</strong> {new Date(encounter.admission_date || '').toLocaleString('ko-KR')}</p>
             <p><strong>상태:</strong> {encounter.status_display}</p>
           </div>
-          <p style={{ marginTop: '1rem', color: '#ef4444' }}>
-            ⚠️ 이 작업은 되돌릴 수 없습니다.
+          <p style={{ marginTop: '1rem', color: '#dc3545', fontWeight: 500 }}>
+            삭제 후에는 복구할 수 없습니다.
           </p>
         </div>
 

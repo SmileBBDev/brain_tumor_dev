@@ -61,4 +61,7 @@ urlpatterns = [
 
     # 진료 보고서 API
     path("api/reports/", include("apps.reports.urls")),
+
+    # 의사 일정 API
+    path("api/schedules/", include("apps.schedules.urls")),
 ]

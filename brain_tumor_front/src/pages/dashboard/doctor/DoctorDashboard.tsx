@@ -1,7 +1,9 @@
 import { DoctorSummaryCards } from "./DoctorSummaryCards";
 import { DoctorWorklist } from "./DoctorWorklist";
+import { DoctorScheduleCalendar } from "./DoctorScheduleCalendar";
 import { AiAlertPanel } from "./AiAlertPanel";
-import { RecentPatients } from "./RecentPatients";
+import PatientListWidget from "../common/PatientListWidget";
+import '@/assets/style/patientListView.css';
 
 export default function DoctorDashboard() {
   return (
@@ -9,9 +11,16 @@ export default function DoctorDashboard() {
       <DoctorSummaryCards />
       <div className="dashboard-row">
         <DoctorWorklist />
-        <AiAlertPanel />
+        <DoctorScheduleCalendar />
       </div>
-      <RecentPatients />
+      <div className="dashboard-row">
+        <AiAlertPanel />
+        <PatientListWidget
+          title="최근 환자"
+          limit={5}
+          showViewAll={true}
+        />
+      </div>
     </div>
   );
 }

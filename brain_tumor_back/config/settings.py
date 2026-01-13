@@ -57,6 +57,7 @@ INSTALLED_APPS = [
     "apps.prescriptions",   # 처방 관리
     "apps.orthancproxy",    # Orthanc 프록시
     "apps.reports",         # 진료 보고서 관리
+    "apps.schedules",       # 의사 일정 관리
 ]
 
 MIDDLEWARE = [

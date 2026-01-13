@@ -248,3 +248,319 @@
   color: var(--primary, #5b6fd6);
   font-weight: 700;
 }
+
+/* ============================================
+   NEW: Patient List Table 개선 스타일
+   ============================================ */
+
+/* Patient Table 기본 스타일 */
+.patient-table {
+  font-size: 0.9rem;
+}
+
+.patient-table th,
+.patient-table td {
+  padding: 0.75rem 1rem;
+  vertical-align: middle;
+}
+
+/* 작업 열 우측 정렬 */
+.patient-table th:last-child,
+.patient-table td:last-child {
+  text-align: right;
+}
+
+/* 행 Hover 효과 강화 */
+.patient-row {
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.patient-row:hover {
+  background-color: #f0f7ff !important;
+}
+
+/* 좌측 포인트 라인 효과 */
+.patient-row::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background-color: transparent;
+  transition: background-color 0.2s ease;
+}
+
+.patient-row:hover::before {
+  background-color: var(--primary, #2563eb);
+}
+
+/* 환자 정보 셀 (이름 + 번호) */
+.patient-info-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.patient-info-cell .patient-name {
+  font-weight: 600;
+  color: #1f2937;
+  font-size: 0.95rem;
+}
+
+.patient-info-cell .patient-number {
+  font-size: 0.8rem;
+  color: #6b7280;
+}
+
+/* 성별/나이 셀 */
+.gender-age-cell {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.gender-age-cell .separator {
+  color: #d1d5db;
+}
+
+.gender-age-cell .gender,
+.gender-age-cell .age {
+  color: #374151;
+}
+
+/* 혈액형 Badge */
+.blood-type-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  min-width: 40px;
+  text-align: center;
+}
+
+/* 상태 표시 (아이콘 + 텍스트) */
+.patient-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+}
+
+.patient-status .status-icon {
+  font-size: 0.7rem;
+}
+
+.patient-status .status-text {
+  font-weight: 500;
+}
+
+.patient-status.status-active .status-text {
+  color: #2e7d32;
+}
+
+.patient-status.status-inactive .status-text {
+  color: #757575;
+}
+
+.patient-status.status-deceased .status-text {
+  color: #c62828;
+}
+
+/* 등록일 셀 */
+.date-cell {
+  color: #6b7280;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+/* 작업 영역 (진료 시작 + 더보기 메뉴) */
+.patient-table .action-buttons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+/* 더보기 메뉴 컨테이너 */
+.more-menu-container {
+  position: relative;
+  display: inline-block;
+}
+
+/* 더보기 버튼 */
+.more-menu-btn {
+  min-width: 36px;
+  padding: 0.4rem 0.6rem !important;
+  font-size: 1.1rem !important;
+  font-weight: bold;
+  letter-spacing: 2px;
+  background-color: #f5f5f5 !important;
+  border-color: #e0e0e0 !important;
+  color: #666 !important;
+}
+
+.more-menu-btn:hover {
+  background-color: #e8e8e8 !important;
+}
+
+/* 드롭다운 메뉴 */
+.more-menu-dropdown {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  margin-top: 4px;
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 100;
+  min-width: 120px;
+  overflow: hidden;
+}
+
+.more-menu-dropdown .menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 14px;
+  border: none;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: #374151;
+  transition: background-color 0.15s ease;
+}
+
+.more-menu-dropdown .menu-item:hover {
+  background-color: #f5f5f5;
+}
+
+.more-menu-dropdown .menu-item.danger {
+  color: #dc2626;
+}
+
+.more-menu-dropdown .menu-item.danger:hover {
+  background-color: #fef2f2;
+}
+
+/* 빈 상태 UI */
+.patient-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 24px;
+  text-align: center;
+  background: #fafafa;
+  border-radius: 12px;
+  border: 2px dashed #e0e0e0;
+}
+
+.patient-empty-state .empty-icon {
+  font-size: 56px;
+  margin-bottom: 16px;
+  opacity: 0.7;
+}
+
+.patient-empty-state .empty-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #374151;
+  margin: 0 0 8px 0;
+}
+
+.patient-empty-state .empty-description {
+  font-size: 0.95rem;
+  color: #6b7280;
+  margin: 0 0 24px 0;
+  max-width: 320px;
+}
+
+/* 반응형 조정 */
+@media (max-width: 1024px) {
+  .patient-table th,
+  .patient-table td {
+    padding: 0.6rem 0.75rem;
+  }
+
+  .patient-info-cell .patient-name {
+    font-size: 0.9rem;
+  }
+
+  .patient-info-cell .patient-number {
+    font-size: 0.75rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .patient-table {
+    font-size: 0.85rem;
+  }
+
+  .blood-type-badge {
+    padding: 3px 8px;
+    font-size: 0.75rem;
+    min-width: 36px;
+  }
+
+  .patient-status .status-text {
+    display: none;
+  }
+
+  .patient-status .status-icon {
+    font-size: 0.9rem;
+  }
+}
+
+/* ============================================
+   Dashboard Patient List Widget 스타일
+   ============================================ */
+.patient-list-widget {
+  overflow: hidden;
+}
+
+.patient-list-widget .card-header {
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.patient-list-widget .card-header h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.patient-list-widget .widget-content {
+  padding: 0;
+}
+
+.patient-widget-table {
+  font-size: 0.85rem;
+}
+
+.patient-widget-table th {
+  padding: 0.6rem 1rem;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.patient-widget-table td {
+  padding: 0.6rem 1rem;
+}
+
+.patient-widget-row {
+  transition: background-color 0.15s ease;
+}
+
+.patient-widget-row:hover {
+  background-color: #f8fafc;
+}

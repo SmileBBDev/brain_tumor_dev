@@ -1,9 +1,12 @@
 /**
- * 일정 캘린더 카드
+ * 환자 일정 캘린더 카드
  * - 환자의 진료 일정을 달력 형태로 표시
+ * - 의사 일정도 함께 표시 (다른 색상)
  */
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import type { Encounter } from '@/types/encounter';
+import { getScheduleCalendar } from '@/services/schedule.api';
+import type { CalendarScheduleItem } from '@/types/schedule';
 
 interface CalendarCardProps {
   patientId: number;
@@ -19,6 +22,25 @@ export default function CalendarCard({
   selectedDate,
 }: CalendarCardProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [doctorSchedules, setDoctorSchedules] = useState<CalendarScheduleItem[]>([]);
+
+  // 의사 일정 로드
+  const loadDoctorSchedules = useCallback(async () => {
+    try {
+      const data = await getScheduleCalendar({
+        year: currentDate.getFullYear(),
+        month: currentDate.getMonth() + 1,
+      });
+      setDoctorSchedules(data);
+    } catch (err) {
+      console.error('Failed to load doctor schedules:', err);
+      // 실패해도 환자 일정은 표시
+    }
+  }, [currentDate]);
+
+  useEffect(() => {
+    loadDoctorSchedules();
+  }, [loadDoctorSchedules]);
 
   // 현재 월의 첫째 날과 마지막 날
   const { firstDay, lastDay: _lastDay, daysInMonth } = useMemo(() => {
@@ -66,6 +88,30 @@ export default function CalendarCard({
     });
     return map;
   }, [monthEncounters]);
+
+  // 날짜별 의사 일정 맵
+  const doctorSchedulesByDate = useMemo(() => {
+    const map: Record<number, CalendarScheduleItem[]> = {};
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+
+    doctorSchedules.forEach((s) => {
+      const start = new Date(s.start);
+      const end = new Date(s.end);
+
+      // 일정이 걸치는 모든 날짜에 추가
+      for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+        if (d.getFullYear() === year && d.getMonth() === month) {
+          const day = d.getDate();
+          if (!map[day]) map[day] = [];
+          if (!map[day].some((item) => item.id === s.id)) {
+            map[day].push(s);
+          }
+        }
+      }
+    });
+    return map;
+  }, [doctorSchedules, currentDate]);
 
   // 이전 달
   const prevMonth = () => {
@@ -132,12 +178,17 @@ export default function CalendarCard({
     }
   };
 
+  // 해당 날짜에 일정이 있는지 (환자 또는 의사)
+  const hasEvents = (day: number): boolean => {
+    return !!(encountersByDate[day] || doctorSchedulesByDate[day]);
+  };
+
   return (
     <div className="clinic-card">
       <div className="clinic-card-header">
         <h3>
           <span className="card-icon">📅</span>
-          일정 캘린더
+          환자 일정 캘린더
         </h3>
         <button className="btn btn-sm btn-secondary" onClick={goToToday}>
           오늘
@@ -171,24 +222,32 @@ export default function CalendarCard({
             <div
               key={idx}
               className={`calendar-day ${day ? '' : 'empty'} ${day && isToday(day) ? 'today' : ''} ${
-                day && encountersByDate[day] ? 'has-event clickable' : ''
-              } ${day && isSelected(day) ? 'selected' : ''}`}
+                day && hasEvents(day) ? 'has-event' : ''
+              } ${day && encountersByDate[day as number] ? 'clickable' : ''} ${day && isSelected(day) ? 'selected' : ''}`}
               onClick={() => day && handleDayClick(day)}
             >
               {day && (
                 <>
                   <span className="day-number">{day}</span>
-                  {encountersByDate[day] && (
-                    <div className="day-events">
-                      {encountersByDate[day].slice(0, 2).map((e, i) => (
-                        <div
-                          key={i}
-                          className={`event-dot ${e.status}`}
-                          title={e.diagnosis || '진료'}
-                        />
-                      ))}
-                    </div>
-                  )}
+                  <div className="day-events">
+                    {/* 환자 진료 일정 */}
+                    {encountersByDate[day]?.slice(0, 2).map((e, i) => (
+                      <div
+                        key={`enc-${i}`}
+                        className={`event-dot ${e.status}`}
+                        title={e.diagnosis || '진료'}
+                      />
+                    ))}
+                    {/* 의사 개인 일정 */}
+                    {doctorSchedulesByDate[day]?.slice(0, 1).map((s) => (
+                      <div
+                        key={`sch-${s.id}`}
+                        className="event-dot doctor-schedule"
+                        style={{ backgroundColor: s.color }}
+                        title={s.title}
+                      />
+                    ))}
+                  </div>
                 </>
               )}
             </div>
@@ -208,6 +267,10 @@ export default function CalendarCard({
           <div className="legend-item">
             <span className="event-dot completed"></span>
             <span>완료</span>
+          </div>
+          <div className="legend-item">
+            <span className="event-dot doctor-schedule" style={{ backgroundColor: '#9ca3af' }}></span>
+            <span>의사일정</span>
           </div>
         </div>
       </div>
@@ -315,6 +378,9 @@ export default function CalendarCard({
         .event-dot.completed {
           background: var(--success, #5fb3a2);
         }
+        .event-dot.doctor-schedule {
+          border: 1px solid rgba(255, 255, 255, 0.5);
+        }
         .calendar-legend {
           display: flex;
           justify-content: center;
@@ -322,6 +388,7 @@ export default function CalendarCard({
           margin-top: 12px;
           padding-top: 8px;
           border-top: 1px solid var(--border, #e5e7eb);
+          flex-wrap: wrap;
         }
         .legend-item {
           display: flex;

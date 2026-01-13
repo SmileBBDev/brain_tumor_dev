@@ -28,8 +28,7 @@ const LISProcessStatusPage = lazy(() => import('@/pages/ocs/LISProcessStatusPage
 const RISUploadPage = lazy(() => import('@/pages/ocs/RISUploadPage'));
 const OCSProcessStatusPage = lazy(() => import('@/pages/ocs/OCSProcessStatusPage'));
 
-// Nurse, Lab, Clinic
-const NurseReceptionPage = lazy(() => import('@/pages/nurse/NurseReceptionPage'));
+// Lab, Clinic
 const LabListPage = lazy(() => import('@/pages/lab/LabListPage'));
 const ClinicPage = lazy(() => import('@/pages/clinic/ClinicPage'));
 
@@ -52,7 +51,6 @@ const AIRequestDetailPage = lazy(() => import('@/pages/ai-inference/AIRequestDet
  * ├── IMAGING: IMAGE_VIEWER, OCS_RIS, OCS_RIS_DETAIL, RIS_DASHBOARD, RIS_RESULT_UPLOAD
  * ├── LAB: LAB_RESULT_VIEW, LAB_RESULT_UPLOAD, OCS_LIS, OCS_LIS_DETAIL, LIS_PROCESS_STATUS
  * ├── AI_SUMMARY: AI_REQUEST_LIST, AI_REQUEST_CREATE, AI_REQUEST_DETAIL
- * ├── NURSE_RECEPTION
  * └── ADMIN: ADMIN_USER, ADMIN_USER_DETAIL, ADMIN_ROLE, ADMIN_MENU_PERMISSION, ADMIN_AUDIT_LOG, ADMIN_SYSTEM_MONITOR
  */
 export const routeMap: Record<string, ComponentType> = {
@@ -91,9 +89,6 @@ export const routeMap: Record<string, ComponentType> = {
   AI_REQUEST_LIST: AIRequestListPage,
   AI_REQUEST_CREATE: AIRequestCreatePage,
   AI_REQUEST_DETAIL: AIRequestDetailPage,
-
-  // === NURSE ===
-  NURSE_RECEPTION: NurseReceptionPage,
 
   // === ADMIN 그룹 ===
   ADMIN_USER: UserList,
