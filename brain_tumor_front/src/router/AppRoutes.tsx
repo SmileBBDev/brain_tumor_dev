@@ -136,7 +136,7 @@ export default function AppRoutes() {
         <Route
           path="/admin/shared-calendar"
           element={
-            <ProtectedRoute allowedRoles={['ADMIN']}>
+            <ProtectedRoute allowedRoles={['ADMIN', 'SYSTEMMANAGER']}>
               <SharedCalendarPage />
             </ProtectedRoute>
           }

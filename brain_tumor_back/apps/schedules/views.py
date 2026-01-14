@@ -31,13 +31,13 @@ from .serializers import (
 # 권한 클래스
 # =============================================================================
 class IsAdminUser(BasePermission):
-    """Admin 권한 체크"""
+    """Admin 또는 SystemManager 권한 체크"""
     def has_permission(self, request, view):
         return (
             request.user and
             request.user.is_authenticated and
             request.user.role and
-            request.user.role.code == 'ADMIN'
+            request.user.role.code in ('ADMIN', 'SYSTEMMANAGER')
         )
 
 
@@ -222,7 +222,7 @@ class SharedScheduleViewSet(viewsets.ModelViewSet):
     Admin이 권한별 공유 일정을 관리합니다.
     """
     permission_classes = [IsAuthenticated, IsAdminUser]
-    pagination_class = DoctorSchedulePagination
+    pagination_class = None  # 페이지네이션 없이 전체 목록 반환
 
     def get_queryset(self):
         queryset = SharedSchedule.objects.filter(is_deleted=False)

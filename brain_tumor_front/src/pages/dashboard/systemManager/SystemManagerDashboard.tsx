@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { getAdminStats } from '@/services/dashboard.api';
 import type { AdminStats } from '@/services/dashboard.api';
+import AdminDashboard from '../admin/AdminDashboard';
 import DoctorDashboard from '../doctor/DoctorDashboard';
 import NurseDashboard from '../nurse/NurseDashboard';
 import LISDashboard from '../lis/LISDashboard';
@@ -9,9 +10,10 @@ import PatientDashboardPreview from '../patient/PatientDashboardPreview';
 import ExternalDashboard from '../external/ExternalDashboard';
 import './SystemManagerDashboard.css';
 
-type TabType = 'OVERVIEW' | 'DOCTOR' | 'NURSE' | 'LIS' | 'RIS' | 'PATIENT' | 'EXTERNAL';
+type TabType = 'OVERVIEW' | 'ADMIN' | 'DOCTOR' | 'NURSE' | 'LIS' | 'RIS' | 'PATIENT' | 'EXTERNAL';
 
 const dashboards = {
+  ADMIN: <AdminDashboard />,
   DOCTOR: <DoctorDashboard />,
   NURSE: <NurseDashboard />,
   LIS: <LISDashboard />,
@@ -41,6 +43,7 @@ export default function SystemManagerDashboard() {
 
   const tabLabels: Record<TabType, string> = {
     OVERVIEW: '시스템 현황',
+    ADMIN: '관리자',
     DOCTOR: '의사',
     NURSE: '간호사',
     LIS: '검사실',
