@@ -190,9 +190,10 @@ export default function ExaminationTab({
     setSOAPSaved(false);
     try {
       await updateEncounter(encounterId, soapData);
-      onUpdate();
       setSOAPSaved(true);
+      showToast('success', 'SOAP 노트가 저장되었습니다.');
       setTimeout(() => setSOAPSaved(false), 3000);
+      onUpdate();
     } catch (err) {
       console.error('Failed to save SOAP:', err);
       showToast('error', 'SOAP 저장에 실패했습니다.');

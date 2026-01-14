@@ -104,14 +104,14 @@ class OCS(models.Model):
         help_text='RIS, LIS, TREATMENT, CONSULT 등'
     )
 
-    # job_type 예시:
-    # - RIS: MRI, CT, PET, X-RAY
-    # - LIS: BLOOD, GENETIC, PROTEIN, URINE, CSF, BIOPSY
+    # job_type (뇌종양 CDSS 전용):
+    # - RIS: MRI, CT, PET (영상검사)
+    # - LIS: CBC, CMP, Coagulation, Tumor Markers, GENE_PANEL, RNA_SEQ, DNA_SEQ, BIOMARKER
     # - TREATMENT: SURGERY, RADIATION, CHEMOTHERAPY
     job_type = models.CharField(
         max_length=50,
         verbose_name='작업 유형',
-        help_text='RIS: MRI/CT/PET/X-RAY, LIS: BLOOD/GENETIC/PROTEIN/URINE/CSF/BIOPSY, TREATMENT: SURGERY/RADIATION/CHEMOTHERAPY'
+        help_text='RIS: MRI/CT/PET, LIS: CBC/CMP/Coagulation/Tumor Markers/GENE_PANEL/RNA_SEQ/DNA_SEQ/BIOMARKER, TREATMENT: SURGERY/RADIATION/CHEMOTHERAPY'
     )
 
     # =========================================================================

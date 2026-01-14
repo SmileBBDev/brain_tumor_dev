@@ -274,11 +274,12 @@ def create_extended_ocs_ris(target_count=100, force=False):
     if not radiologists:
         radiologists = list(User.objects.filter(role__code='DOCTOR'))
 
-    modalities = ['CT', 'MRI', 'PET', 'X-RAY']
-    body_parts = ['Brain', 'Head', 'Skull', 'Neck', 'Cervical Spine']
+    # 뇌종양 CDSS에 필요한 영상 검사만
+    modalities = ['MRI', 'CT', 'PET']  # X-RAY 제거
+    body_parts = ['Brain', 'Head']  # 뇌종양 관련 부위만
     ocs_statuses = ['ORDERED', 'ACCEPTED', 'IN_PROGRESS', 'RESULT_READY', 'CONFIRMED']
     priorities = ['urgent', 'normal']
-    clinical_indications = ['headache', 'dizziness', 'seizure', 'follow-up', 'screening', 'brain tumor evaluation']
+    clinical_indications = ['brain tumor evaluation', 'follow-up', 'post-op check', 'treatment response']
 
     created_count = 0
     needed = target_count - existing_count
@@ -420,11 +421,19 @@ def create_extended_ocs_lis(target_count=80, force=False):
     if not lab_workers:
         lab_workers = list(User.objects.filter(role__code='DOCTOR'))
 
+    # 뇌종양 CDSS에 필요한 검사만 (8종류)
     test_types = [
-        'CBC', 'BMP', 'CMP', 'Lipid Panel', 'LFT', 'RFT',
-        'Thyroid Panel', 'Coagulation', 'Urinalysis', 'Tumor Markers',
-        'GENETIC', 'RNA_SEQ', 'DNA_SEQ', 'GENE_PANEL',
-        'PROTEIN', 'PROTEIN_PANEL', 'BIOMARKER',
+        # 혈액검사 (4) - 항암치료/수술 전 필수
+        'CBC',            # 일반혈액검사
+        'CMP',            # 종합대사패널 (간/신기능 포함)
+        'Coagulation',    # 응고검사
+        'Tumor Markers',  # 종양표지자
+        # 유전자검사 (3) - 뇌종양 분류/예후 판정
+        'GENE_PANEL',     # IDH1, MGMT, TP53, EGFR
+        'RNA_SEQ',        # RNA 발현 분석
+        'DNA_SEQ',        # DNA 변이 분석
+        # 단백질검사 (1) - 뇌손상/종양 마커
+        'BIOMARKER',      # GFAP, S100B, NSE
     ]
     ocs_statuses = ['ORDERED', 'ACCEPTED', 'IN_PROGRESS', 'RESULT_READY', 'CONFIRMED']
     priorities = ['urgent', 'normal']
@@ -465,7 +474,7 @@ def create_extended_ocs_lis(target_count=80, force=False):
         if ocs_status in ['RESULT_READY', 'CONFIRMED']:
             is_abnormal = random.random() < 0.2
 
-            if test_type in ['GENETIC', 'RNA_SEQ', 'DNA_SEQ', 'GENE_PANEL']:
+            if test_type in ['GENE_PANEL', 'RNA_SEQ', 'DNA_SEQ']:
                 gene_mutations = [
                     {"gene_name": "IDH1", "mutation_type": "R132H" if is_abnormal else "Wild Type", "status": "Mutant" if is_abnormal else "Normal"},
                     {"gene_name": "MGMT", "mutation_type": "Methylated" if random.random() > 0.5 else "Unmethylated", "status": "Methylated" if random.random() > 0.5 else "Unmethylated"},
@@ -476,7 +485,7 @@ def create_extended_ocs_lis(target_count=80, force=False):
                     "summary": "유전자 변이 검출됨" if is_abnormal else "유전자 변이 없음",
                     "interpretation": "IDH1 변이 양성" if is_abnormal else "특이 변이 없음", "_custom": {}
                 }
-            elif test_type in ['PROTEIN', 'PROTEIN_PANEL', 'BIOMARKER']:
+            elif test_type == 'BIOMARKER':
                 protein_markers = [
                     {"marker_name": "GFAP", "value": round(random.uniform(0.1, 5.0), 2), "unit": "ng/mL", "reference_range": "0-2.0", "is_abnormal": random.random() > 0.7},
                     {"marker_name": "S100B", "value": round(random.uniform(0.01, 0.5), 3), "unit": "ug/L", "reference_range": "0-0.15", "is_abnormal": random.random() > 0.6},

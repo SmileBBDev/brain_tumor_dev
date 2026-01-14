@@ -1,11 +1,14 @@
+import csv
+import io
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.parsers import MultiPartParser, FormParser
 from django.utils import timezone
-from django.db.models import Max
+from django.db.models import Max, Q
 
-from .models import Prescription, PrescriptionItem
+from .models import Prescription, PrescriptionItem, Medication
 from .serializers import (
     PrescriptionListSerializer,
     PrescriptionDetailSerializer,
@@ -13,8 +16,162 @@ from .serializers import (
     PrescriptionUpdateSerializer,
     PrescriptionIssueSerializer,
     PrescriptionCancelSerializer,
-    PrescriptionItemSerializer
+    PrescriptionItemSerializer,
+    PrescriptionItemCreateSerializer,
+    MedicationListSerializer,
+    MedicationDetailSerializer,
+    MedicationCreateSerializer,
+    MedicationUpdateSerializer,
+    QuickPrescribeSerializer,
 )
+
+
+class MedicationViewSet(viewsets.ModelViewSet):
+    """
+    의약품 마스터 ViewSet
+
+    - GET /api/medications/ : 의약품 목록 (검색/필터 지원)
+    - POST /api/medications/ : 의약품 등록
+    - GET /api/medications/{id}/ : 의약품 상세
+    - PATCH /api/medications/{id}/ : 의약품 수정
+    - DELETE /api/medications/{id}/ : 의약품 삭제
+    - POST /api/medications/upload-csv/ : CSV 일괄 업로드
+    - GET /api/medications/categories/ : 카테고리 목록
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        queryset = Medication.objects.all()
+
+        # 검색어 (코드, 이름, 일반명)
+        q = self.request.query_params.get('q')
+        if q:
+            queryset = queryset.filter(
+                Q(code__icontains=q) |
+                Q(name__icontains=q) |
+                Q(generic_name__icontains=q)
+            )
+
+        # 카테고리 필터
+        category = self.request.query_params.get('category')
+        if category:
+            queryset = queryset.filter(category=category)
+
+        # 활성 상태 필터 (기본값: True)
+        is_active = self.request.query_params.get('is_active', 'true')
+        if is_active.lower() == 'true':
+            queryset = queryset.filter(is_active=True)
+        elif is_active.lower() == 'false':
+            queryset = queryset.filter(is_active=False)
+
+        return queryset.order_by('category', 'name')
+
+    def get_serializer_class(self):
+        if self.action == 'list':
+            return MedicationListSerializer
+        if self.action == 'create':
+            return MedicationCreateSerializer
+        if self.action in ['update', 'partial_update']:
+            return MedicationUpdateSerializer
+        return MedicationDetailSerializer
+
+    @action(detail=False, methods=['get'])
+    def categories(self, request):
+        """의약품 카테고리 목록"""
+        categories = [
+            {'value': choice[0], 'label': choice[1]}
+            for choice in Medication.Category.choices
+        ]
+        return Response(categories)
+
+    @action(detail=False, methods=['post'], parser_classes=[MultiPartParser, FormParser])
+    def upload_csv(self, request):
+        """
+        CSV 파일로 의약품 일괄 등록
+
+        CSV 형식:
+        code,name,generic_name,category,default_dosage,default_route,default_frequency,default_duration_days,unit,warnings,contraindications
+        """
+        file = request.FILES.get('file')
+        if not file:
+            return Response(
+                {'error': 'CSV 파일이 필요합니다.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            decoded_file = file.read().decode('utf-8-sig')
+            reader = csv.DictReader(io.StringIO(decoded_file))
+
+            created_count = 0
+            updated_count = 0
+            errors = []
+
+            for row_num, row in enumerate(reader, start=2):
+                try:
+                    code = row.get('code', '').strip()
+                    if not code:
+                        errors.append(f"행 {row_num}: 의약품 코드가 없습니다.")
+                        continue
+
+                    defaults = {
+                        'name': row.get('name', '').strip(),
+                        'generic_name': row.get('generic_name', '').strip() or None,
+                        'category': row.get('category', 'OTHER').strip(),
+                        'default_dosage': row.get('default_dosage', '').strip(),
+                        'default_route': row.get('default_route', 'PO').strip(),
+                        'default_frequency': row.get('default_frequency', 'TID').strip(),
+                        'default_duration_days': int(row.get('default_duration_days', 7) or 7),
+                        'unit': row.get('unit', '정').strip(),
+                        'warnings': row.get('warnings', '').strip() or None,
+                        'contraindications': row.get('contraindications', '').strip() or None,
+                        'is_active': True,
+                    }
+
+                    medication, created = Medication.objects.update_or_create(
+                        code=code,
+                        defaults=defaults
+                    )
+
+                    if created:
+                        created_count += 1
+                    else:
+                        updated_count += 1
+
+                except Exception as e:
+                    errors.append(f"행 {row_num}: {str(e)}")
+
+            return Response({
+                'message': f'업로드 완료: {created_count}개 생성, {updated_count}개 업데이트',
+                'created_count': created_count,
+                'updated_count': updated_count,
+                'errors': errors if errors else None
+            })
+
+        except UnicodeDecodeError:
+            return Response(
+                {'error': 'UTF-8 인코딩 파일만 지원합니다.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        except Exception as e:
+            return Response(
+                {'error': f'파일 처리 중 오류: {str(e)}'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+    @action(detail=False, methods=['get'])
+    def template(self, request):
+        """CSV 템플릿 다운로드용 헤더 반환"""
+        return Response({
+            'columns': [
+                'code', 'name', 'generic_name', 'category', 'default_dosage',
+                'default_route', 'default_frequency', 'default_duration_days',
+                'unit', 'warnings', 'contraindications'
+            ],
+            'category_choices': [c[0] for c in Medication.Category.choices],
+            'route_choices': [c[0] for c in Medication.Route.choices],
+            'frequency_choices': ['QD', 'BID', 'TID', 'QID', 'PRN', 'QOD', 'QW'],
+        })
 
 
 class PrescriptionViewSet(viewsets.ModelViewSet):
@@ -167,7 +324,12 @@ class PrescriptionViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'], url_path='items')
     def add_item(self, request, pk=None):
-        """처방 항목 추가"""
+        """
+        처방 항목 추가 (클릭 처방 지원)
+
+        medication_id만 전달하면 기본값으로 자동 처방.
+        용량, 빈도 등을 커스터마이즈하려면 함께 전달.
+        """
         prescription = self.get_object()
 
         if not prescription.is_editable:
@@ -176,22 +338,51 @@ class PrescriptionViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        serializer = PrescriptionItemSerializer(data=request.data)
+        serializer = PrescriptionItemCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        
+
         # 순서 자동 설정
         max_order = prescription.items.aggregate(Max('order'))['order__max'] or 0
-        
+
+        # medication_id로 전달된 경우 medication 객체 사용
+        validated_data = serializer.validated_data.copy()
+        validated_data.pop('medication_id', None)  # medication_id 제거 (medication 객체가 이미 있음)
+
         item = PrescriptionItem.objects.create(
             prescription=prescription,
             order=max_order + 1,
-            **serializer.validated_data
+            **validated_data
         )
 
         return Response(
             PrescriptionItemSerializer(item).data,
             status=status.HTTP_201_CREATED
         )
+
+    @action(detail=True, methods=['post'], url_path='quick-prescribe')
+    def quick_prescribe(self, request, pk=None):
+        """
+        클릭 한 번으로 의약품 처방 (간편 처방)
+
+        의약품 ID만 전달하면 기본값으로 처방 항목 자동 생성.
+        """
+        prescription = self.get_object()
+
+        if not prescription.is_editable:
+            return Response(
+                {'error': '발행된 처방전은 수정할 수 없습니다.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        serializer = QuickPrescribeSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        item = serializer.create_prescription_item(prescription)
+
+        return Response({
+            'message': '의약품이 처방에 추가되었습니다.',
+            'item': PrescriptionItemSerializer(item).data
+        }, status=status.HTTP_201_CREATED)
 
     @action(detail=True, methods=['delete'], url_path='items/(?P<item_id>[^/.]+)')
     def remove_item(self, request, pk=None, item_id=None):

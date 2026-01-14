@@ -69,11 +69,11 @@ class ImagingStudyListSerializer(serializers.ModelSerializer):
         return obj.encounter_id
 
     def get_modality_display(self, obj):
+        # 뇌종양 CDSS에 필요한 영상 검사만
         modality_map = {
-            'CT': 'CT (Computed Tomography)',
             'MRI': 'MRI (Magnetic Resonance Imaging)',
+            'CT': 'CT (Computed Tomography)',
             'PET': 'PET (Positron Emission Tomography)',
-            'X-RAY': 'X-Ray',
         }
         return modality_map.get(obj.job_type, obj.job_type)
 
@@ -233,7 +233,7 @@ class ImagingStudyCreateSerializer(serializers.Serializer):
 
     patient = serializers.IntegerField()
     encounter = serializers.IntegerField(required=False, allow_null=True)
-    modality = serializers.ChoiceField(choices=['CT', 'MRI', 'PET', 'X-RAY'])
+    modality = serializers.ChoiceField(choices=['MRI', 'CT', 'PET'])
     body_part = serializers.CharField(default='brain', required=False)
     scheduled_at = serializers.DateTimeField(required=False, allow_null=True)
     clinical_info = serializers.CharField(required=False, allow_blank=True, default='')
@@ -282,7 +282,7 @@ class ImagingStudyCreateSerializer(serializers.Serializer):
 class ImagingStudyUpdateSerializer(serializers.Serializer):
     """영상 검사 정보 수정용 Serializer (OCS 수정)"""
 
-    modality = serializers.ChoiceField(choices=['CT', 'MRI', 'PET', 'X-RAY'], required=False)
+    modality = serializers.ChoiceField(choices=['MRI', 'CT', 'PET'], required=False)
     body_part = serializers.CharField(required=False)
     status = serializers.ChoiceField(
         choices=['ordered', 'scheduled', 'in_progress', 'completed', 'reported', 'cancelled'],
@@ -477,7 +477,7 @@ class ImagingSearchSerializer(serializers.Serializer):
         help_text='검색어 (환자명, 환자번호)'
     )
     modality = serializers.ChoiceField(
-        choices=['CT', 'MRI', 'PET', 'X-RAY'],
+        choices=['MRI', 'CT', 'PET'],
         required=False,
         help_text='검사 종류'
     )

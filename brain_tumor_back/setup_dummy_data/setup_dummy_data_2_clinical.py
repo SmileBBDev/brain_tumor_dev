@@ -392,11 +392,12 @@ def create_dummy_imaging_with_ocs(num_orders=30, force=False):
     if not radiologists:
         radiologists = list(User.objects.filter(role__code='DOCTOR'))
 
-    modalities = ['CT', 'MRI', 'PET', 'X-RAY']
-    body_parts = ['Brain', 'Head', 'Skull', 'Neck', 'Cervical Spine']
+    # 뇌종양 CDSS에 필요한 영상 검사만
+    modalities = ['MRI', 'CT', 'PET']  # X-RAY 제거
+    body_parts = ['Brain', 'Head']  # 뇌종양 관련 부위만
     ocs_statuses = ['ORDERED', 'ACCEPTED', 'IN_PROGRESS', 'RESULT_READY', 'CONFIRMED']
     priorities = ['urgent', 'normal']
-    clinical_indications = ['headache', 'dizziness', 'seizure', 'follow-up', 'screening', 'brain tumor evaluation']
+    clinical_indications = ['brain tumor evaluation', 'follow-up', 'post-op check', 'treatment response']
 
     created_count = 0
 
@@ -531,15 +532,19 @@ def create_dummy_lis_orders(num_orders=30, force=False):
     if not lab_workers:
         lab_workers = list(User.objects.filter(role__code='DOCTOR'))
 
-    # 검사 항목 (BLOOD, GENETIC, PROTEIN 포함)
+    # 뇌종양 CDSS에 필요한 검사만 (8종류)
     test_types = [
-        # BLOOD 검사
-        'CBC', 'BMP', 'CMP', 'Lipid Panel', 'LFT', 'RFT',
-        'Thyroid Panel', 'Coagulation', 'Urinalysis', 'Tumor Markers',
-        # GENETIC 검사 (유전자)
-        'GENETIC', 'RNA_SEQ', 'DNA_SEQ', 'GENE_PANEL',
-        # PROTEIN 검사 (단백질)
-        'PROTEIN', 'PROTEIN_PANEL', 'BIOMARKER',
+        # 혈액검사 (4) - 항암치료/수술 전 필수
+        'CBC',            # 일반혈액검사
+        'CMP',            # 종합대사패널 (간/신기능 포함)
+        'Coagulation',    # 응고검사
+        'Tumor Markers',  # 종양표지자
+        # 유전자검사 (3) - 뇌종양 분류/예후 판정
+        'GENE_PANEL',     # IDH1, MGMT, TP53, EGFR
+        'RNA_SEQ',        # RNA 발현 분석
+        'DNA_SEQ',        # DNA 변이 분석
+        # 단백질검사 (1) - 뇌손상/종양 마커
+        'BIOMARKER',      # GFAP, S100B, NSE
     ]
     ocs_statuses = ['ORDERED', 'ACCEPTED', 'IN_PROGRESS', 'RESULT_READY', 'CONFIRMED']
     priorities = ['urgent', 'normal']
@@ -594,6 +599,22 @@ def create_dummy_lis_orders(num_orders=30, force=False):
                     {"code": "HGB", "name": "혈색소", "value": str(round(random.uniform(12.0, 17.0), 1)), "unit": "g/dL", "reference": "12.0-17.0", "is_abnormal": False},
                     {"code": "PLT", "name": "혈소판", "value": str(random.randint(150, 400)), "unit": "10^3/uL", "reference": "150-400", "is_abnormal": False},
                 ]
+            elif test_type == 'CMP':
+                # 종합대사패널 (간/신기능 포함)
+                test_results = [
+                    {"code": "GLU", "name": "혈당", "value": str(random.randint(70, 110)), "unit": "mg/dL", "reference": "70-110", "is_abnormal": False},
+                    {"code": "BUN", "name": "요소질소", "value": str(round(random.uniform(7, 20), 1)), "unit": "mg/dL", "reference": "7-20", "is_abnormal": False},
+                    {"code": "CRE", "name": "크레아티닌", "value": str(round(random.uniform(0.6, 1.2), 2)), "unit": "mg/dL", "reference": "0.6-1.2", "is_abnormal": False},
+                    {"code": "AST", "name": "AST", "value": str(random.randint(10, 40)), "unit": "U/L", "reference": "10-40", "is_abnormal": False},
+                    {"code": "ALT", "name": "ALT", "value": str(random.randint(7, 56)), "unit": "U/L", "reference": "7-56", "is_abnormal": False},
+                ]
+            elif test_type == 'Coagulation':
+                # 응고검사 (수술 전 필수)
+                test_results = [
+                    {"code": "PT", "name": "프로트롬빈시간", "value": str(round(random.uniform(11, 13.5), 1)), "unit": "sec", "reference": "11-13.5", "is_abnormal": False},
+                    {"code": "INR", "name": "INR", "value": str(round(random.uniform(0.9, 1.1), 2)), "unit": "", "reference": "0.9-1.1", "is_abnormal": False},
+                    {"code": "aPTT", "name": "활성화부분트롬보플라스틴시간", "value": str(round(random.uniform(25, 35), 1)), "unit": "sec", "reference": "25-35", "is_abnormal": False},
+                ]
             elif test_type == 'Tumor Markers':
                 cea_val = round(random.uniform(0.5, 5.0), 2) if not is_abnormal else round(random.uniform(5.1, 20.0), 2)
                 afp_val = round(random.uniform(0.5, 10.0), 2) if not is_abnormal else round(random.uniform(10.1, 50.0), 2)
@@ -601,7 +622,7 @@ def create_dummy_lis_orders(num_orders=30, force=False):
                     {"code": "CEA", "name": "암배아항원", "value": str(cea_val), "unit": "ng/mL", "reference": "0-5.0", "is_abnormal": cea_val > 5.0},
                     {"code": "AFP", "name": "알파태아단백", "value": str(afp_val), "unit": "ng/mL", "reference": "0-10.0", "is_abnormal": afp_val > 10.0},
                 ]
-            elif test_type in ['GENETIC', 'RNA_SEQ', 'DNA_SEQ', 'GENE_PANEL']:
+            elif test_type in ['GENE_PANEL', 'RNA_SEQ', 'DNA_SEQ']:
                 # 유전자 검사 결과
                 gene_mutations = [
                     {"gene_name": "IDH1", "mutation_type": "R132H" if is_abnormal else "Wild Type", "status": "Mutant" if is_abnormal else "Normal", "allele_frequency": round(random.uniform(0.1, 0.5), 2) if is_abnormal else None, "clinical_significance": "Favorable prognosis" if is_abnormal else "N/A"},
@@ -616,7 +637,7 @@ def create_dummy_lis_orders(num_orders=30, force=False):
                     "summary": "유전자 변이 검출됨" if is_abnormal else "유전자 변이 없음",
                     "interpretation": "IDH1 변이 양성 - 예후 양호" if is_abnormal else "특이 변이 없음", "_custom": {}
                 }
-            elif test_type in ['PROTEIN', 'PROTEIN_PANEL', 'BIOMARKER']:
+            elif test_type == 'BIOMARKER':
                 # 단백질 검사 결과
                 protein_markers = [
                     {"marker_name": "GFAP", "value": round(random.uniform(0.1, 5.0), 2), "unit": "ng/mL", "reference_range": "0-2.0", "is_abnormal": random.random() > 0.7, "interpretation": "Astrocyte marker"},
@@ -638,8 +659,8 @@ def create_dummy_lis_orders(num_orders=30, force=False):
                     {"code": "TEST2", "name": f"{test_type} 항목2", "value": str(round(random.uniform(10, 50), 1)), "unit": "U/L", "reference": "10-50", "is_abnormal": False},
                 ]
 
-            # GENETIC/PROTEIN은 위에서 이미 worker_result 설정됨
-            if test_type not in ['GENETIC', 'RNA_SEQ', 'DNA_SEQ', 'GENE_PANEL', 'PROTEIN', 'PROTEIN_PANEL', 'BIOMARKER']:
+            # GENE/BIOMARKER는 위에서 이미 worker_result 설정됨
+            if test_type not in ['GENE_PANEL', 'RNA_SEQ', 'DNA_SEQ', 'BIOMARKER']:
                 worker_result = {
                     "_template": "LIS",
                     "_version": "1.0",

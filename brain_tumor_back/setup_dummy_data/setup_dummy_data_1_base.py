@@ -1209,11 +1209,12 @@ def create_dummy_imaging_with_ocs(num_orders=30, force=False):
     if not radiologists:
         radiologists = list(User.objects.filter(role__code='DOCTOR'))
 
-    modalities = ['CT', 'MRI', 'PET', 'X-RAY']
-    body_parts = ['Brain', 'Head', 'Skull', 'Neck', 'Cervical Spine']
+    # 뇌종양 CDSS에 필요한 영상 검사만
+    modalities = ['MRI', 'CT', 'PET']  # X-RAY 제거
+    body_parts = ['Brain', 'Head']  # 뇌종양 관련 부위만
     ocs_statuses = ['ORDERED', 'ACCEPTED', 'IN_PROGRESS', 'RESULT_READY', 'CONFIRMED']
     priorities = ['urgent', 'normal']
-    clinical_indications = ['headache', 'dizziness', 'seizure', 'follow-up', 'screening', 'brain tumor evaluation']
+    clinical_indications = ['brain tumor evaluation', 'follow-up', 'post-op check', 'treatment response']
 
     created_count = 0
 
@@ -1249,9 +1250,28 @@ def create_dummy_imaging_with_ocs(num_orders=30, force=False):
             lobes = ['frontal', 'temporal', 'parietal', 'occipital']
             hemispheres = ['left', 'right']
 
+            # MRI인 경우 4채널 시리즈 생성
+            series_data = []
+            if modality == 'MRI':
+                for seq_type in ['T1', 'T2', 'T1C', 'FLAIR']:
+                    series_data.append({
+                        "series_uid": f"1.2.840.{random.randint(100000, 999999)}.{seq_type}",
+                        "series_type": seq_type,
+                        "series_description": f"{seq_type} Weighted",
+                        "instance_count": random.randint(20, 60)
+                    })
+            else:
+                # CT, X-Ray 등 단일 시리즈
+                series_data.append({
+                    "series_uid": f"1.2.840.{random.randint(100000, 999999)}.1",
+                    "series_type": "OTHER",
+                    "series_description": f"{modality} Series",
+                    "instance_count": random.randint(30, 200)
+                })
+
             worker_result = {
                 "_template": "RIS",
-                "_version": "1.0",
+                "_version": "1.1",
                 "_confirmed": ocs_status == 'CONFIRMED',
                 "findings": "Mass lesion identified." if tumor_detected else "No acute intracranial abnormality.",
                 "impression": "Brain tumor suspected." if tumor_detected else "Normal study.",
@@ -1263,8 +1283,9 @@ def create_dummy_imaging_with_ocs(num_orders=30, force=False):
                 },
                 "dicom": {
                     "study_uid": f"1.2.840.{random.randint(100000, 999999)}.{random.randint(1000, 9999)}",
-                    "series_count": random.randint(1, 5),
-                    "instance_count": random.randint(20, 200)
+                    "series": series_data,
+                    "series_count": len(series_data),
+                    "instance_count": sum(s.get('instance_count', 0) for s in series_data)
                 },
                 "work_notes": []
             }
@@ -1348,15 +1369,19 @@ def create_dummy_lis_orders(num_orders=30, force=False):
     if not lab_workers:
         lab_workers = list(User.objects.filter(role__code='DOCTOR'))
 
-    # 검사 항목 (BLOOD, GENETIC, PROTEIN 포함)
+    # 뇌종양 CDSS에 필요한 검사만 (8종류)
     test_types = [
-        # BLOOD 검사
-        'CBC', 'BMP', 'CMP', 'Lipid Panel', 'LFT', 'RFT',
-        'Thyroid Panel', 'Coagulation', 'Urinalysis', 'Tumor Markers',
-        # GENETIC 검사 (유전자)
-        'GENETIC', 'RNA_SEQ', 'DNA_SEQ', 'GENE_PANEL',
-        # PROTEIN 검사 (단백질)
-        'PROTEIN', 'PROTEIN_PANEL', 'BIOMARKER',
+        # 혈액검사 (4) - 항암치료/수술 전 필수
+        'CBC',            # 일반혈액검사
+        'CMP',            # 종합대사패널 (간/신기능 포함)
+        'Coagulation',    # 응고검사
+        'Tumor Markers',  # 종양표지자
+        # 유전자검사 (3) - 뇌종양 분류/예후 판정
+        'GENE_PANEL',     # IDH1, MGMT, TP53, EGFR
+        'RNA_SEQ',        # RNA 발현 분석
+        'DNA_SEQ',        # DNA 변이 분석
+        # 단백질검사 (1) - 뇌손상/종양 마커
+        'BIOMARKER',      # GFAP, S100B, NSE
     ]
     ocs_statuses = ['ORDERED', 'ACCEPTED', 'IN_PROGRESS', 'RESULT_READY', 'CONFIRMED']
     priorities = ['urgent', 'normal']
@@ -1418,7 +1443,7 @@ def create_dummy_lis_orders(num_orders=30, force=False):
                     {"code": "CEA", "name": "암배아항원", "value": str(cea_val), "unit": "ng/mL", "reference": "0-5.0", "is_abnormal": cea_val > 5.0},
                     {"code": "AFP", "name": "알파태아단백", "value": str(afp_val), "unit": "ng/mL", "reference": "0-10.0", "is_abnormal": afp_val > 10.0},
                 ]
-            elif test_type in ['GENETIC', 'RNA_SEQ', 'DNA_SEQ', 'GENE_PANEL']:
+            elif test_type in ['GENE_PANEL', 'RNA_SEQ', 'DNA_SEQ']:
                 # 유전자 검사 결과
                 gene_mutations = [
                     {"gene_name": "IDH1", "mutation_type": "R132H" if is_abnormal else "Wild Type", "status": "Mutant" if is_abnormal else "Normal", "allele_frequency": round(random.uniform(0.1, 0.5), 2) if is_abnormal else None, "clinical_significance": "Favorable prognosis" if is_abnormal else "N/A"},
@@ -1426,14 +1451,24 @@ def create_dummy_lis_orders(num_orders=30, force=False):
                     {"gene_name": "MGMT", "mutation_type": "Methylated" if random.random() > 0.5 else "Unmethylated", "status": "Methylated" if random.random() > 0.5 else "Unmethylated", "allele_frequency": None, "clinical_significance": "TMZ response predictor"},
                     {"gene_name": "EGFR", "mutation_type": random.choice(["Amplified", "Normal"]), "status": random.choice(["Amplified", "Normal"]), "allele_frequency": None, "clinical_significance": "GBM marker"},
                 ]
+                # RNA 시퀀싱 데이터 (AI 모델 매칭용)
+                rna_seq_data = {
+                    "sample_id": f"RNA_{random.randint(10000, 99999)}",
+                    "sequencing_platform": random.choice(["Illumina NovaSeq", "Illumina HiSeq", "Ion Torrent"]),
+                    "read_depth": f"{random.randint(30, 100)}x",
+                    "quality_score": round(random.uniform(28, 38), 1),
+                    "gene_expression_profile": "available",
+                    "transcript_count": random.randint(15000, 25000)
+                }
                 test_results = [{"code": "GENE", "name": "유전자 변이 분석", "value": "분석 완료", "unit": "", "reference": "", "is_abnormal": is_abnormal}]
                 worker_result = {
-                    "_template": "LIS", "_version": "1.0", "_confirmed": ocs_status == 'CONFIRMED',
+                    "_template": "LIS", "_version": "1.1", "_confirmed": ocs_status == 'CONFIRMED',
                     "test_type": "GENETIC", "test_results": test_results, "gene_mutations": gene_mutations,
+                    "RNA_seq": rna_seq_data,  # AI 모델 매칭용 키
                     "summary": "유전자 변이 검출됨" if is_abnormal else "유전자 변이 없음",
                     "interpretation": "IDH1 변이 양성 - 예후 양호" if is_abnormal else "특이 변이 없음", "_custom": {}
                 }
-            elif test_type in ['PROTEIN', 'PROTEIN_PANEL', 'BIOMARKER']:
+            elif test_type == 'BIOMARKER':
                 # 단백질 검사 결과
                 protein_markers = [
                     {"marker_name": "GFAP", "value": round(random.uniform(0.1, 5.0), 2), "unit": "ng/mL", "reference_range": "0-2.0", "is_abnormal": random.random() > 0.7, "interpretation": "Astrocyte marker"},
@@ -1455,8 +1490,8 @@ def create_dummy_lis_orders(num_orders=30, force=False):
                     {"code": "TEST2", "name": f"{test_type} 항목2", "value": str(round(random.uniform(10, 50), 1)), "unit": "U/L", "reference": "10-50", "is_abnormal": False},
                 ]
 
-            # GENETIC/PROTEIN은 위에서 이미 worker_result 설정됨
-            if test_type not in ['GENETIC', 'RNA_SEQ', 'DNA_SEQ', 'GENE_PANEL', 'PROTEIN', 'PROTEIN_PANEL', 'BIOMARKER']:
+            # GENE/BIOMARKER는 위에서 이미 worker_result 설정됨
+            if test_type not in ['GENE_PANEL', 'RNA_SEQ', 'DNA_SEQ', 'BIOMARKER']:
                 worker_result = {
                 "_template": "LIS",
                 "_version": "1.0",
@@ -1544,7 +1579,7 @@ def create_ai_models():
             "description": "MRI 4채널(T1, T2, T1C, FLAIR) 기반 뇌종양 분석 모델",
             "ocs_sources": ["RIS"],
             "required_keys": {
-                "RIS": ["dicom.T1", "dicom.T2", "dicom.T1C", "dicom.FLAIR"]
+                "RIS": ["MRI"]  # job_type 기반 매칭
             },
             "version": "1.0.0",
             "is_active": True,
@@ -1560,7 +1595,7 @@ def create_ai_models():
             "description": "RNA 시퀀싱 기반 유전자 분석 모델 (MGMT 메틸화, IDH 변이 등)",
             "ocs_sources": ["LIS"],
             "required_keys": {
-                "LIS": ["RNA_seq"]  # job_type='GENETIC'인 OCS에서 조회
+                "LIS": ["RNA_SEQ"]  # job_type 기반 매칭
             },
             "version": "1.0.0",
             "is_active": True,
@@ -1573,11 +1608,11 @@ def create_ai_models():
         {
             "code": "MM",
             "name": "Multimodal Analysis",
-            "description": "MRI + 유전 + 단백질 통합 분석 모델 (종합 예후 예측)",
+            "description": "MRI + RNA시퀀싱 + 바이오마커 통합 분석 모델 (종합 예후 예측)",
             "ocs_sources": ["RIS", "LIS"],
             "required_keys": {
-                "RIS": ["dicom.T1", "dicom.T2", "dicom.T1C", "dicom.FLAIR"],
-                "LIS": ["RNA_seq", "protein"]  # job_type='GENETIC', 'PROTEIN'인 OCS에서 조회
+                "RIS": ["MRI"],
+                "LIS": ["RNA_SEQ", "BIOMARKER"]  # job_type 기반 매칭
             },
             "version": "1.0.0",
             "is_active": True,

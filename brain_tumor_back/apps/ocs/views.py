@@ -957,8 +957,8 @@ class OCSViewSet(viewsets.ModelViewSet):
         # 외부용 RIS OCS ID 생성 (risx_0001 형식)
         external_ocs_id = self._generate_external_ris_id()
 
-        # job_type 결정
-        job_type = request.data.get('job_type', 'CT')
+        # job_type 결정 (뇌종양 CDSS에서는 MRI가 기본)
+        job_type = request.data.get('job_type', 'MRI')
 
         # 외부 기관 정보 파싱
         external_source = {

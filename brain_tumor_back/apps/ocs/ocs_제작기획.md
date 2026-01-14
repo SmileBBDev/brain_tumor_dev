@@ -34,7 +34,11 @@
 │ encounter_id      │ FK → Encounter (nullable)                        │
 ├──────────────────────────────────────────────────────────────────────┤
 │ job_role          │ RIS, LIS, TREATMENT, CONSULT 등                  │
-│ job_type          │ MRI, CT, BLOOD, SURGERY 등 (자유 입력)           │
+│ job_type          │ 뇌종양 CDSS 전용:                                │
+│                   │ - RIS: MRI, CT, PET                              │
+│                   │ - LIS: CBC, CMP, Coagulation, Tumor Markers,     │
+│                   │        GENE_PANEL, RNA_SEQ, DNA_SEQ, BIOMARKER   │
+│                   │ - TREATMENT: SURGERY, RADIATION, CHEMOTHERAPY   │
 ├──────────────────────────────────────────────────────────────────────┤
 │ doctor_request    │ JSON - 의사 요청 (템플릿 + 자유 필드)             │
 │ worker_result     │ JSON - 작업 결과 (job_role별 템플릿 + 자유 필드)  │
@@ -90,7 +94,7 @@
 | 필드 | 타입 | 설명 |
 |------|------|------|
 | `job_role` | CharField(20) | RIS, LIS, TREATMENT, CONSULT 등 |
-| `job_type` | CharField(50) | MRI, CT, BLOOD, SURGERY 등 (자유 입력) |
+| `job_type` | CharField(50) | 뇌종양 CDSS 전용 - RIS: MRI/CT/PET, LIS: CBC/CMP/Coagulation/Tumor Markers/GENE_PANEL/RNA_SEQ/DNA_SEQ/BIOMARKER, TREATMENT: SURGERY/RADIATION/CHEMOTHERAPY |
 
 #### 우선순위 (priority)
 | 값 | 설명 |

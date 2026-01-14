@@ -9,11 +9,11 @@ class ImagingStudy(models.Model):
     이 모델은 DICOM 영상 데이터 연동을 위한 메타데이터만 관리.
     """
 
+    # 뇌종양 CDSS에 필요한 영상 검사만
     MODALITY_CHOICES = [
-        ('CT', 'CT (Computed Tomography)'),
         ('MRI', 'MRI (Magnetic Resonance Imaging)'),
+        ('CT', 'CT (Computed Tomography)'),
         ('PET', 'PET (Positron Emission Tomography)'),
-        ('X-RAY', 'X-Ray'),
     ]
 
     # ==========================================================================

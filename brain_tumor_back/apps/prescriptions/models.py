@@ -10,6 +10,147 @@ from apps.accounts.models import User
 # =============================================================================
 
 
+class Medication(models.Model):
+    """
+    의약품 마스터 모델
+
+    의사가 클릭으로 처방할 수 있는 의약품 목록.
+    """
+
+    class Category(models.TextChoices):
+        ANALGESIC = 'ANALGESIC', '진통제'
+        ANTIBIOTIC = 'ANTIBIOTIC', '항생제'
+        ANTIEPILEPTIC = 'ANTIEPILEPTIC', '항경련제'
+        STEROID = 'STEROID', '스테로이드'
+        CHEMOTHERAPY = 'CHEMOTHERAPY', '항암제'
+        ANTIEMETIC = 'ANTIEMETIC', '항구토제'
+        DIURETIC = 'DIURETIC', '이뇨제'
+        ANTICOAGULANT = 'ANTICOAGULANT', '항응고제'
+        SEDATIVE = 'SEDATIVE', '진정제'
+        OTHER = 'OTHER', '기타'
+
+    class Route(models.TextChoices):
+        PO = 'PO', '경구'
+        IV = 'IV', '정맥주사'
+        IM = 'IM', '근육주사'
+        SC = 'SC', '피하주사'
+        TOPICAL = 'TOPICAL', '외용'
+        INHALATION = 'INHALATION', '흡입'
+        OTHER = 'OTHER', '기타'
+
+    # 기본 정보
+    code = models.CharField(
+        max_length=50,
+        unique=True,
+        verbose_name='의약품 코드',
+        help_text='고유 식별 코드'
+    )
+
+    name = models.CharField(
+        max_length=200,
+        verbose_name='의약품명',
+        help_text='일반명 또는 상품명'
+    )
+
+    generic_name = models.CharField(
+        max_length=200,
+        blank=True,
+        null=True,
+        verbose_name='일반명',
+        help_text='성분명'
+    )
+
+    # 분류
+    category = models.CharField(
+        max_length=20,
+        choices=Category.choices,
+        default=Category.OTHER,
+        verbose_name='약품 분류'
+    )
+
+    # 기본 처방 정보
+    default_dosage = models.CharField(
+        max_length=100,
+        verbose_name='기본 용량',
+        help_text='예: 500mg, 10ml'
+    )
+
+    default_route = models.CharField(
+        max_length=20,
+        choices=Route.choices,
+        default=Route.PO,
+        verbose_name='기본 투여 경로'
+    )
+
+    default_frequency = models.CharField(
+        max_length=20,
+        default='TID',
+        verbose_name='기본 복용 빈도',
+        help_text='QD, BID, TID, QID, PRN 등'
+    )
+
+    default_duration_days = models.PositiveIntegerField(
+        default=7,
+        verbose_name='기본 처방 일수'
+    )
+
+    # 단위 정보
+    unit = models.CharField(
+        max_length=50,
+        default='정',
+        verbose_name='단위',
+        help_text='정, 캡슐, ml, mg 등'
+    )
+
+    # 주의사항
+    warnings = models.TextField(
+        blank=True,
+        null=True,
+        verbose_name='주의사항',
+        help_text='복용 시 주의사항'
+    )
+
+    contraindications = models.TextField(
+        blank=True,
+        null=True,
+        verbose_name='금기사항',
+        help_text='투여 금기 사항'
+    )
+
+    # 상태
+    is_active = models.BooleanField(
+        default=True,
+        verbose_name='사용 가능',
+        help_text='비활성화 시 처방 목록에서 제외'
+    )
+
+    # 타임스탬프
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name='등록일시'
+    )
+
+    updated_at = models.DateTimeField(
+        auto_now=True,
+        verbose_name='수정일시'
+    )
+
+    class Meta:
+        db_table = 'medication'
+        verbose_name = '의약품'
+        verbose_name_plural = '의약품 목록'
+        ordering = ['category', 'name']
+        indexes = [
+            models.Index(fields=['code']),
+            models.Index(fields=['name']),
+            models.Index(fields=['category']),
+            models.Index(fields=['is_active']),
+        ]
+
+    def __str__(self):
+        return f"{self.code} - {self.name} ({self.default_dosage})"
+
+
 class Prescription(models.Model):
     """
     처방전 모델
@@ -193,7 +334,18 @@ class PrescriptionItem(models.Model):
         verbose_name='처방전'
     )
 
-    # 약품 정보
+    # 의약품 마스터 참조 (클릭 처방용)
+    medication = models.ForeignKey(
+        Medication,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='prescription_items',
+        verbose_name='의약품',
+        help_text='의약품 마스터에서 선택 (클릭 처방 시)'
+    )
+
+    # 약품 정보 (직접 입력 또는 마스터에서 복사)
     medication_name = models.CharField(
         max_length=200,
         verbose_name='약품명'

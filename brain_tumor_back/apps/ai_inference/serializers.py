@@ -198,8 +198,35 @@ class AIInferenceRequestCreateSerializer(serializers.ModelSerializer):
         return ocs_references, input_data
 
     def _get_nested_value(self, data, key):
-        """중첩 딕셔너리에서 dot notation으로 값 추출"""
+        """
+        중첩 딕셔너리에서 값 추출 (확장된 로직)
+
+        특수 케이스 처리:
+        - dicom.T1, dicom.T2, dicom.T1C, dicom.FLAIR:
+          dicom.series 배열에서 series_type/seriesType 매칭
+        - 일반 키: 기존 dot notation 방식
+        """
+        if not data:
+            return None
+
         keys = key.split('.')
+
+        # 특수 케이스: dicom.시리즈타입 (T1, T2, T1C, FLAIR)
+        if len(keys) == 2 and keys[0] == 'dicom':
+            series_type = keys[1].upper()  # T1, T2, T1C, FLAIR
+            dicom_data = data.get('dicom', {})
+            series_list = dicom_data.get('series', [])
+
+            # series 배열에서 해당 series_type 찾기
+            for series in series_list:
+                # series_type 또는 seriesType 키 확인
+                s_type = series.get('series_type', series.get('seriesType', '')).upper()
+                if s_type == series_type:
+                    return series  # 해당 시리즈 데이터 반환
+
+            return None
+
+        # 일반 케이스: 기존 dot notation
         value = data
         for k in keys:
             if isinstance(value, dict) and k in value:
