@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { getExternalStats } from '@/services/dashboard.api';
 import type { ExternalStats } from '@/services/dashboard.api';
+import { UnifiedCalendar } from '@/components/calendar/UnifiedCalendar';
 import './ExternalDashboard.css';
 
 export default function ExternalDashboard() {
@@ -61,41 +62,44 @@ export default function ExternalDashboard() {
         </div>
       </div>
 
-      {/* 최근 업로드 목록 */}
-      <div className="dashboard-section">
-        <h3>최근 업로드</h3>
-        <table className="upload-table">
-          <thead>
-            <tr>
-              <th>OCS ID</th>
-              <th>환자</th>
-              <th>유형</th>
-              <th>상태</th>
-              <th>업로드 시간</th>
-            </tr>
-          </thead>
-          <tbody>
-            {stats.recent_uploads.length === 0 ? (
+      {/* 최근 업로드 목록 + 캘린더 */}
+      <div className="dashboard-main-row">
+        <div className="dashboard-section">
+          <h3>최근 업로드</h3>
+          <table className="upload-table">
+            <thead>
               <tr>
-                <td colSpan={5} className="empty">업로드 내역이 없습니다.</td>
+                <th>OCS ID</th>
+                <th>환자</th>
+                <th>유형</th>
+                <th>상태</th>
+                <th>업로드 시간</th>
               </tr>
-            ) : (
-              stats.recent_uploads.map((upload) => (
-                <tr key={upload.id}>
-                  <td>{upload.ocs_id}</td>
-                  <td>{upload.patient_name}</td>
-                  <td>{upload.job_role}</td>
-                  <td>
-                    <span className={`status-badge status-${upload.status.toLowerCase()}`}>
-                      {upload.status}
-                    </span>
-                  </td>
-                  <td>{new Date(upload.uploaded_at).toLocaleString('ko-KR')}</td>
+            </thead>
+            <tbody>
+              {stats.recent_uploads.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="empty">업로드 내역이 없습니다.</td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ) : (
+                stats.recent_uploads.map((upload) => (
+                  <tr key={upload.id}>
+                    <td>{upload.ocs_id}</td>
+                    <td>{upload.patient_name}</td>
+                    <td>{upload.job_role}</td>
+                    <td>
+                      <span className={`status-badge status-${upload.status.toLowerCase()}`}>
+                        {upload.status}
+                      </span>
+                    </td>
+                    <td>{new Date(upload.uploaded_at).toLocaleString('ko-KR')}</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+        <UnifiedCalendar title="외부기관 통합 캘린더" />
       </div>
     </div>
   );

@@ -2,6 +2,11 @@
   min-height: 400px;
 }
 
+.unified-calendar .header-buttons {
+  display: flex;
+  gap: 8px;
+}
+
 .unified-calendar .calendar-body {
   padding: 16px;
 }

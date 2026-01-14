@@ -1,6 +1,7 @@
 import { RISSummaryCards } from "./RISSummaryCards";
 import { RISWorklist } from "./RISWorklist";
 import { RISPendingReports } from "./RISPendingReports";
+import { UnifiedCalendar } from "@/components/calendar/UnifiedCalendar";
 
 export default function RISDashboard() {
   return (
@@ -8,8 +9,9 @@ export default function RISDashboard() {
       <RISSummaryCards />
       <div className="dashboard-row">
         <RISWorklist />
-        <RISPendingReports />
+        <UnifiedCalendar title="RIS 통합 캘린더" />
       </div>
+      <RISPendingReports />
     </div>
   );
 }

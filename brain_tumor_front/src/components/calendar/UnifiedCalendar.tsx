@@ -28,6 +28,8 @@ import './UnifiedCalendar.css';
 interface UnifiedCalendarProps {
   title?: string;
   patientId?: number; // 진료탭용 환자 ID
+  showManageButton?: boolean; // 관리 버튼 표시 여부 (Admin용)
+  onManageClick?: () => void; // 관리 버튼 클릭 핸들러
 }
 
 interface ScheduleModalData {
@@ -36,7 +38,7 @@ interface ScheduleModalData {
   date?: string;
 }
 
-export function UnifiedCalendar({ title = '통합 캘린더', patientId }: UnifiedCalendarProps) {
+export function UnifiedCalendar({ title = '통합 캘린더', patientId, showManageButton, onManageClick }: UnifiedCalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [sharedSchedules, setSharedSchedules] = useState<UnifiedScheduleItem[]>([]);
   const [personalSchedules, setPersonalSchedules] = useState<UnifiedScheduleItem[]>([]);
@@ -209,9 +211,16 @@ export function UnifiedCalendar({ title = '통합 캘린더', patientId }: Unifi
     <section className="card unified-calendar">
       <header className="card-header">
         <h3>{title}</h3>
-        <button className="btn btn-sm btn-secondary" onClick={goToToday}>
-          오늘
-        </button>
+        <div className="header-buttons">
+          {showManageButton && onManageClick && (
+            <button className="btn btn-sm btn-primary" onClick={onManageClick}>
+              캘린더 관리
+            </button>
+          )}
+          <button className="btn btn-sm btn-secondary" onClick={goToToday}>
+            오늘
+          </button>
+        </div>
       </header>
 
       <div className="calendar-body">

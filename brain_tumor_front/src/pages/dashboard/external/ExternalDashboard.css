@@ -74,6 +74,12 @@
   color: var(--text-sub);
 }
 
+.external-dashboard .dashboard-main-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 20px;
+}
+
 .external-dashboard .dashboard-section {
   background: var(--card-bg);
   border: 1px solid var(--card-border);
@@ -157,6 +163,12 @@
   padding: 40px;
   text-align: center;
   color: var(--text-sub);
+}
+
+@media (max-width: 1200px) {
+  .external-dashboard .dashboard-main-row {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 768px) {

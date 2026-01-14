@@ -9,6 +9,7 @@ Brain Tumor CDSS - 더미 데이터 설정 스크립트 (통합 래퍼)
 4. setup_dummy_data_4_extended.py - 확장 데이터 (환자 +20명, 오늘 예약 진료, 과거 기록)
 5. 추가 사용자 생성 (각 역할별 2명 추가)
 6. 환자 계정-데이터 연결
+7. setup_unified_schedules.py - 통합 캘린더 데이터 (공유 일정, 개인 일정)
 
 사용법:
     python -m setup_dummy_data          # 기존 데이터 유지, 부족분만 추가
@@ -19,6 +20,7 @@ Brain Tumor CDSS - 더미 데이터 설정 스크립트 (통합 래퍼)
     python -m setup_dummy_data --prescriptions  # 처방 데이터만 생성
     python -m setup_dummy_data --extended       # 확장 데이터만 생성 (환자 추가, 오늘 예약)
     python -m setup_dummy_data --menu   # 메뉴/권한만 업데이트 (네비게이션 바 반영)
+    python -m setup_dummy_data --schedules      # 통합 캘린더 데이터만 생성
 
 선행 조건:
     python setup_database.py  (마이그레이션 및 기본 데이터)
@@ -93,6 +95,7 @@ def print_final_summary():
     from apps.followup.models import FollowUp
     from apps.prescriptions.models import Prescription, PrescriptionItem
     from apps.accounts.models import User, Role
+    from apps.schedules.models import DoctorSchedule, SharedSchedule, PersonalSchedule
 
     print("\n" + "="*60)
     print("전체 더미 데이터 생성 완료!")
@@ -130,6 +133,9 @@ def print_final_summary():
     print(f"  - 처방 항목: {PrescriptionItem.objects.count()}건")
     print(f"  - AI 모델: {AIModel.objects.count()}개")
     print(f"  - AI 요청: {AIInferenceRequest.objects.count()}건")
+    print(f"  - 의사 일정: {DoctorSchedule.objects.filter(is_deleted=False).count()}건")
+    print(f"  - 공유 일정: {SharedSchedule.objects.filter(is_deleted=False).count()}건")
+    print(f"  - 개인 일정: {PersonalSchedule.objects.filter(is_deleted=False).count()}건")
 
     print(f"\n[다음 단계]")
     print(f"  서버 실행:")
@@ -280,6 +286,7 @@ def main():
     parser.add_argument('--prescriptions', action='store_true', help='처방 데이터만 생성 (3_prescriptions)')
     parser.add_argument('--extended', action='store_true', help='확장 데이터만 생성 (4_extended: 환자 추가, 오늘 예약)')
     parser.add_argument('--menu', action='store_true', help='메뉴/권한만 업데이트 (네비게이션 바 반영)')
+    parser.add_argument('--schedules', action='store_true', help='통합 캘린더 데이터만 생성 (공유 일정, 개인 일정)')
     parser.add_argument('-y', '--yes', action='store_true', help='확인 없이 자동 실행 (비대화형 모드)')
     args = parser.parse_args()
 
@@ -321,6 +328,18 @@ def main():
         )
         return
 
+    # --schedules 옵션: 통합 캘린더 데이터만 생성
+    if args.schedules:
+        schedule_args = []
+        if args.reset:
+            schedule_args.append('--reset')
+        run_script(
+            'setup_unified_schedules.py',
+            schedule_args,
+            '통합 캘린더 더미 데이터 생성 (공유 일정, 개인 일정)'
+        )
+        return
+
     # 실행할 스크립트 결정
     run_base = not args.add  # --add만 지정하면 base 스킵
     run_add = not args.base   # --base만 지정하면 add 스킵
@@ -341,7 +360,7 @@ def main():
         if not run_script(
             'setup_dummy_data_1_base.py',
             script_args,
-            '기본 더미 데이터 생성 (1/6)'
+            '기본 더미 데이터 생성 (1/7)'
         ):
             print("\n[WARNING] 기본 데이터 생성에 문제가 있습니다.")
             success = False
@@ -351,7 +370,7 @@ def main():
         if not run_script(
             'setup_dummy_data_2_add.py',
             script_args,
-            '추가 더미 데이터 생성 (2/6)'
+            '추가 더미 데이터 생성 (2/7)'
         ):
             print("\n[WARNING] 추가 데이터 생성에 문제가 있습니다.")
             success = False
@@ -361,7 +380,7 @@ def main():
         if not run_script(
             'setup_dummy_data_3_prescriptions.py',
             script_args,
-            '처방 더미 데이터 생성 (3/6)'
+            '처방 더미 데이터 생성 (3/7)'
         ):
             print("\n[WARNING] 처방 데이터 생성에 문제가 있습니다.")
             success = False
@@ -371,13 +390,16 @@ def main():
         if not run_script(
             'setup_dummy_data_4_extended.py',
             [],
-            '확장 더미 데이터 생성 (4/6)'
+            '확장 더미 데이터 생성 (4/7)'
         ):
             print("\n[WARNING] 확장 데이터 생성에 문제가 있습니다.")
             success = False
 
     # 5. 추가 사용자 생성 (system, doctor 제외 각 역할별 2명 추가)
     if run_base:
+        print(f"\n{'='*60}")
+        print(f"[실행] 추가 사용자 생성 (5/7)")
+        print(f"{'='*60}")
         try:
             create_additional_users(reset=args.reset)
         except Exception as e:
@@ -386,13 +408,29 @@ def main():
 
     # 6. 환자 계정-데이터 연결
     if run_base:
+        print(f"\n{'='*60}")
+        print(f"[실행] 환자 계정-데이터 연결 (6/7)")
+        print(f"{'='*60}")
         try:
             link_patient_accounts(reset=args.reset)
         except Exception as e:
             print(f"\n[WARNING] 환자 계정 연결에 문제가 있습니다: {e}")
             success = False
 
-    # 6. 최종 요약
+    # 7. 통합 캘린더 데이터 생성 (공유 일정, 개인 일정)
+    if run_add:
+        schedule_args = []
+        if args.reset:
+            schedule_args.append('--reset')
+        if not run_script(
+            'setup_unified_schedules.py',
+            schedule_args,
+            '통합 캘린더 더미 데이터 생성 (7/7)'
+        ):
+            print("\n[WARNING] 통합 캘린더 데이터 생성에 문제가 있습니다.")
+            success = False
+
+    # 최종 요약
     if run_base and run_add:
         print_final_summary()
 

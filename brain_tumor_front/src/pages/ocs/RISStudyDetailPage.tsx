@@ -6,7 +6,7 @@
  * - Final 확정, EMR 전송, PDF 출력
  */
 import { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider';
 import { getOCS, startOCS, saveOCSResult, confirmOCS } from '@/services/ocs.api';
 import type { OCSDetail, RISWorkerResult } from '@/types/ocs';
@@ -56,6 +56,7 @@ type TabType = 'info' | 'report' | 'result' | 'history';
 export default function RISStudyDetailPage() {
   const { ocsId } = useParams<{ ocsId: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user } = useAuth();
 
   const [ocsDetail, setOcsDetail] = useState<OCSDetail | null>(null);
@@ -80,6 +81,18 @@ export default function RISStudyDetailPage() {
 
   // DICOM 뷰어 팝업
   const [viewerOpen, setViewerOpen] = useState(false);
+
+  // URL 쿼리 파라미터 처리 (tab, openViewer)
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam && ['info', 'report', 'result', 'history'].includes(tabParam)) {
+      setActiveTab(tabParam as TabType);
+    }
+    const openViewerParam = searchParams.get('openViewer');
+    if (openViewerParam === 'true') {
+      setViewerOpen(true);
+    }
+  }, [searchParams]);
 
   // OCS 상세 조회
   useEffect(() => {

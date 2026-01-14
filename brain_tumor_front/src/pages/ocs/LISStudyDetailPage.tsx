@@ -7,7 +7,7 @@
  * - GENETIC/PROTEIN 검사 지원
  */
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider';
 import { getOCS, startOCS, saveOCSResult, confirmOCS } from '@/services/ocs.api';
 import type { OCSDetail, GeneMutation, ProteinMarker } from '@/types/ocs';
@@ -71,6 +71,7 @@ const getFlagDisplay = (flag: string) => {
 export default function LISStudyDetailPage() {
   const { ocsId } = useParams<{ ocsId: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user } = useAuth();
 
   const [ocs, setOcs] = useState<OCSDetail | null>(null);
@@ -109,6 +110,14 @@ export default function LISStudyDetailPage() {
 
   // 검사 카테고리 확인
   const testCategory = ocs ? getLISCategory(ocs.job_type) : 'BLOOD';
+
+  // URL 쿼리 파라미터 처리 (tab)
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam && ['info', 'result', 'genetic', 'protein', 'interpretation', 'history'].includes(tabParam)) {
+      setActiveTab(tabParam as TabType);
+    }
+  }, [searchParams]);
 
   // 데이터 로드
   const fetchOCSDetail = useCallback(async () => {

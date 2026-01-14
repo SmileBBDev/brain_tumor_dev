@@ -102,6 +102,12 @@
   margin-top: 4px;
 }
 
+.admin-dashboard .dashboard-main-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
 .admin-dashboard .dashboard-section {
   background: var(--card-bg);
   border: 1px solid var(--card-border);
@@ -109,6 +115,10 @@
   padding: 20px 24px;
   box-shadow: var(--shadow-card);
   margin-bottom: 24px;
+}
+
+.admin-dashboard .dashboard-main-row .dashboard-section {
+  margin-bottom: 0;
 }
 
 .admin-dashboard .dashboard-section h3 {
@@ -218,6 +228,9 @@
 @media (max-width: 1200px) {
   .admin-dashboard .summary-cards {
     grid-template-columns: repeat(2, 1fr);
+  }
+  .admin-dashboard .dashboard-main-row {
+    grid-template-columns: 1fr;
   }
 }
 

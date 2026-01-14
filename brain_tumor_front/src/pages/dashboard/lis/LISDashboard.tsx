@@ -1,6 +1,7 @@
 import { LISSummary } from "./LISSummary";
 import { LISWorklist } from "./LISWorklist";
 import { LISAbnormalAlert } from "./LISAbnormalAlert";
+import { UnifiedCalendar } from "@/components/calendar/UnifiedCalendar";
 // 검사 중심 Workflow
 /**
  * [LIS Summary]
@@ -19,7 +20,10 @@ export default function LISDashboard() {
   return (
     <div className="dashboard lis">
       <LISSummary />
-      <LISWorklist />
+      <div className="dashboard-row">
+        <LISWorklist />
+        <UnifiedCalendar title="LIS 통합 캘린더" />
+      </div>
       <LISAbnormalAlert />
     </div>
   );

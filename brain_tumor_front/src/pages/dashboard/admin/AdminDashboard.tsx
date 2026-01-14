@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getAdminStats } from '@/services/dashboard.api';
 import type { AdminStats } from '@/services/dashboard.api';
+import { UnifiedCalendar } from '@/components/calendar/UnifiedCalendar';
 import './AdminDashboard.css';
 
 export default function AdminDashboard() {
@@ -84,17 +85,24 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      {/* 역할별 사용자 현황 */}
-      <div className="dashboard-section">
-        <h3>역할별 사용자</h3>
-        <div className="role-grid">
-          {Object.entries(stats.users.by_role).map(([role, count]) => (
-            <div key={role} className="role-item">
-              <span className="role-name">{role}</span>
-              <span className="role-count">{count}명</span>
-            </div>
-          ))}
+      {/* 역할별 사용자 현황 + 캘린더 */}
+      <div className="dashboard-main-row">
+        <div className="dashboard-section">
+          <h3>역할별 사용자</h3>
+          <div className="role-grid">
+            {Object.entries(stats.users.by_role).map(([role, count]) => (
+              <div key={role} className="role-item">
+                <span className="role-name">{role}</span>
+                <span className="role-count">{count}명</span>
+              </div>
+            ))}
+          </div>
         </div>
+        <UnifiedCalendar
+          title="관리자 통합 캘린더"
+          showManageButton
+          onManageClick={() => navigate('/admin/shared-calendar')}
+        />
       </div>
     </div>
   );
