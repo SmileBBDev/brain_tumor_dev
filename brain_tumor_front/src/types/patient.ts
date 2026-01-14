@@ -5,9 +5,28 @@ import type { OCSListItem } from './ocs';
 
 export type Gender = 'M' | 'F' | 'O';
 
-export type PatientStatus = 'active' | 'inactive' | 'deceased';
+export type PatientStatus = 'active' | 'discharged' | 'transferred' | 'deceased';
+
+export type PatientSeverity = 'normal' | 'mild' | 'moderate' | 'severe' | 'critical';
 
 export type BloodType = 'A+' | 'A-' | 'B+' | 'B-' | 'O+' | 'O-' | 'AB+' | 'AB-';
+
+// 상태 라벨
+export const PATIENT_STATUS_LABELS: Record<PatientStatus, string> = {
+  active: '진료중',
+  discharged: '퇴원',
+  transferred: '전원',
+  deceased: '사망',
+};
+
+// 중증도 라벨
+export const PATIENT_SEVERITY_LABELS: Record<PatientSeverity, string> = {
+  normal: '정상',
+  mild: '경증',
+  moderate: '중등도',
+  severe: '중증',
+  critical: '위중',
+};
 
 export interface Patient {
   id: number;
@@ -22,6 +41,7 @@ export interface Patient {
   allergies: string[];
   chronic_diseases: string[];
   status: PatientStatus;
+  severity: PatientSeverity;
   age: number;
   registered_by_name: string;
   created_at: string;
@@ -38,6 +58,7 @@ export interface PatientListResponse {
 export interface PatientSearchParams {
   q?: string;
   status?: PatientStatus;
+  severity?: PatientSeverity;
   gender?: Gender;
   start_date?: string;
   end_date?: string;
@@ -57,6 +78,7 @@ export interface PatientCreateData {
   allergies?: string[];
   chronic_diseases?: string[];
   chief_complaint?: string;  // 주 호소 (환자가 말하는 증상)
+  severity?: PatientSeverity;
 }
 
 export interface PatientUpdateData {
@@ -68,6 +90,7 @@ export interface PatientUpdateData {
   allergies?: string[];
   chronic_diseases?: string[];
   status?: PatientStatus;
+  severity?: PatientSeverity;
 }
 
 export interface PatientStatistics {

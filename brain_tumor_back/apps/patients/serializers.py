@@ -21,6 +21,7 @@ class PatientListSerializer(serializers.ModelSerializer):
             'phone',
             'blood_type',
             'status',
+            'severity',
             'registered_by_name',
             'created_at',
         ]
@@ -52,6 +53,7 @@ class PatientDetailSerializer(serializers.ModelSerializer):
             'chronic_diseases',
             'chief_complaint',
             'status',
+            'severity',
             'is_active',
             'registered_by',
             'registered_by_name',
@@ -127,6 +129,7 @@ class PatientCreateSerializer(serializers.ModelSerializer):
             'allergies',
             'chronic_diseases',
             'chief_complaint',
+            'severity',
         ]
 
     def validate_phone(self, value):
@@ -173,6 +176,7 @@ class PatientUpdateSerializer(serializers.ModelSerializer):
             'chronic_diseases',
             'chief_complaint',
             'status',
+            'severity',
         ]
 
     def validate_phone(self, value):
@@ -196,6 +200,11 @@ class PatientSearchSerializer(serializers.Serializer):
         choices=Patient.STATUS_CHOICES,
         required=False,
         help_text='환자 상태'
+    )
+    severity = serializers.ChoiceField(
+        choices=Patient.SEVERITY_CHOICES,
+        required=False,
+        help_text='중증도'
     )
     gender = serializers.ChoiceField(
         choices=Patient.GENDER_CHOICES,
@@ -349,6 +358,7 @@ class PatientDashboardSerializer(serializers.ModelSerializer):
             'chronic_diseases',
             'chief_complaint',
             'status',
+            'severity',
             'attending_doctor_name',
             'attending_doctor_department',
             'created_at',

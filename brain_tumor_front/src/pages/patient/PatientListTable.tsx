@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import type { Patient } from '@/types/patient';
+import type { Patient, PatientStatus, PatientSeverity } from '@/types/patient';
+import { PATIENT_STATUS_LABELS, PATIENT_SEVERITY_LABELS } from '@/types/patient';
 
 type Props = {
   role: string;
@@ -41,17 +42,31 @@ export default function PatientListTable({ role, patients, onEdit, onDelete, onR
     return genderMap[gender] || gender;
   };
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'active':
-        return { icon: '🟢', text: '활성', className: 'status-active' };
-      case 'inactive':
-        return { icon: '⚪', text: '비활성', className: 'status-inactive' };
-      case 'deceased':
-        return { icon: '🔴', text: '사망', className: 'status-deceased' };
-      default:
-        return { icon: '⚪', text: status, className: '' };
-    }
+  const getStatusInfo = (status: PatientStatus) => {
+    const statusConfig: Record<PatientStatus, { icon: string; className: string }> = {
+      active: { icon: '🟢', className: 'status-active' },
+      discharged: { icon: '🔵', className: 'status-discharged' },
+      transferred: { icon: '🟡', className: 'status-transferred' },
+      deceased: { icon: '🔴', className: 'status-deceased' },
+    };
+    return {
+      ...statusConfig[status],
+      text: PATIENT_STATUS_LABELS[status] || status,
+    };
+  };
+
+  const getSeverityInfo = (severity: PatientSeverity) => {
+    const severityConfig: Record<PatientSeverity, { color: string; bgColor: string }> = {
+      normal: { color: '#388e3c', bgColor: '#e8f5e9' },
+      mild: { color: '#1976d2', bgColor: '#e3f2fd' },
+      moderate: { color: '#f57c00', bgColor: '#fff3e0' },
+      severe: { color: '#d32f2f', bgColor: '#ffebee' },
+      critical: { color: '#7b1fa2', bgColor: '#f3e5f5' },
+    };
+    return {
+      ...severityConfig[severity],
+      text: PATIENT_SEVERITY_LABELS[severity] || severity,
+    };
   };
 
   const getBloodTypeStyle = (bloodType: string | null) => {
@@ -118,6 +133,7 @@ export default function PatientListTable({ role, patients, onEdit, onDelete, onR
         <col className="col-gender-age" />
         <col className="col-phone" />
         <col className="col-blood-type" />
+        <col className="col-severity" />
         <col className="col-status" />
         <col className="col-date" />
         <col className="col-actions" />
@@ -128,6 +144,7 @@ export default function PatientListTable({ role, patients, onEdit, onDelete, onR
           <th>성별/나이</th>
           <th>연락처</th>
           <th>혈액형</th>
+          <th>중증도</th>
           <th>상태</th>
           <th>등록일</th>
           <th>작업</th>
@@ -136,7 +153,8 @@ export default function PatientListTable({ role, patients, onEdit, onDelete, onR
 
       <tbody>
         {patients.map(p => {
-          const statusInfo = getStatusIcon(p.status);
+          const statusInfo = getStatusInfo(p.status);
+          const severityInfo = getSeverityInfo(p.severity);
           const bloodTypeStyle = getBloodTypeStyle(p.blood_type);
 
           const handleRowClick = () => navigate(`/patients/${p.id}`);
@@ -173,6 +191,19 @@ export default function PatientListTable({ role, patients, onEdit, onDelete, onR
                   style={bloodTypeStyle}
                 >
                   {p.blood_type || '-'}
+                </span>
+              </td>
+
+              {/* 중증도 Badge */}
+              <td onClick={handleRowClick}>
+                <span
+                  className="severity-badge"
+                  style={{
+                    backgroundColor: severityInfo.bgColor,
+                    color: severityInfo.color,
+                  }}
+                >
+                  {severityInfo.text}
                 </span>
               </td>
 

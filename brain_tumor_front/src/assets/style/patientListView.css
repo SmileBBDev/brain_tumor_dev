@@ -260,37 +260,41 @@
   width: 100%;
 }
 
-/* 컬럼 폭 고정 정의 (colgroup 기반) */
+/* 컬럼 폭 고정 정의 (colgroup 기반) - 8컬럼 */
 .patient-table .col-patient-info {
-  width: 22%;
+  width: 18%;
 }
 .patient-table .col-gender-age {
-  width: 10%;
+  width: 9%;
 }
 .patient-table .col-phone {
-  width: 14%;
+  width: 13%;
 }
 .patient-table .col-blood-type {
-  width: 8%;
+  width: 7%;
+}
+.patient-table .col-severity {
+  width: 9%;
 }
 .patient-table .col-status {
-  width: 10%;
+  width: 9%;
 }
 .patient-table .col-date {
-  width: 12%;
+  width: 11%;
 }
 .patient-table .col-actions {
   width: 14%;
 }
 
-/* th 기반 컬럼 폭 (colgroup 미사용 시 fallback) */
-.patient-table th:nth-child(1) { width: 22%; }  /* 환자 정보 */
-.patient-table th:nth-child(2) { width: 10%; }  /* 성별/나이 */
-.patient-table th:nth-child(3) { width: 14%; }  /* 연락처 */
-.patient-table th:nth-child(4) { width: 8%; }   /* 혈액형 */
-.patient-table th:nth-child(5) { width: 10%; }  /* 상태 */
-.patient-table th:nth-child(6) { width: 12%; }  /* 등록일 */
-.patient-table th:nth-child(7) { width: 14%; }  /* 작업 */
+/* th 기반 컬럼 폭 (colgroup 미사용 시 fallback) - 8컬럼 */
+.patient-table th:nth-child(1) { width: 18%; }  /* 환자 정보 */
+.patient-table th:nth-child(2) { width: 9%; }   /* 성별/나이 */
+.patient-table th:nth-child(3) { width: 13%; }  /* 연락처 */
+.patient-table th:nth-child(4) { width: 7%; }   /* 혈액형 */
+.patient-table th:nth-child(5) { width: 9%; }   /* 중증도 */
+.patient-table th:nth-child(6) { width: 9%; }   /* 상태 */
+.patient-table th:nth-child(7) { width: 11%; }  /* 등록일 */
+.patient-table th:nth-child(8) { width: 14%; }  /* 작업 */
 
 .patient-table th,
 .patient-table td {
@@ -421,6 +425,18 @@
   white-space: nowrap;
 }
 
+/* 중증도 Badge */
+.severity-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  min-width: 50px;
+  text-align: center;
+  white-space: nowrap;
+}
+
 /* 상태 표시 (아이콘 + 텍스트) */
 .patient-status {
   display: inline-flex;
@@ -442,8 +458,12 @@
   color: #2e7d32;
 }
 
-.patient-status.status-inactive .status-text {
-  color: #757575;
+.patient-status.status-discharged .status-text {
+  color: #1976d2;
+}
+
+.patient-status.status-transferred .status-text {
+  color: #f57c00;
 }
 
 .patient-status.status-deceased .status-text {
