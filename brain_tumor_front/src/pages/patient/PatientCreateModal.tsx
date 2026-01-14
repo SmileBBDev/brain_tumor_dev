@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { createPatient } from '@/services/patient.api';
-import type { PatientCreateData } from '@/types/patient';
+import type { PatientCreateData, PatientSeverity } from '@/types/patient';
+import { PATIENT_SEVERITY_LABELS } from '@/types/patient';
 import PhoneInput from '@/pages/common/PhoneInput';
 import './PatientCreateModal.css';
 
@@ -22,6 +23,7 @@ export default function PatientCreateModal({ isOpen, onClose, onSuccess }: Props
     blood_type: undefined,
     allergies: [],
     chronic_diseases: [],
+    severity: 'normal',
   });
 
   const [allergyInput, setAllergyInput] = useState('');
@@ -122,6 +124,7 @@ export default function PatientCreateModal({ isOpen, onClose, onSuccess }: Props
       blood_type: undefined,
       allergies: [],
       chronic_diseases: [],
+      severity: 'normal',
     });
     setAllergyInput('');
     setDiseaseInput('');
@@ -205,6 +208,21 @@ export default function PatientCreateModal({ isOpen, onClose, onSuccess }: Props
                   <option value="O-">O-</option>
                   <option value="AB+">AB+</option>
                   <option value="AB-">AB-</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label>중증도</label>
+                <select
+                  name="severity"
+                  value={formData.severity || 'normal'}
+                  onChange={handleChange}
+                >
+                  {(Object.entries(PATIENT_SEVERITY_LABELS) as [PatientSeverity, string][]).map(([value, label]) => (
+                    <option key={value} value={value}>{label}</option>
+                  ))}
                 </select>
               </div>
             </div>

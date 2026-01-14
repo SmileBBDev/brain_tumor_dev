@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { updatePatient } from '@/services/patient.api';
-import type { Patient, PatientUpdateData } from '@/types/patient';
+import type { Patient, PatientUpdateData, PatientStatus, PatientSeverity } from '@/types/patient';
+import { PATIENT_STATUS_LABELS, PATIENT_SEVERITY_LABELS } from '@/types/patient';
 import './PatientCreateModal.css';
 
 type Props = {
@@ -20,6 +21,7 @@ export default function PatientEditModal({ isOpen, patient, onClose, onSuccess }
     allergies: [],
     chronic_diseases: [],
     status: 'active',
+    severity: 'normal',
   });
 
   const [allergyInput, setAllergyInput] = useState('');
@@ -39,6 +41,7 @@ export default function PatientEditModal({ isOpen, patient, onClose, onSuccess }
         allergies: patient.allergies || [],
         chronic_diseases: patient.chronic_diseases || [],
         status: patient.status,
+        severity: patient.severity,
       });
     }
   }, [isOpen, patient]);
@@ -199,18 +202,33 @@ export default function PatientEditModal({ isOpen, patient, onClose, onSuccess }
               </div>
             </div>
 
-            <div className="form-group">
-              <label>상태 <span className="required">*</span></label>
-              <select
-                name="status"
-                value={formData.status}
-                onChange={handleChange}
-                required
-              >
-                <option value="active">활성</option>
-                <option value="inactive">비활성</option>
-                <option value="deceased">사망</option>
-              </select>
+            <div className="form-row">
+              <div className="form-group">
+                <label>중증도</label>
+                <select
+                  name="severity"
+                  value={formData.severity || 'normal'}
+                  onChange={handleChange}
+                >
+                  {(Object.entries(PATIENT_SEVERITY_LABELS) as [PatientSeverity, string][]).map(([value, label]) => (
+                    <option key={value} value={value}>{label}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label>상태 <span className="required">*</span></label>
+                <select
+                  name="status"
+                  value={formData.status}
+                  onChange={handleChange}
+                  required
+                >
+                  {(Object.entries(PATIENT_STATUS_LABELS) as [PatientStatus, string][]).map(([value, label]) => (
+                    <option key={value} value={value}>{label}</option>
+                  ))}
+                </select>
+              </div>
             </div>
           </div>
 

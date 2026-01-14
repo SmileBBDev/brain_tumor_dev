@@ -884,9 +884,14 @@ def create_dummy_patients(target_count=30, force=False):
                 skipped_count += 1
                 continue
 
+            # 랜덤 중증도 할당
+            severity_choices = ['normal', 'normal', 'normal', 'mild', 'mild', 'moderate', 'severe', 'critical']
+            severity = random.choice(severity_choices)
+
             patient = Patient.objects.create(
                 registered_by=registered_by,
                 status='active',
+                severity=severity,
                 **patient_data
             )
             created_count += 1

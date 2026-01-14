@@ -16,7 +16,7 @@
   background: #fff;
   border-radius: 8px;
   width: 90%;
-  max-width: 900px;
+  max-width: 1200px;
   max-height: 90vh;
   display: flex;
   flex-direction: column;
@@ -45,7 +45,7 @@
 .summary-modal .modal-body {
   flex: 1;
   overflow-y: auto;
-  padding: 24px;
+  padding: 24px 32px;
 }
 
 .summary-content {

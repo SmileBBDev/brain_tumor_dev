@@ -106,7 +106,10 @@ class DoctorScheduleUpdateSerializer(serializers.ModelSerializer):
 
 class DoctorScheduleCalendarSerializer(serializers.ModelSerializer):
     """캘린더 표시용 간소화 Serializer"""
-    display_color = serializers.CharField(read_only=True)
+    # 프론트엔드 CalendarScheduleItem 타입과 필드명 일치
+    start = serializers.DateTimeField(source='start_datetime', read_only=True)
+    end = serializers.DateTimeField(source='end_datetime', read_only=True)
+    color = serializers.CharField(source='display_color', read_only=True)
     schedule_type_display = serializers.CharField(
         source='get_schedule_type_display', read_only=True
     )
@@ -115,7 +118,7 @@ class DoctorScheduleCalendarSerializer(serializers.ModelSerializer):
         model = DoctorSchedule
         fields = [
             'id', 'title', 'schedule_type', 'schedule_type_display',
-            'start_datetime', 'end_datetime', 'all_day',
-            'display_color',
+            'start', 'end', 'all_day',
+            'color',
         ]
         read_only_fields = fields

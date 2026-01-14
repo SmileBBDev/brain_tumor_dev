@@ -24,9 +24,18 @@ class Patient(models.Model):
     ]
 
     STATUS_CHOICES = [
-        ('active', '활성'),
-        ('inactive', '비활성'),
+        ('active', '진료중'),
+        ('discharged', '퇴원'),
+        ('transferred', '전원'),
         ('deceased', '사망'),
+    ]
+
+    SEVERITY_CHOICES = [
+        ('normal', '정상'),
+        ('mild', '경증'),
+        ('moderate', '중등도'),
+        ('severe', '중증'),
+        ('critical', '위중'),
     ]
 
     # 환자 번호 자동 생성을 위한 검증
@@ -89,10 +98,16 @@ class Patient(models.Model):
 
     # 상태
     status = models.CharField(
-        max_length=10,
+        max_length=15,
         choices=STATUS_CHOICES,
         default='active',
-        verbose_name='상태'
+        verbose_name='환자상태'
+    )
+    severity = models.CharField(
+        max_length=10,
+        choices=SEVERITY_CHOICES,
+        default='normal',
+        verbose_name='중증도'
     )
 
     # 등록 정보
@@ -129,6 +144,7 @@ class Patient(models.Model):
             models.Index(fields=['name']),
             models.Index(fields=['phone']),
             models.Index(fields=['status']),
+            models.Index(fields=['severity']),
             models.Index(fields=['-created_at']),
         ]
 

@@ -135,17 +135,18 @@ export function DoctorScheduleCalendar() {
     );
   };
 
-  // 날짜의 우선 일정 유형 (배경색 결정)
-  const getPrimaryScheduleType = (day: number): ScheduleType | null => {
+  // 날짜의 우선 일정 색상 (배경색 결정)
+  const getPrimaryScheduleColor = (day: number): string | null => {
     const daySchedules = schedulesByDate[day];
     if (!daySchedules || daySchedules.length === 0) return null;
 
     // 우선순위: leave > meeting > training > personal > other
     const priority: ScheduleType[] = ['leave', 'meeting', 'training', 'personal', 'other'];
     for (const type of priority) {
-      if (daySchedules.some(s => s.schedule_type === type)) return type;
+      const found = daySchedules.find(s => s.schedule_type === type);
+      if (found) return found.color;
     }
-    return daySchedules[0].schedule_type;
+    return daySchedules[0].color;
   };
 
   // 날짜 클릭 - 선택/해제 또는 새 일정 생성
@@ -233,17 +234,20 @@ export function DoctorScheduleCalendar() {
               {calendarDays.map((day, idx) => {
                 const daySchedules = day ? schedulesByDate[day] : null;
                 const scheduleCount = daySchedules?.length || 0;
-                const primaryType = day ? getPrimaryScheduleType(day) : null;
+                const primaryColor = day ? getPrimaryScheduleColor(day) : null;
                 const isTodayCell = day ? isToday(day) : false;
                 const isSelected = day === selectedDay;
 
-                // Tint 클래스 결정 (의사 캘린더는 파란색 계열)
-                const tintClass = scheduleCount > 0 ? 'tint-doctor' : '';
+                // 인라인 스타일로 실제 일정 색상 적용
+                const cellStyle = primaryColor
+                  ? { '--schedule-color': primaryColor } as React.CSSProperties
+                  : undefined;
 
                 return (
                   <div
                     key={idx}
-                    className={`calendar-day ${day ? 'clickable' : 'empty'} ${isTodayCell ? 'today' : ''} ${isSelected ? 'selected' : ''} ${tintClass}`}
+                    className={`calendar-day ${day ? 'clickable' : 'empty'} ${isTodayCell ? 'today' : ''} ${isSelected ? 'selected' : ''} ${scheduleCount > 0 ? 'has-schedule' : ''}`}
+                    style={cellStyle}
                     onClick={() => handleDayClick(day)}
                   >
                     {day && (
@@ -253,13 +257,15 @@ export function DoctorScheduleCalendar() {
                         </span>
                         {/* 복수 일정시 Badge 표시 */}
                         {scheduleCount > 1 && (
-                          <span className="schedule-badge doctor">{scheduleCount}</span>
+                          <span className="schedule-badge" style={{ backgroundColor: primaryColor || '#5b8def' }}>
+                            {scheduleCount}
+                          </span>
                         )}
-                        {/* 단일 일정시 유형 표시 */}
-                        {scheduleCount === 1 && primaryType && (
+                        {/* 단일 일정시 색상 dot 표시 */}
+                        {scheduleCount === 1 && primaryColor && (
                           <span
                             className="schedule-type-dot"
-                            style={{ backgroundColor: SCHEDULE_TYPE_COLORS[primaryType] }}
+                            style={{ backgroundColor: primaryColor }}
                           />
                         )}
                       </>
@@ -422,7 +428,7 @@ export function DoctorScheduleCalendar() {
 
         /* ============================================
            Tint 방식: ::before pseudo-element + inset
-           의사 캘린더는 파란색 계열
+           일정의 실제 색상을 CSS 변수로 적용
            ============================================ */
         .calendar-day::before {
           content: "";
@@ -433,12 +439,12 @@ export function DoctorScheduleCalendar() {
           z-index: 0;
         }
 
-        /* 의사 일정 tint - 파란색 계열 */
-        .calendar-day.tint-doctor::before {
-          background: rgba(91, 141, 239, 0.12);
+        /* 일정 있는 셀 - 실제 색상 적용 (12% 투명도) */
+        .calendar-day.has-schedule::before {
+          background: color-mix(in srgb, var(--schedule-color, #5b8def) 15%, transparent);
         }
-        .calendar-day.tint-doctor:hover::before {
-          background: rgba(91, 141, 239, 0.18);
+        .calendar-day.has-schedule:hover::before {
+          background: color-mix(in srgb, var(--schedule-color, #5b8def) 22%, transparent);
         }
 
         /* ============================================
@@ -484,7 +490,7 @@ export function DoctorScheduleCalendar() {
 
         /* ============================================
            일정 개수 Badge - 작은 크기, 우측 상단
-           의사 캘린더는 파란색
+           일정 색상에 맞춰 동적으로 표시
            ============================================ */
         .schedule-badge {
           position: absolute;
@@ -493,7 +499,6 @@ export function DoctorScheduleCalendar() {
           min-width: 14px;
           height: 14px;
           padding: 0 3px;
-          background: #9ca3af;
           color: white;
           font-size: 9px;
           font-weight: 600;
@@ -502,9 +507,6 @@ export function DoctorScheduleCalendar() {
           align-items: center;
           justify-content: center;
           z-index: 2;
-        }
-        .schedule-badge.doctor {
-          background: #5b8def;
         }
 
         /* 단일 일정 유형 표시 dot */

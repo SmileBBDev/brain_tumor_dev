@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import type { Patient } from '@/types/patient';
+import type { Patient, PatientStatus, PatientSeverity } from '@/types/patient';
+import { PATIENT_STATUS_LABELS, PATIENT_SEVERITY_LABELS } from '@/types/patient';
 
 type Props = {
   role: string;
@@ -41,17 +42,31 @@ export default function PatientListTable({ role, patients, onEdit, onDelete, onR
     return genderMap[gender] || gender;
   };
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'active':
-        return { icon: '🟢', text: '활성', className: 'status-active' };
-      case 'inactive':
-        return { icon: '⚪', text: '비활성', className: 'status-inactive' };
-      case 'deceased':
-        return { icon: '🔴', text: '사망', className: 'status-deceased' };
-      default:
-        return { icon: '⚪', text: status, className: '' };
-    }
+  const getStatusInfo = (status: PatientStatus) => {
+    const statusConfig: Record<PatientStatus, { icon: string; className: string }> = {
+      active: { icon: '🟢', className: 'status-active' },
+      discharged: { icon: '🔵', className: 'status-discharged' },
+      transferred: { icon: '🟡', className: 'status-transferred' },
+      deceased: { icon: '🔴', className: 'status-deceased' },
+    };
+    return {
+      ...statusConfig[status],
+      text: PATIENT_STATUS_LABELS[status] || status,
+    };
+  };
+
+  const getSeverityInfo = (severity: PatientSeverity) => {
+    const severityConfig: Record<PatientSeverity, { color: string; bgColor: string }> = {
+      normal: { color: '#388e3c', bgColor: '#e8f5e9' },
+      mild: { color: '#1976d2', bgColor: '#e3f2fd' },
+      moderate: { color: '#f57c00', bgColor: '#fff3e0' },
+      severe: { color: '#d32f2f', bgColor: '#ffebee' },
+      critical: { color: '#7b1fa2', bgColor: '#f3e5f5' },
+    };
+    return {
+      ...severityConfig[severity],
+      text: PATIENT_SEVERITY_LABELS[severity] || severity,
+    };
   };
 
   const getBloodTypeStyle = (bloodType: string | null) => {
@@ -112,12 +127,24 @@ export default function PatientListTable({ role, patients, onEdit, onDelete, onR
 
   return (
     <table className="table patient-table">
+      {/* 컬럼 폭 고정을 위한 colgroup */}
+      <colgroup>
+        <col className="col-patient-info" />
+        <col className="col-gender-age" />
+        <col className="col-phone" />
+        <col className="col-blood-type" />
+        <col className="col-severity" />
+        <col className="col-status" />
+        <col className="col-date" />
+        <col className="col-actions" />
+      </colgroup>
       <thead>
         <tr>
           <th>환자 정보</th>
           <th>성별/나이</th>
           <th>연락처</th>
           <th>혈액형</th>
+          <th>중증도</th>
           <th>상태</th>
           <th>등록일</th>
           <th>작업</th>
@@ -126,33 +153,39 @@ export default function PatientListTable({ role, patients, onEdit, onDelete, onR
 
       <tbody>
         {patients.map(p => {
-          const statusInfo = getStatusIcon(p.status);
+          const statusInfo = getStatusInfo(p.status);
+          const severityInfo = getSeverityInfo(p.severity);
           const bloodTypeStyle = getBloodTypeStyle(p.blood_type);
+
+          const handleRowClick = () => navigate(`/patients/${p.id}`);
 
           return (
             <tr
               key={p.id}
               className="patient-row clickable-row"
-              onClick={() => navigate(`/patients/${p.id}`)}
             >
               {/* 환자 정보 (이름 + 번호) */}
-              <td className="patient-info-cell">
-                <span className="patient-name">{p.name}</span>
-                <span className="patient-number">{p.patient_number}</span>
+              <td onClick={handleRowClick}>
+                <div className="patient-info-cell">
+                  <span className="patient-name">{p.name}</span>
+                  <span className="patient-number">{p.patient_number}</span>
+                </div>
               </td>
 
               {/* 성별/나이 */}
-              <td className="gender-age-cell">
-                <span className="gender">{getGenderShort(p.gender)}</span>
-                <span className="separator">/</span>
-                <span className="age">{p.age}세</span>
+              <td onClick={handleRowClick}>
+                <div className="gender-age-cell">
+                  <span className="gender">{getGenderShort(p.gender)}</span>
+                  <span className="separator">/</span>
+                  <span className="age">{p.age}세</span>
+                </div>
               </td>
 
               {/* 연락처 */}
-              <td>{p.phone}</td>
+              <td onClick={handleRowClick}>{p.phone}</td>
 
               {/* 혈액형 Badge */}
-              <td>
+              <td onClick={handleRowClick}>
                 <span
                   className="blood-type-badge"
                   style={bloodTypeStyle}
@@ -161,8 +194,21 @@ export default function PatientListTable({ role, patients, onEdit, onDelete, onR
                 </span>
               </td>
 
+              {/* 중증도 Badge */}
+              <td onClick={handleRowClick}>
+                <span
+                  className="severity-badge"
+                  style={{
+                    backgroundColor: severityInfo.bgColor,
+                    color: severityInfo.color,
+                  }}
+                >
+                  {severityInfo.text}
+                </span>
+              </td>
+
               {/* 상태 (아이콘 + 텍스트) */}
-              <td>
+              <td onClick={handleRowClick}>
                 <span className={`patient-status ${statusInfo.className}`}>
                   <span className="status-icon">{statusInfo.icon}</span>
                   <span className="status-text">{statusInfo.text}</span>
@@ -170,13 +216,13 @@ export default function PatientListTable({ role, patients, onEdit, onDelete, onR
               </td>
 
               {/* 등록일 */}
-              <td className="date-cell">
+              <td className="date-cell" onClick={handleRowClick}>
                 {new Date(p.created_at).toLocaleDateString('ko-KR')}
               </td>
 
-              {/* 작업 영역 */}
+              {/* 작업 영역 - 클릭 이벤트 없음 */}
               <td>
-                <div className="action-buttons" onClick={(e) => e.stopPropagation()}>
+                <div className="action-buttons">
                   {/* 진료 시작 버튼 (주요 액션) */}
                   {canStartCare && p.status === 'active' && (
                     <button

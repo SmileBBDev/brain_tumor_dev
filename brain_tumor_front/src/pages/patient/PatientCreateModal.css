@@ -9,7 +9,6 @@
   width: 75vw;
   max-width: 950px;
   min-width: 450px;
-  padding: 2rem;
 }
 
 /* Patient detail view styles */
@@ -17,14 +16,28 @@
   padding: 0.5rem 0;
 }
 
-.modal-large .modal-body {
-  padding: 2rem;
+/* 환자 모달 내 폼 그룹 간격 */
+.modal-large .form-group {
+  margin-bottom: 0.875rem;
 }
 
-.modal-large .modal-header {
-  padding: 1.5rem 2rem;
+/* 환자 모달 input/textarea 일관된 스타일 */
+.modal-large .form-group input,
+.modal-large .form-group select,
+.modal-large .form-group textarea {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
-.modal-large .modal-footer {
-  padding: 1.5rem 2rem;
+/* 모달 내 tag-input 스타일 일관성 */
+.modal-large .tag-input {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.modal-large .tag-input input {
+  flex: 1;
+  min-width: 0;
 }
