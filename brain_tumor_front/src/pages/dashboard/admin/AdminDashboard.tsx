@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { getAdminStats } from '@/services/dashboard.api';
 import type { AdminStats } from '@/services/dashboard.api';
 import './AdminDashboard.css';
 
 export default function AdminDashboard() {
+  const navigate = useNavigate();
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -27,6 +29,17 @@ export default function AdminDashboard() {
   return (
     <div className="admin-dashboard">
       <h2>관리자 대시보드</h2>
+
+      {/* 관리 버튼 영역 */}
+      <div className="admin-actions">
+        <button
+          className="action-btn calendar-btn"
+          onClick={() => navigate('/admin/shared-calendar')}
+        >
+          <span className="btn-icon">📅</span>
+          <span className="btn-text">권한별 캘린더 관리</span>
+        </button>
+      </div>
 
       {/* 요약 카드 */}
       <div className="summary-cards">

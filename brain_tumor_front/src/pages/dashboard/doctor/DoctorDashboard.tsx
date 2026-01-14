@@ -1,6 +1,6 @@
 import { DoctorSummaryCards } from "./DoctorSummaryCards";
 import { DoctorWorklist } from "./DoctorWorklist";
-import { DoctorScheduleCalendar } from "./DoctorScheduleCalendar";
+import { UnifiedCalendar } from "@/components/calendar/UnifiedCalendar";
 import { AiAlertPanel } from "./AiAlertPanel";
 import PatientListWidget from "../common/PatientListWidget";
 import '@/assets/style/patientListView.css';
@@ -11,7 +11,7 @@ export default function DoctorDashboard() {
       <DoctorSummaryCards />
       <div className="dashboard-row">
         <DoctorWorklist />
-        <DoctorScheduleCalendar />
+        <UnifiedCalendar title="의사 통합 캘린더" />
       </div>
       <div className="dashboard-row">
         <AiAlertPanel />

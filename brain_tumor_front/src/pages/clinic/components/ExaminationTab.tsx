@@ -26,6 +26,7 @@ import type {
 } from '@/types/patient';
 import type { OCSListItem } from '@/types/ocs';
 import type { Encounter } from '@/types/encounter';
+import { getPatientAvailableModels, createAIRequest, getPatientAIRequests, type AvailableModel, type AIInferenceRequest } from '@/services/ai.api';
 import PrescriptionCard from './DiagnosisPrescriptionCard';
 import TodayAppointmentCard from './TodayAppointmentCard';
 import PastRecordCard from './PastRecordCard';
@@ -123,6 +124,12 @@ export default function ExaminationTab({
   // 토스트 메시지
   const [toastMessage, setToastMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
+  // AI 추론 관련 상태
+  const [availableModels, setAvailableModels] = useState<AvailableModel[]>([]);
+  const [aiRequests, setAIRequests] = useState<AIInferenceRequest[]>([]);
+  const [selectedModel, setSelectedModel] = useState<string>('');
+  const [requestingAI, setRequestingAI] = useState(false);
+
   // 토스트 표시 헬퍼
   const showToast = (type: 'success' | 'error', text: string) => {
     setToastMessage({ type, text });
@@ -141,9 +148,11 @@ export default function ExaminationTab({
 
     setLoading(true);
     try {
-      const [summaryData, alertsData] = await Promise.all([
+      const [summaryData, alertsData, modelsData, aiRequestsData] = await Promise.all([
         getExaminationSummary(patientId).catch(() => null),
         getPatientAlerts(patientId).catch(() => []),
+        getPatientAvailableModels(patientId).catch(() => []),
+        getPatientAIRequests(patientId).catch(() => []),
       ]);
 
       if (summaryData) {
@@ -165,6 +174,8 @@ export default function ExaminationTab({
         );
       }
       setAlerts(alertsData);
+      setAvailableModels(modelsData);
+      setAIRequests(aiRequestsData);
     } catch (err) {
       console.error('Failed to load examination data:', err);
     } finally {
@@ -219,6 +230,42 @@ export default function ExaminationTab({
       console.error('Failed to delete alert:', err);
       showToast('error', '삭제에 실패했습니다.');
     }
+  };
+
+  // AI 추론 요청
+  const handleRequestAI = async () => {
+    if (!selectedModel || !patientId) return;
+
+    setRequestingAI(true);
+    try {
+      const newRequest = await createAIRequest({
+        patient_id: patientId,
+        model_code: selectedModel,
+        priority: 'normal',
+      });
+      setAIRequests(prev => [newRequest, ...prev]);
+      setSelectedModel('');
+      showToast('success', 'AI 추론 요청이 생성되었습니다.');
+      // 새로운 요청 상세 페이지로 이동
+      navigate(`/ai/requests/${newRequest.id}`);
+    } catch (err: any) {
+      console.error('Failed to create AI request:', err);
+      showToast('error', err.response?.data?.error || 'AI 추론 요청에 실패했습니다.');
+    } finally {
+      setRequestingAI(false);
+    }
+  };
+
+  // RIS 검사결과 (Orthanc 뷰어) 열기
+  const handleOpenDicomViewer = (ocsId: number) => {
+    navigate(`/ocs/ris/${ocsId}?openViewer=true`);
+  };
+
+  // OCS의 AI 결과 조회
+  const getAIResultsForOCS = (ocsId: number) => {
+    return aiRequests.filter(req =>
+      req.ocs_references?.includes(ocsId) && req.status === 'COMPLETED'
+    );
   };
 
   // Alert 저장
@@ -429,34 +476,81 @@ export default function ExaminationTab({
               <div className="empty-message">등록된 오더가 없습니다.</div>
             ) : (
               <div className="order-list">
-                {ocsList.slice(0, 6).map((ocs) => (
-                  <div
-                    key={ocs.id}
-                    className="order-item"
-                    onClick={() => {
-                      if (ocs.job_role === 'RIS') {
-                        navigate(`/ocs/ris/${ocs.id}`);
-                      } else if (ocs.job_role === 'LIS') {
-                        navigate(`/ocs/lis/${ocs.id}`);
-                      }
-                    }}
-                  >
-                    <div className="order-item-content">
-                      <div className="order-item-title">
-                        <span className={`job-role-badge ${ocs.job_role.toLowerCase()}`}>
-                          {JOB_ROLE_LABELS[ocs.job_role] || ocs.job_role}
+                {ocsList.slice(0, 6).map((ocs) => {
+                  const isConfirmed = ocs.ocs_status === 'CONFIRMED';
+                  const ocsAIResults = getAIResultsForOCS(ocs.id);
+
+                  return (
+                    <div key={ocs.id} className="order-item-wrapper">
+                      <div
+                        className="order-item"
+                        onClick={() => {
+                          if (ocs.job_role === 'RIS') {
+                            navigate(`/ocs/ris/${ocs.id}`);
+                          } else if (ocs.job_role === 'LIS') {
+                            navigate(`/ocs/lis/${ocs.id}`);
+                          }
+                        }}
+                      >
+                        <div className="order-item-content">
+                          <div className="order-item-title">
+                            <span className={`job-role-badge ${ocs.job_role.toLowerCase()}`}>
+                              {JOB_ROLE_LABELS[ocs.job_role] || ocs.job_role}
+                            </span>
+                            {JOB_TYPE_LABELS[ocs.job_type] || ocs.job_type}
+                          </div>
+                          <div className="order-item-subtitle">
+                            {ocs.ocs_id} | {ocs.created_at?.slice(0, 10)}
+                          </div>
+                        </div>
+                        <span className={`status-badge ${ocs.ocs_status.toLowerCase()}`}>
+                          {OCS_STATUS_LABELS[ocs.ocs_status] || ocs.ocs_status}
                         </span>
-                        {JOB_TYPE_LABELS[ocs.job_type] || ocs.job_type}
                       </div>
-                      <div className="order-item-subtitle">
-                        {ocs.ocs_id} | {ocs.created_at?.slice(0, 10)}
-                      </div>
+
+                      {/* CONFIRMED 상태일 때 검사결과/AI결과 버튼 표시 */}
+                      {isConfirmed && (
+                        <div className="order-item-actions">
+                          {ocs.job_role === 'RIS' && (
+                            <button
+                              className="btn btn-sm btn-outline"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleOpenDicomViewer(ocs.id);
+                              }}
+                            >
+                              영상 조회
+                            </button>
+                          )}
+                          <button
+                            className="btn btn-sm btn-outline"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (ocs.job_role === 'RIS') {
+                                navigate(`/ocs/ris/${ocs.id}?tab=result`);
+                              } else {
+                                navigate(`/ocs/lis/${ocs.id}?tab=result`);
+                              }
+                            }}
+                          >
+                            검사결과
+                          </button>
+                          {ocsAIResults.length > 0 && (
+                            <button
+                              className="btn btn-sm btn-primary"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigate(`/ai/requests/${ocsAIResults[0].id}`);
+                              }}
+                            >
+                              AI결과 ({ocsAIResults.length})
+                            </button>
+                          )}
+                        </div>
+                      )}
                     </div>
-                    <span className={`status-badge ${ocs.ocs_status.toLowerCase()}`}>
-                      {OCS_STATUS_LABELS[ocs.ocs_status] || ocs.ocs_status}
-                    </span>
-                  </div>
-                ))}
+                  );
+                })}
                 {ocsList.length > 6 && (
                   <div className="more-link" onClick={() => navigate(`/ocs/manage?patientId=${patientId}`)}>
                     +{ocsList.length - 6}개 더 보기
@@ -466,113 +560,100 @@ export default function ExaminationTab({
             )}
           </section>
 
-          {/* 통합 결과 섹션: RIS + LIS + AI */}
-          <section className="exam-section result-card unified-results">
+          {/* AI 추론 요청 섹션 */}
+          <section className="exam-section ai-inference-card">
             <div className="section-header">
               <h4>
-                <span className="card-icon">📊</span>
-                검사/분석 결과
+                <span className="card-icon">🤖</span>
+                AI 추론 요청
               </h4>
               <button
-                className="btn btn-sm btn-primary"
-                onClick={() => navigate(`/ai/requests/create?patientId=${patientId}`)}
+                className="btn btn-sm btn-outline"
+                onClick={() => navigate(`/ai/requests?patientId=${patientId}`)}
                 disabled={!patientId || patientId <= 0}
               >
-                AI 추론 요청
+                전체 보기
               </button>
             </div>
 
-            {/* RIS 결과 (영상검사) */}
-            {(() => {
-              const risResults = ocsList.filter(o => o.job_role === 'RIS' && ['RESULT_READY', 'CONFIRMED'].includes(o.ocs_status));
-              return (
-                <div className="result-subsection">
-                  <h5 className="subsection-title">
-                    <span className="subsection-icon ris">RIS</span>
-                    영상검사
-                    <span className="subsection-count">({risResults.length})</span>
-                  </h5>
-                  {risResults.length === 0 ? (
-                    <div className="empty-message small">영상검사 결과 없음</div>
-                  ) : (
-                    <div className="result-list compact">
-                      {risResults.slice(0, 3).map((result) => (
-                        <div
-                          key={result.id}
-                          className="result-item"
-                          onClick={() => navigate(`/ocs/ris/${result.id}`)}
-                        >
-                          <div className="result-item-content">
-                            <span className="result-type">{JOB_TYPE_LABELS[result.job_type] || result.job_type}</span>
-                            <span className="result-date">{result.created_at?.slice(0, 10)}</span>
-                          </div>
-                          <span className={`status-badge mini ${result.ocs_status.toLowerCase()}`}>
-                            {OCS_STATUS_LABELS[result.ocs_status] || result.ocs_status}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              );
-            })()}
+            {/* 모델 선택 및 요청 */}
+            <div className="ai-request-form">
+              <div className="ai-model-selector">
+                <select
+                  value={selectedModel}
+                  onChange={(e) => setSelectedModel(e.target.value)}
+                  disabled={!patientId || patientId <= 0 || requestingAI}
+                >
+                  <option value="">AI 모델 선택</option>
+                  {availableModels.map((model) => (
+                    <option
+                      key={model.code}
+                      value={model.code}
+                      disabled={!model.is_available}
+                    >
+                      {model.name} {!model.is_available && '(데이터 부족)'}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  className="btn btn-sm btn-primary"
+                  onClick={handleRequestAI}
+                  disabled={!selectedModel || requestingAI}
+                >
+                  {requestingAI ? '요청 중...' : '추론 요청'}
+                </button>
+              </div>
 
-            {/* LIS 결과 (검체검사) */}
-            {(() => {
-              const lisResults = ocsList.filter(o => o.job_role === 'LIS' && ['RESULT_READY', 'CONFIRMED'].includes(o.ocs_status));
-              return (
-                <div className="result-subsection">
-                  <h5 className="subsection-title">
-                    <span className="subsection-icon lis">LIS</span>
-                    검체검사
-                    <span className="subsection-count">({lisResults.length})</span>
-                  </h5>
-                  {lisResults.length === 0 ? (
-                    <div className="empty-message small">검체검사 결과 없음</div>
-                  ) : (
-                    <div className="result-list compact">
-                      {lisResults.slice(0, 3).map((result) => (
-                        <div
-                          key={result.id}
-                          className="result-item"
-                          onClick={() => navigate(`/ocs/lis/${result.id}`)}
-                        >
-                          <div className="result-item-content">
-                            <span className="result-type">{JOB_TYPE_LABELS[result.job_type] || result.job_type}</span>
-                            <span className="result-date">{result.created_at?.slice(0, 10)}</span>
-                          </div>
-                          <span className={`status-badge mini ${result.ocs_status.toLowerCase()}`}>
-                            {OCS_STATUS_LABELS[result.ocs_status] || result.ocs_status}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              );
-            })()}
+              {/* 선택된 모델 정보 */}
+              {selectedModel && (() => {
+                const model = availableModels.find(m => m.code === selectedModel);
+                if (!model) return null;
+                return (
+                  <div className="ai-model-info">
+                    <p className="model-description">{model.description}</p>
+                    {!model.is_available && model.missing_keys.length > 0 && (
+                      <div className="model-missing-data">
+                        <span className="warning-icon">⚠️</span>
+                        필요 데이터 부족: {model.missing_keys.join(', ')}
+                      </div>
+                    )}
+                    {model.is_available && (
+                      <div className="model-ready">
+                        <span className="check-icon">✅</span>
+                        모든 필요 데이터 준비됨
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+            </div>
 
-            {/* AI 분석 결과 */}
-            <div className="result-subsection">
+            {/* 최근 AI 추론 결과 */}
+            <div className="ai-results-list">
               <h5 className="subsection-title">
                 <span className="subsection-icon ai">AI</span>
-                AI 분석
-                <span className="subsection-count">({summary?.ai_summary ? 1 : 0})</span>
+                최근 추론 결과
+                <span className="subsection-count">({aiRequests.length})</span>
               </h5>
-              {!summary?.ai_summary ? (
-                <div className="empty-message small">AI 분석 결과 없음</div>
+              {aiRequests.length === 0 ? (
+                <div className="empty-message small">AI 추론 이력 없음</div>
               ) : (
-                <div className="ai-result-card" onClick={() => navigate(`/ai/requests?patientId=${patientId}`)}>
-                  <div className="ai-result-header">
-                    <span className="ai-model-name">AI 분석 #{summary.ai_summary.id}</span>
-                    <span className="ai-date">{summary.ai_summary.created_at?.split('T')[0]}</span>
-                  </div>
-                  <div className="ai-result-preview">
-                    {typeof summary.ai_summary.result === 'object'
-                      ? JSON.stringify(summary.ai_summary.result, null, 2).slice(0, 100) + '...'
-                      : String(summary.ai_summary.result).slice(0, 100) + '...'
-                    }
-                  </div>
+                <div className="result-list compact">
+                  {aiRequests.slice(0, 4).map((req) => (
+                    <div
+                      key={req.id}
+                      className="result-item ai-request-item"
+                      onClick={() => navigate(`/ai/requests/${req.id}`)}
+                    >
+                      <div className="result-item-content">
+                        <span className="result-type">{req.model_name}</span>
+                        <span className="result-date">{req.requested_at?.slice(0, 10)}</span>
+                      </div>
+                      <span className={`status-badge mini ${req.status.toLowerCase()}`}>
+                        {req.status_display}
+                      </span>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>

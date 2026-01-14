@@ -11,6 +11,7 @@ const OCSResultReportPage = lazy(() => import('@/pages/ocs/OCSResultReportPage')
 const MyPage = lazy(() => import('@/pages/mypage/MyPage'));
 const PatientDashboard = lazy(() => import('@/pages/patient/PatientDashboard'));
 const PatientDetailPage = lazy(() => import('@/pages/patient/PatientDetailPage'));
+const SharedCalendarPage = lazy(() => import('@/pages/admin/SharedCalendarPage'));
 
 // 접근 가능한 메뉴만 flatten (라우트 등록용 - breadcrumbOnly 포함)
 function flattenAccessibleMenus(
@@ -127,6 +128,16 @@ export default function AppRoutes() {
           element={
             <ProtectedRoute>
               <PatientDetailPage />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Admin 공유 캘린더 관리 페이지 */}
+        <Route
+          path="/admin/shared-calendar"
+          element={
+            <ProtectedRoute allowedRoles={['ADMIN']}>
+              <SharedCalendarPage />
             </ProtectedRoute>
           }
         />

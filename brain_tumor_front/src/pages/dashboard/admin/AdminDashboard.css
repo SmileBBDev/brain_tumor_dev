@@ -9,6 +9,43 @@
   color: var(--text-main);
 }
 
+/* 관리 버튼 영역 */
+.admin-dashboard .admin-actions {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.admin-dashboard .action-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.admin-dashboard .action-btn:hover {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.admin-dashboard .action-btn .btn-icon {
+  font-size: 20px;
+}
+
+.admin-dashboard .action-btn .btn-text {
+  font-size: 14px;
+  font-weight: 500;
+}
+
 .admin-dashboard .summary-cards {
   display: grid;
   grid-template-columns: repeat(3, 1fr);

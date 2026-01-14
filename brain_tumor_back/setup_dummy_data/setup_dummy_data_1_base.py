@@ -580,7 +580,7 @@ def load_menu_permission_seed():
 
     # 최상위 메뉴
     menu_admin, _ = create_menu(1, code='ADMIN', path=None, icon='settings', order=7, is_active=True)
-    menu_ai, _ = create_menu(2, code='AI_SUMMARY', path='/ai', icon='brain', order=6, is_active=True)
+    menu_ai, _ = create_menu(2, code='AI_SUMMARY', path=None, icon='brain', order=6, is_active=True)
     menu_dashboard, _ = create_menu(3, code='DASHBOARD', path='/dashboard', icon='home', order=1, is_active=True)
     menu_imaging, _ = create_menu(4, code='IMAGING', path=None, icon=None, group_label='영상', order=4, is_active=True)
     menu_lab, _ = create_menu(5, code='LAB', path=None, icon=None, group_label='검사', order=5, is_active=True)
@@ -641,7 +641,7 @@ def load_menu_permission_seed():
     create_menu(16, code='LAB_RESULT_UPLOAD', path='/lab/upload', icon='upload', order=5, is_active=True, parent=menu_lab)
 
     # AI 추론 요청 메뉴 (AI_SUMMARY 하위) - AI_REQUEST_LIST는 사이드바에 표시하지 않음 (breadcrumb_only)
-    menu_ai_request, _ = create_menu(33, code='AI_REQUEST_LIST', path='/ai/requests', icon='list', breadcrumb_only=True, order=1, is_active=True, parent=menu_ai)
+    menu_ai_request, _ = create_menu(33, code='AI_REQUEST_LIST', path='/ai/requests', icon='list', breadcrumb_only=False, order=1, is_active=True, parent=menu_ai)
     create_menu(34, code='AI_REQUEST_CREATE', path='/ai/requests/create', breadcrumb_only=True, order=2, is_active=True, parent=menu_ai_request)
     create_menu(35, code='AI_REQUEST_DETAIL', path='/ai/requests/:id', breadcrumb_only=True, order=3, is_active=True, parent=menu_ai_request)
 

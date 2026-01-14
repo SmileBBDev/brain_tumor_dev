@@ -1235,3 +1235,194 @@
 }
 
 /* 과거 기록 섹션 - 이제 4번째 컬럼으로 통합됨 */
+
+/* ============================================
+   Order Item Wrapper & Actions (CONFIRMED 상태 버튼)
+   ============================================ */
+.order-item-wrapper {
+  border-bottom: 1px solid var(--border, #e5e7eb);
+}
+
+.order-item-wrapper:last-child {
+  border-bottom: none;
+}
+
+.order-item-wrapper .order-item {
+  border-bottom: none;
+}
+
+.order-item-actions {
+  display: flex;
+  gap: 6px;
+  padding: 6px 0 10px 0;
+  flex-wrap: wrap;
+}
+
+.order-item-actions .btn {
+  font-size: 10px;
+  padding: 4px 8px;
+}
+
+.order-item-actions .btn-outline {
+  background: var(--card-bg, white);
+  border: 1px solid var(--border, #e5e7eb);
+  color: var(--text-main, #374151);
+}
+
+.order-item-actions .btn-outline:hover {
+  background: var(--bg-main, #f4f6f9);
+  border-color: var(--primary, #4f46e5);
+  color: var(--primary, #4f46e5);
+}
+
+.order-item-actions .btn-primary {
+  background: var(--primary, #4f46e5);
+  border: 1px solid var(--primary, #4f46e5);
+  color: white;
+}
+
+.order-item-actions .btn-primary:hover {
+  background: var(--primary-dark, #4338ca);
+}
+
+/* ============================================
+   AI Inference Card 스타일
+   ============================================ */
+.ai-inference-card {
+  background: linear-gradient(135deg, #f5f7ff 0%, var(--card-bg, white) 100%);
+  border: 1px solid #e3e8ff;
+}
+
+.ai-inference-card .card-icon {
+  margin-right: 6px;
+}
+
+/* AI 요청 폼 */
+.ai-request-form {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border, #e5e7eb);
+  margin-bottom: 12px;
+}
+
+.ai-model-selector {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.ai-model-selector select {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 6px;
+  font-size: 12px;
+  background: var(--card-bg, white);
+  color: var(--text-main, #374151);
+  cursor: pointer;
+}
+
+.ai-model-selector select:focus {
+  outline: none;
+  border-color: var(--primary, #4f46e5);
+  box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.1);
+}
+
+.ai-model-selector select option:disabled {
+  color: var(--text-sub, #9ca3af);
+}
+
+.ai-model-selector .btn {
+  white-space: nowrap;
+  padding: 8px 16px;
+  font-size: 12px;
+}
+
+/* 모델 정보 표시 */
+.ai-inference-card .ai-model-info {
+  margin-top: 10px;
+  padding: 10px;
+  background: var(--bg-main, #f4f6f9);
+  border-radius: 6px;
+}
+
+.ai-inference-card .model-description {
+  font-size: 11px;
+  color: var(--text-sub, #6b7280);
+  margin: 0 0 8px 0;
+  line-height: 1.4;
+}
+
+.ai-inference-card .model-missing-data {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: #d97706;
+  background: #fffbeb;
+  padding: 6px 10px;
+  border-radius: 4px;
+}
+
+.ai-inference-card .model-missing-data .warning-icon {
+  font-size: 13px;
+}
+
+.ai-inference-card .model-ready {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: #059669;
+  background: #ecfdf5;
+  padding: 6px 10px;
+  border-radius: 4px;
+}
+
+.ai-inference-card .model-ready .check-icon {
+  font-size: 13px;
+}
+
+/* AI 결과 리스트 */
+.ai-results-list {
+  padding-top: 4px;
+}
+
+.ai-results-list .subsection-title {
+  margin-bottom: 10px;
+}
+
+.ai-request-item {
+  background: var(--bg-main, #f4f6f9);
+  border-radius: 4px;
+  margin-bottom: 4px;
+}
+
+.ai-request-item:hover {
+  background: var(--bg-hover, #e8eaed);
+}
+
+/* AI 상태 배지 추가 */
+.examination-tab .status-badge.pending {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.examination-tab .status-badge.validating {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.examination-tab .status-badge.processing {
+  background: #e0e7ff;
+  color: #4338ca;
+}
+
+.examination-tab .status-badge.completed {
+  background: #d1fae5;
+  color: #047857;
+}
+
+.examination-tab .status-badge.failed {
+  background: #fee2e2;
+  color: #dc2626;
+}

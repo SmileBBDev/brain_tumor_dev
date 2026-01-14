@@ -1,20 +1,44 @@
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, BasePermission
 from rest_framework.pagination import PageNumberPagination
+from rest_framework.views import APIView
 from django.utils import timezone
+from django.db.models import Q
 from datetime import timedelta
 from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiParameter
 
-from .models import DoctorSchedule
+from .models import DoctorSchedule, SharedSchedule, PersonalSchedule
 from .serializers import (
     DoctorScheduleListSerializer,
     DoctorScheduleDetailSerializer,
     DoctorScheduleCreateSerializer,
     DoctorScheduleUpdateSerializer,
     DoctorScheduleCalendarSerializer,
+    SharedScheduleListSerializer,
+    SharedScheduleCreateSerializer,
+    SharedScheduleUpdateSerializer,
+    SharedScheduleCalendarSerializer,
+    PersonalScheduleListSerializer,
+    PersonalScheduleCreateSerializer,
+    PersonalScheduleUpdateSerializer,
+    PersonalScheduleCalendarSerializer,
 )
+
+
+# =============================================================================
+# 권한 클래스
+# =============================================================================
+class IsAdminUser(BasePermission):
+    """Admin 권한 체크"""
+    def has_permission(self, request, view):
+        return (
+            request.user and
+            request.user.is_authenticated and
+            request.user.role and
+            request.user.role.code == 'ADMIN'
+        )
 
 
 class DoctorSchedulePagination(PageNumberPagination):
@@ -179,3 +203,215 @@ class DoctorScheduleViewSet(viewsets.ModelViewSet):
 
         serializer = DoctorScheduleListSerializer(schedules, many=True)
         return Response(serializer.data)
+
+
+# =============================================================================
+# 공유 일정 ViewSet (Admin 전용)
+# =============================================================================
+@extend_schema_view(
+    list=extend_schema(summary="공유 일정 목록 조회 (Admin)"),
+    retrieve=extend_schema(summary="공유 일정 상세 조회"),
+    create=extend_schema(summary="공유 일정 생성"),
+    partial_update=extend_schema(summary="공유 일정 수정"),
+    destroy=extend_schema(summary="공유 일정 삭제"),
+)
+class SharedScheduleViewSet(viewsets.ModelViewSet):
+    """
+    공유 일정 CRUD ViewSet (Admin 전용)
+
+    Admin이 권한별 공유 일정을 관리합니다.
+    """
+    permission_classes = [IsAuthenticated, IsAdminUser]
+    pagination_class = DoctorSchedulePagination
+
+    def get_queryset(self):
+        queryset = SharedSchedule.objects.filter(is_deleted=False)
+
+        # visibility 필터
+        visibility = self.request.query_params.get('visibility')
+        if visibility:
+            queryset = queryset.filter(visibility=visibility)
+
+        # 날짜 범위 필터
+        start_date = self.request.query_params.get('start_date')
+        end_date = self.request.query_params.get('end_date')
+        if start_date:
+            queryset = queryset.filter(start_datetime__date__gte=start_date)
+        if end_date:
+            queryset = queryset.filter(start_datetime__date__lte=end_date)
+
+        return queryset.order_by('start_datetime')
+
+    def get_serializer_class(self):
+        if self.action == 'list':
+            return SharedScheduleListSerializer
+        elif self.action == 'create':
+            return SharedScheduleCreateSerializer
+        elif self.action in ['update', 'partial_update']:
+            return SharedScheduleUpdateSerializer
+        return SharedScheduleListSerializer
+
+    def perform_destroy(self, instance):
+        instance.is_deleted = True
+        instance.save()
+
+
+# =============================================================================
+# 개인 일정 ViewSet (모든 사용자)
+# =============================================================================
+@extend_schema_view(
+    list=extend_schema(summary="개인 일정 목록 조회"),
+    retrieve=extend_schema(summary="개인 일정 상세 조회"),
+    create=extend_schema(summary="개인 일정 생성"),
+    partial_update=extend_schema(summary="개인 일정 수정"),
+    destroy=extend_schema(summary="개인 일정 삭제"),
+)
+class PersonalScheduleViewSet(viewsets.ModelViewSet):
+    """
+    개인 일정 CRUD ViewSet
+
+    모든 사용자가 자신의 개인 일정을 관리합니다.
+    """
+    permission_classes = [IsAuthenticated]
+    pagination_class = DoctorSchedulePagination
+
+    def get_queryset(self):
+        queryset = PersonalSchedule.objects.filter(
+            user=self.request.user,
+            is_deleted=False
+        )
+
+        # 일정 유형 필터
+        schedule_type = self.request.query_params.get('schedule_type')
+        if schedule_type:
+            queryset = queryset.filter(schedule_type=schedule_type)
+
+        # 날짜 범위 필터
+        start_date = self.request.query_params.get('start_date')
+        end_date = self.request.query_params.get('end_date')
+        if start_date:
+            queryset = queryset.filter(start_datetime__date__gte=start_date)
+        if end_date:
+            queryset = queryset.filter(start_datetime__date__lte=end_date)
+
+        return queryset.order_by('start_datetime')
+
+    def get_serializer_class(self):
+        if self.action == 'list':
+            return PersonalScheduleListSerializer
+        elif self.action == 'create':
+            return PersonalScheduleCreateSerializer
+        elif self.action in ['update', 'partial_update']:
+            return PersonalScheduleUpdateSerializer
+        return PersonalScheduleListSerializer
+
+    def perform_destroy(self, instance):
+        instance.is_deleted = True
+        instance.save()
+
+
+# =============================================================================
+# 통합 캘린더 API (Dashboard용 / 진료탭용)
+# =============================================================================
+@extend_schema(
+    summary="통합 캘린더 조회",
+    description="""
+    사용자의 통합 캘린더를 조회합니다.
+    - 공유 일정: 전체 공지(ALL) + 사용자 권한에 해당하는 공유 일정
+    - 개인 일정: 본인의 개인 일정
+    - 환자 일정: patient_id 파라미터 전달 시 해당 환자의 진료 일정 (Encounter)
+    """,
+    parameters=[
+        OpenApiParameter(name='year', description='년도 (YYYY)', type=int, required=True),
+        OpenApiParameter(name='month', description='월 (1-12)', type=int, required=True),
+        OpenApiParameter(name='patient_id', description='환자 ID (진료탭용)', type=int, required=False),
+    ]
+)
+class UnifiedCalendarView(APIView):
+    """통합 캘린더 API"""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        year = request.query_params.get('year')
+        month = request.query_params.get('month')
+        patient_id = request.query_params.get('patient_id')
+
+        if not year or not month:
+            return Response(
+                {'error': 'year와 month 파라미터가 필요합니다.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            year = int(year)
+            month = int(month)
+        except ValueError:
+            return Response(
+                {'error': 'year와 month는 숫자여야 합니다.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # 해당 월의 시작/끝 계산
+        start_date = timezone.datetime(year, month, 1, tzinfo=timezone.get_current_timezone())
+        if month == 12:
+            end_date = timezone.datetime(year + 1, 1, 1, tzinfo=timezone.get_current_timezone())
+        else:
+            end_date = timezone.datetime(year, month + 1, 1, tzinfo=timezone.get_current_timezone())
+
+        user = request.user
+        user_role = user.role.code if user.role else None
+
+        # 1. 공유 일정 조회 (전체 공지 + 사용자 권한)
+        shared_filter = Q(is_deleted=False) & Q(
+            start_datetime__lt=end_date,
+            end_datetime__gte=start_date
+        ) & (
+            Q(visibility='ALL') | Q(visibility=user_role)
+        )
+        shared_schedules = SharedSchedule.objects.filter(shared_filter).order_by('start_datetime')
+        shared_data = SharedScheduleCalendarSerializer(shared_schedules, many=True).data
+
+        # 2. 개인 일정 조회
+        personal_schedules = PersonalSchedule.objects.filter(
+            user=user,
+            is_deleted=False,
+            start_datetime__lt=end_date,
+            end_datetime__gte=start_date
+        ).order_by('start_datetime')
+        personal_data = PersonalScheduleCalendarSerializer(personal_schedules, many=True).data
+
+        # 3. 환자 일정 조회 (patient_id가 있을 경우)
+        patient_data = []
+        if patient_id:
+            try:
+                from apps.encounters.models import Encounter
+                patient_encounters = Encounter.objects.filter(
+                    patient_id=patient_id,
+                    is_deleted=False
+                ).filter(
+                    Q(encounter_date__gte=start_date.date(), encounter_date__lt=end_date.date()) |
+                    Q(admission_date__gte=start_date.date(), admission_date__lt=end_date.date())
+                ).order_by('encounter_date')
+
+                for enc in patient_encounters:
+                    enc_date = enc.admission_date or enc.encounter_date
+                    patient_data.append({
+                        'id': enc.id,
+                        'title': f'{enc.get_encounter_type_display()} - {enc.get_status_display()}',
+                        'schedule_type': 'patient',
+                        'schedule_type_display': '환자 진료',
+                        'start': enc_date.isoformat() if enc_date else None,
+                        'end': enc_date.isoformat() if enc_date else None,
+                        'all_day': True,
+                        'color': '#f59e0b',  # 노랑
+                        'scope': 'patient',
+                        'patient_id': patient_id,
+                    })
+            except Exception:
+                pass  # Encounter 앱이 없거나 오류 시 무시
+
+        return Response({
+            'shared': shared_data,
+            'personal': personal_data,
+            'patient': patient_data,
+        })

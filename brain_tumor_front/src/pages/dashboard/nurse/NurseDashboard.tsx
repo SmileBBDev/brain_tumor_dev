@@ -13,6 +13,7 @@ import type { Encounter, EncounterSearchParams, EncounterStatus } from '@/types/
 import type { User } from '@/types/user';
 import Pagination from '@/layout/Pagination';
 import PatientListWidget from '../common/PatientListWidget';
+import { UnifiedCalendar } from '@/components/calendar/UnifiedCalendar';
 import '@/assets/style/patientListView.css';
 import './NurseDashboard.css';
 
@@ -373,13 +374,16 @@ export default function NurseDashboard() {
           )}
         </section>
 
-        {/* 환자 목록 위젯 */}
-        <PatientListWidget
-          title="환자 목록"
-          limit={5}
-          showViewAll={true}
-          compact={true}
-        />
+        {/* 사이드 패널: 환자 목록 + 캘린더 */}
+        <div className="dashboard-sidebar">
+          <PatientListWidget
+            title="환자 목록"
+            limit={5}
+            showViewAll={true}
+            compact={true}
+          />
+          <UnifiedCalendar title="간호사 통합 캘린더" />
+        </div>
       </div>
     </div>
   );
