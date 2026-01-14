@@ -103,10 +103,10 @@ export default function LISWorklistPage() {
   return (
     <div className="page lis-worklist">
       {/* 헤더 */}
-      <header className="page-header">
+      {/* <header className="page-header">
         <h2>검사 Worklist</h2>
         <span className="subtitle">담당 검사 목록을 확인하고 결과를 입력합니다</span>
-      </header>
+      </header> */}
 
       {/* 요약 카드 (6개 상태) */}
       <section className="summary-cards">
@@ -222,6 +222,10 @@ export default function LISWorklistPage() {
             내 작업만
           </label>
         </div>
+      </section>
+
+      <section className='page-header'>
+        <span className="subtitle">담당 검사 목록을 확인하고 결과를 입력합니다</span>
       </section>
 
       {/* 워크리스트 테이블 */}

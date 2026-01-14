@@ -76,8 +76,7 @@ export default function OCSProcessStatusPage() {
       {/* 헤더 */}
       <header className="page-header">
         <div className="header-left">
-          <h2>OCS 처리 현황</h2>
-          <span className="subtitle">RIS/LIS 통합 처리 현황을 모니터링합니다</span>
+          <span className="subtitle">RIS/LIS 통합 처리 현황을 모니터링합니다.</span>
         </div>
         <div className="header-right">
           <button className="refresh-btn" onClick={loadData} disabled={loading}>
@@ -129,6 +128,18 @@ export default function OCSProcessStatusPage() {
               </div>
             </div>
           </section>
+
+          
+          {/* 범례 */}
+          <section className="legend-section">
+            {(Object.keys(STATUS_INFO) as StatusKey[]).map((key) => (
+              <div key={key} className="legend-item">
+                <span className={`legend-color ${STATUS_INFO[key].className}`} />
+                <span>{STATUS_INFO[key].label}</span>
+              </div>
+            ))}
+          </section>
+         
 
           {/* 부서별 현황 */}
           <section className="department-section">
@@ -205,15 +216,7 @@ export default function OCSProcessStatusPage() {
             </div>
           </section>
 
-          {/* 범례 */}
-          <section className="legend-section">
-            {(Object.keys(STATUS_INFO) as StatusKey[]).map((key) => (
-              <div key={key} className="legend-item">
-                <span className={`legend-color ${STATUS_INFO[key].className}`} />
-                <span>{STATUS_INFO[key].label}</span>
-              </div>
-            ))}
-          </section>
+          
         </>
       )}
 

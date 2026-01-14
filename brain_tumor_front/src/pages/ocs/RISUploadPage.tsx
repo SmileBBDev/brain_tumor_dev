@@ -549,7 +549,7 @@ export default function RISUploadPage() {
     <div className="page ris-upload-page">
       {/* 헤더 */}
       <header className="page-header">
-        <h2>영상 결과 업로드</h2>
+        {/* <h2>영상 결과 업로드</h2> */}
         <span className="subtitle">외부 RIS/PACS의 영상 데이터를 등록합니다</span>
       </header>
 

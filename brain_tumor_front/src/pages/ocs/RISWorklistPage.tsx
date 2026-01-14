@@ -103,11 +103,6 @@ export default function RISWorklistPage() {
 
   return (
     <div className="page ris-worklist">
-      {/* 헤더 */}
-      <header className="page-header">
-        <h2>영상 판독 Worklist</h2>
-        <span className="subtitle">담당 영상 검사 목록을 확인하고 판독을 진행합니다</span>
-      </header>
 
       {/* 요약 카드 (6개 상태) */}
       <section className="summary-cards">
@@ -223,6 +218,10 @@ export default function RISWorklistPage() {
             내 작업만
           </label>
         </div>
+      </section>
+
+      <section className="page-header">
+        <span className="subtitle">담당 영상 검사 목록을 확인하고 판독을 진행합니다</span>
       </section>
 
       {/* 워크리스트 테이블 */}

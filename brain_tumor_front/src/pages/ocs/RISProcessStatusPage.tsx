@@ -176,8 +176,8 @@ export default function RISProcessStatusPage() {
 
       {/* 헤더 */}
       <header className="page-header">
-        <h2>전체 판독 현황</h2>
-        <span className="subtitle">영상의학과 판독 진행 상황을 모니터링합니다</span>
+        {/* <h2>전체 판독 현황</h2> */}
+        <span className="subtitle">영상의학과 판독 진행 상황을 모니터링합니다.</span>
         <div className="header-controls">
           <select
             className="date-range-filter"

@@ -177,7 +177,7 @@ export default function LISProcessStatusPage() {
 
       {/* 헤더 */}
       <header className="page-header">
-        <h2>전체 검사 현황</h2>
+        {/* <h2>전체 검사 현황</h2> */}
         <span className="subtitle">검사실 검사 진행 상황을 모니터링합니다</span>
         <div className="header-controls">
           <select

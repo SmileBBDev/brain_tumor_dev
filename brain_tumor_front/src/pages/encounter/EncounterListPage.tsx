@@ -1,4 +1,5 @@
 import EncounterListWidget from './EncounterListWidget';
+import '@/assets/style/encounterListView.css';
 
 export default function EncounterListPage() {
   return (

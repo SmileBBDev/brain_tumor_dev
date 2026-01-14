@@ -2,12 +2,12 @@
 
 .ris-upload-page {
   padding: 20px;
-  max-width: 900px;
+  /* max-width: 900px; */
 }
 
-.ris-upload-page .page-header {
+/* .ris-upload-page .page-header {
   margin-bottom: 24px;
-}
+} */
 
 .ris-upload-page .page-header h2 {
   margin: 0 0 4px 0;

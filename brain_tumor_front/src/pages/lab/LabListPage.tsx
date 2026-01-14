@@ -6,6 +6,7 @@ import type { OCSListItem, OCSSearchParams, OcsStatus } from '@/types/ocs';
 import LabListTable from './LabListTable';
 import Pagination from '@/layout/Pagination';
 import '@/assets/style/encounterListView.css';
+import '@/assets/style/summaryCard.css';
 
 // 검사 유형 정의
 type LabTestType = 'BLOOD' | 'GENETIC' | 'PROTEIN' | 'URINE' | 'CSF' | 'BIOPSY' | '';
@@ -90,10 +91,61 @@ export default function LabListPage() {
 
   return (
     <div className="page">
-      <div className="page-header">
+      {/* <div className="page-header">
         <h1>검사 결과 조회</h1>
         <p className="subtitle">혈액, 유전자, 단백질, 조직 검사 결과 관리</p>
+      </div> */}
+
+      {/* Statistics Summary */}
+      <div className="summary-container">
+        <div className="summary-card total">
+          <div className="label">총 검사</div>
+          <div className="count">{totalCount}</div>
+        </div>
+        <div className="summary-card in-progress">
+          <div className="label">진행 중</div>
+          <div className="count">{getStatusCount('IN_PROGRESS')}</div>
+        </div>
+        <div className="summary-card waiting">
+          <div className="label">결과 대기</div>
+          <div className="count">{getStatusCount('RESULT_READY')}</div>
+        </div>
+        <div className="summary-card confirmed">
+          <div className="label">확정 완료</div>
+          <div className="count">{getStatusCount('CONFIRMED')}</div>
+        </div>
       </div>
+        {/* <div style={{
+          display: 'flex',
+          gap: '1rem',
+          marginBottom: '1rem',
+          padding: '1rem',
+          background: '#f8f9fa',
+          borderRadius: '8px'
+        }}>
+          <div style={{ flex: 1, textAlign: 'center' }}>
+            <div style={{ fontSize: '0.875rem', color: '#666' }}>총 검사</div>
+            <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#333' }}>{totalCount}</div>
+          </div>
+          <div style={{ flex: 1, textAlign: 'center' }}>
+            <div style={{ fontSize: '0.875rem', color: '#666' }}>진행 중</div>
+            <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#339af0' }}>
+              {getStatusCount('IN_PROGRESS')}
+            </div>
+          </div>
+          <div style={{ flex: 1, textAlign: 'center' }}>
+            <div style={{ fontSize: '0.875rem', color: '#666' }}>결과 대기</div>
+            <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#ff6b6b' }}>
+              {getStatusCount('RESULT_READY')}
+            </div>
+          </div>
+          <div style={{ flex: 1, textAlign: 'center' }}>
+            <div style={{ fontSize: '0.875rem', color: '#666' }}>확정 완료</div>
+            <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#51cf66' }}>
+              {getStatusCount('CONFIRMED')}
+            </div>
+          </div>
+        </div> */}
 
       <div className="content">
         {/* Filter Bar */}
@@ -148,38 +200,9 @@ export default function LabListPage() {
           </div>
         </div>
 
-        {/* Statistics Summary */}
-        <div style={{
-          display: 'flex',
-          gap: '1rem',
-          marginBottom: '1rem',
-          padding: '1rem',
-          background: '#f8f9fa',
-          borderRadius: '8px'
-        }}>
-          <div style={{ flex: 1, textAlign: 'center' }}>
-            <div style={{ fontSize: '0.875rem', color: '#666' }}>총 검사</div>
-            <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#333' }}>{totalCount}</div>
-          </div>
-          <div style={{ flex: 1, textAlign: 'center' }}>
-            <div style={{ fontSize: '0.875rem', color: '#666' }}>진행 중</div>
-            <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#339af0' }}>
-              {getStatusCount('IN_PROGRESS')}
-            </div>
-          </div>
-          <div style={{ flex: 1, textAlign: 'center' }}>
-            <div style={{ fontSize: '0.875rem', color: '#666' }}>결과 대기</div>
-            <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#ff6b6b' }}>
-              {getStatusCount('RESULT_READY')}
-            </div>
-          </div>
-          <div style={{ flex: 1, textAlign: 'center' }}>
-            <div style={{ fontSize: '0.875rem', color: '#666' }}>확정 완료</div>
-            <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#51cf66' }}>
-              {getStatusCount('CONFIRMED')}
-            </div>
-          </div>
-        </div>
+        <section className='page-header'>
+          <span className="subtitle">혈액, 유전자, 단백질, 조직 검사 결과 관리</span>
+        </section>
 
         {/* Table */}
         {loading ? (

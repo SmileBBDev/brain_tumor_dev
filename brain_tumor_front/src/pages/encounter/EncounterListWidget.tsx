@@ -7,7 +7,6 @@ import EncounterCreateModal from './EncounterCreateModal';
 import EncounterEditModal from './EncounterEditModal';
 import EncounterDeleteModal from './EncounterDeleteModal';
 import Pagination from '@/layout/Pagination';
-import '@/assets/style/encounterListView.css';
 
 export type WidgetSize = 'compact' | 'medium' | 'full';
 

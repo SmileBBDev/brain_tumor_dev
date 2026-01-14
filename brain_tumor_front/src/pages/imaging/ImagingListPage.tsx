@@ -8,6 +8,7 @@ import ImagingEditModal from './ImagingEditModal';
 import ImagingDeleteModal from './ImagingDeleteModal';
 import Pagination from '@/layout/Pagination';
 import '@/assets/style/encounterListView.css';
+import '@/assets/style/summaryCard.css';
 
 export default function ImagingListPage() {
   const { role } = useAuth();
@@ -129,12 +130,61 @@ export default function ImagingListPage() {
 
   return (
     <div className="page">
-      <div className="page-header">
+      {/* <div className="page-header">
         <h1>영상 검사 목록</h1>
         <p className="subtitle">CT, MRI, PET, X-Ray 검사 오더 관리</p>
+      </div> */}
+
+      <div className="">
+        <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
+          <div className="summary-card total">
+            <div className="label">총 검사</div>
+            <div className="count">{totalCount}</div>
+          </div>
+          <div className="summary-card waiting">
+            <div className="label">판독 대기</div>
+            <div className="count">
+              {studies.filter(s => s.status === 'completed' && !s.has_report).length}
+            </div>
+          </div>
+          <div className="summary-card confirmed">
+            <div className="label">판독 완료</div>
+            <div className="count">
+              {studies.filter(s => s.has_report).length}
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="content">
+        {/* Statistics Summary */}
+        
+        {/* <div style={{
+          display: 'flex',
+          gap: '1rem',
+          marginBottom: '1rem',
+          padding: '1rem',
+          background: '#f8f9fa',
+          borderRadius: '8px'
+        }}>
+          <div style={{ flex: 1, textAlign: 'center' }}>
+            <div style={{ fontSize: '0.875rem', color: '#666' }}>총 검사</div>
+            <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#333' }}>{totalCount}</div>
+          </div>
+          <div style={{ flex: 1, textAlign: 'center' }}>
+            <div style={{ fontSize: '0.875rem', color: '#666' }}>판독 대기</div>
+            <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#ff6b6b' }}>
+              {studies.filter(s => s.status === 'completed' && !s.has_report).length}
+            </div>
+          </div>
+          <div style={{ flex: 1, textAlign: 'center' }}>
+            <div style={{ fontSize: '0.875rem', color: '#666' }}>판독 완료</div>
+            <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#51cf66' }}>
+              {studies.filter(s => s.has_report).length}
+            </div>
+          </div>
+        </div> */}
+
         {/* Filter Bar */}
         <div className="filter-bar">
           <div className="filter-left">
@@ -205,32 +255,9 @@ export default function ImagingListPage() {
           </div>
         </div>
 
-        {/* Statistics Summary */}
-        <div style={{
-          display: 'flex',
-          gap: '1rem',
-          marginBottom: '1rem',
-          padding: '1rem',
-          background: '#f8f9fa',
-          borderRadius: '8px'
-        }}>
-          <div style={{ flex: 1, textAlign: 'center' }}>
-            <div style={{ fontSize: '0.875rem', color: '#666' }}>총 검사</div>
-            <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#333' }}>{totalCount}</div>
-          </div>
-          <div style={{ flex: 1, textAlign: 'center' }}>
-            <div style={{ fontSize: '0.875rem', color: '#666' }}>판독 대기</div>
-            <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#ff6b6b' }}>
-              {studies.filter(s => s.status === 'completed' && !s.has_report).length}
-            </div>
-          </div>
-          <div style={{ flex: 1, textAlign: 'center' }}>
-            <div style={{ fontSize: '0.875rem', color: '#666' }}>판독 완료</div>
-            <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#51cf66' }}>
-              {studies.filter(s => s.has_report).length}
-            </div>
-          </div>
-        </div>
+        <section className='page-header'>
+          <span className="subtitle">CT, MRI, PET, X-Ray 검사 오더 관리</span>
+        </section>
 
         {/* Table */}
         {loading ? (
