@@ -217,14 +217,14 @@
   font-size: 13px;
   font-weight: 600;
   padding: 12px;
-  text-align: left;
+  text-align: center;
 }
 
 .content tbody td {
   padding: 12px;
   font-size: 14px;
   color: var(--text-main, #1f2937);
-  border-top: 1px solid var(--border, #e5e7eb);
+  /* border-top: 1px solid var(--border, #e5e7eb); */
 }
 
 .content tbody tr:hover {
@@ -267,7 +267,7 @@
 /* 작업 열 우측 정렬 */
 .patient-table th:last-child,
 .patient-table td:last-child {
-  text-align: right;
+  text-align: center;
 }
 
 /* 행 Hover 효과 강화 */
@@ -275,6 +275,7 @@
   cursor: pointer;
   transition: all 0.2s ease;
   position: relative;
+  text-align: center;
 }
 
 .patient-row:hover {
@@ -317,7 +318,7 @@
 
 /* 성별/나이 셀 */
 .gender-age-cell {
-  display: flex;
+  /* display: flex; */
   align-items: center;
   gap: 4px;
   white-space: nowrap;
@@ -381,9 +382,9 @@
 /* 작업 영역 (진료 시작 + 더보기 메뉴) */
 .patient-table .action-buttons {
   display: flex;
-  align-items: center;
   gap: 8px;
-  justify-content: flex-end;
+  justify-content: center; /* 가로 가운데 정렬 */
+
 }
 
 /* 더보기 메뉴 컨테이너 */

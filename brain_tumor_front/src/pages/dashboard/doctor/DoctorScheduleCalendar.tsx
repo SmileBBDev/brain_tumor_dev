@@ -456,12 +456,12 @@ export function DoctorScheduleCalendar() {
         /* ============================================
            선택된 날짜 - outline only (배경 fill 없음)
            ============================================ */
-        .calendar-day.selected {
-          outline: 2px solid #5b8def;
-          outline-offset: -2px;
-          box-shadow: 0 4px 12px rgba(91, 141, 239, 0.25);
-          z-index: 1;
-        }
+        // .calendar-day.selected {
+        //   outline: 2px solid #5b8def;
+        //   outline-offset: -2px;
+        //   box-shadow: 0 4px 12px rgba(91, 141, 239, 0.25);
+        //   z-index: 1;
+        // }
         .calendar-day.selected .day-number {
           color: #5b8def;
           font-weight: 700;

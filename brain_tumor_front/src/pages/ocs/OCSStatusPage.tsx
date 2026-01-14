@@ -168,10 +168,10 @@ export default function OCSStatusPage() {
   return (
     <div className="page ocs-status-page">
       {/* 헤더 */}
-      <header className="page-header">
-        <div className="header-left">
-          <h2>OCS 현황</h2>
-          <span className="subtitle">전체 OCS 현황을 확인합니다</span>
+      {/* <header className="page-header"> */}
+        {/* <div className="header-left"> */}
+          {/* <h2>OCS 현황</h2> */}
+          {/* <span className="subtitle">전체 OCS 현황을 확인합니다</span>
         </div>
         <div className="header-right">
           {role === 'SYSTEMMANAGER' && (
@@ -188,7 +188,7 @@ export default function OCSStatusPage() {
             </button>
           )}
         </div>
-      </header>
+      </header> */}
 
       {/* 필터 영역 */}
       <section className="filter-bar">
@@ -263,9 +263,28 @@ export default function OCSStatusPage() {
               </option>
             ))}
           </select>
+
+
+          {role === 'SYSTEMMANAGER' && (
+            <button className="btn secondary" onClick={handleExportExcel}>
+              Excel 내보내기
+            </button>
+          )}
+          {(role === 'DOCTOR' || role === 'SYSTEMMANAGER') && (
+            <button
+              className="btn primary"
+              onClick={() => navigate('/ocs/create')}
+            >
+              + OCS 생성
+            </button>
+          )}
         </div>
       </section>
 
+      <section className="page-header">
+        <span className="subtitle">전체 OCS 현황을 확인합니다</span>
+      </section>
+      
       {/* 테이블 */}
       <section className="content">
         {loading ? (
