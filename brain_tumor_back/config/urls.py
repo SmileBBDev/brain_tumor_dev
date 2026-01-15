@@ -33,7 +33,7 @@ urlpatterns = [
 
     # AI Inference API
     path("api/ai/", include("apps.ai_inference.urls")),
-
+    
     # 치료 관리 API
     path("api/treatment/", include("apps.treatment.urls")),
 

@@ -1296,7 +1296,7 @@ def create_dummy_imaging_with_ocs(num_orders=30, force=False):
         radiologists = list(User.objects.filter(role__code='DOCTOR'))
 
     # 뇌종양 CDSS에 필요한 영상 검사만
-    modalities = ['MRI', 'CT', 'PET']  # X-RAY 제거
+    modalities = ['MRI']  # MRI만 사용 (CT, PET 제거)
     body_parts = ['Brain', 'Head']  # 뇌종양 관련 부위만
     ocs_statuses = ['ORDERED', 'ACCEPTED', 'IN_PROGRESS', 'RESULT_READY', 'CONFIRMED']
     priorities = ['urgent', 'normal']

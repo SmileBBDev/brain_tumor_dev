@@ -5,7 +5,9 @@ Orthanc DICOM 업로드 및 OCS 동기화 스크립트
 이 스크립트는:
 1. 환자데이터 폴더의 MRI를 Orthanc에 업로드
 2. OCS RIS 레코드의 worker_result를 Orthanc 정보로 업데이트
-3. 상위 16개 OCS RIS → CONFIRMED, 나머지 → ACCEPTED
+3. Orthanc/DICOM 데이터가 있는 OCS → CONFIRMED, 없으면 → ACCEPTED
+
+※ CT/PET OCS는 setup_dummy_data_*.py에서 생성하지 않음 (MRI만 생성)
 
 사용법:
     python setup_dummy_data/sync_orthanc_ocs.py
@@ -421,8 +423,8 @@ def main():
     # 5. OCS 업데이트
     print("\n[5단계] OCS 업데이트...")
 
-    # 상위 16개 = CONFIRMED, 나머지 = ACCEPTED
-    confirmed_count = min(16, len(upload_results))
+    # Orthanc/DICOM 데이터가 있으면 CONFIRMED, 없으면 ACCEPTED
+    confirmed_count = 0
 
     for i, result in enumerate(upload_results):
         mapping = result["mapping"]
@@ -433,31 +435,33 @@ def main():
             print(f"  [{i+1}] {mapping['patient_number']}: OCS 없음, 스킵")
             continue
 
-        is_confirmed = (i < confirmed_count)
+        # orthanc_info가 있으면 CONFIRMED, 없으면 ACCEPTED
+        is_confirmed = orthanc_info is not None
         status = "CONFIRMED" if is_confirmed else "ACCEPTED"
+
+        if is_confirmed:
+            confirmed_count += 1
 
         print(f"  [{i+1}] {ocs.ocs_id} -> {status}")
 
         if orthanc_info:
-            update_ocs_worker_result(ocs, orthanc_info, is_confirmed=is_confirmed, dry_run=args.dry_run)
+            update_ocs_worker_result(ocs, orthanc_info, is_confirmed=True, dry_run=args.dry_run)
         else:
-            # Orthanc 업로드 없이 상태만 변경
+            # Orthanc 업로드 없이 ACCEPTED 상태로 변경
             if not args.dry_run:
-                if is_confirmed:
-                    ocs.ocs_status = OCS.OcsStatus.CONFIRMED
-                    ocs.confirmed_at = timezone.now()
-                else:
-                    ocs.ocs_status = OCS.OcsStatus.ACCEPTED
-                    ocs.accepted_at = timezone.now()
+                ocs.ocs_status = OCS.OcsStatus.ACCEPTED
+                ocs.accepted_at = timezone.now()
                 ocs.save()
 
-    # 6. 나머지 OCS RIS를 ACCEPTED로 변경
-    print("\n[6단계] 나머지 OCS RIS 상태 변경...")
+    # 6. 나머지 OCS RIS MRI를 ACCEPTED로 변경
+    print("\n[6단계] 나머지 OCS RIS MRI 상태 변경...")
 
     processed_ocs_ids = [m["ocs"].id for m in [r["mapping"] for r in upload_results] if m["ocs"]]
 
+    # MRI만 대상으로 함 (CT, PET 제외)
     remaining_ocs = OCS.objects.filter(
         job_role='RIS',
+        job_type='MRI',
         is_deleted=False
     ).exclude(
         id__in=processed_ocs_ids
@@ -466,7 +470,7 @@ def main():
     )
 
     remaining_count = remaining_ocs.count()
-    print(f"  대상: {remaining_count}건")
+    print(f"  대상: {remaining_count}건 (MRI only)")
 
     if not args.dry_run and remaining_count > 0:
         updated = remaining_ocs.update(
@@ -474,7 +478,7 @@ def main():
             accepted_at=timezone.now()
         )
         print(f"  업데이트 완료: {updated}건")
-    else:
+    elif args.dry_run:
         print(f"  [DRY-RUN] 업데이트 스킵")
 
     # 7. 요약
@@ -485,8 +489,8 @@ def main():
     print(f"\n[요약]")
     print(f"  - 환자 폴더: {len(PATIENT_FOLDERS)}개")
     print(f"  - 업로드 처리: {len(upload_results)}건")
-    print(f"  - CONFIRMED: {confirmed_count}건")
-    print(f"  - 나머지 ACCEPTED: {remaining_count}건")
+    print(f"  - CONFIRMED (DICOM 있음): {confirmed_count}건")
+    print(f"  - 나머지 ACCEPTED (MRI): {remaining_count}건")
 
     # Orthanc 상태 확인
     try:
@@ -494,6 +498,14 @@ def main():
         print(f"  - Orthanc Studies: {len(studies)}개")
     except:
         pass
+
+    # 최종 OCS RIS 상태
+    print(f"\n[OCS RIS 최종 상태]")
+    mri_total = OCS.objects.filter(job_role='RIS', job_type='MRI', is_deleted=False).count()
+    mri_confirmed = OCS.objects.filter(job_role='RIS', job_type='MRI', ocs_status='CONFIRMED', is_deleted=False).count()
+    mri_accepted = OCS.objects.filter(job_role='RIS', job_type='MRI', ocs_status='ACCEPTED', is_deleted=False).count()
+
+    print(f"  - MRI 전체: {mri_total}건 (CONFIRMED: {mri_confirmed}, ACCEPTED: {mri_accepted})")
 
 
 if __name__ == "__main__":

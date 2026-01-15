@@ -12,11 +12,12 @@ Brain Tumor CDSS 프로젝트의 개발/테스트용 더미 데이터 생성 시
 6. [파일 구조](#파일-구조)
 7. [데이터 흐름](#데이터-흐름)
 8. [스크립트별 상세 설명](#스크립트별-상세-설명)
-9. [진료 예약 스케줄 생성](#진료-예약-스케줄-생성)
-10. [테스트 계정](#테스트-계정)
-11. [생성되는 데이터 통계](#생성되는-데이터-통계)
-12. [새 기능 추가 가이드](#새-기능-추가-가이드)
-13. [트러블슈팅](#트러블슈팅)
+9. [환자데이터 동기화](#환자데이터-동기화)
+10. [진료 예약 스케줄 생성](#진료-예약-스케줄-생성)
+11. [테스트 계정](#테스트-계정)
+12. [생성되는 데이터 통계](#생성되는-데이터-통계)
+13. [새 기능 추가 가이드](#새-기능-추가-가이드)
+14. [트러블슈팅](#트러블슈팅)
 
 ---
 
@@ -70,6 +71,9 @@ setup_dummy_data/
 ├── setup_dummy_data_2_clinical.py           # 임상 데이터 (환자, 진료, OCS, AI, 치료, 경과, 처방)
 ├── setup_dummy_data_3_extended.py           # 확장 데이터 (대량 진료/OCS, 오늘 진료, 일정)
 ├── setup_dummy_data_4_encounter_schedule.py # 진료 예약 스케줄 (의사별 기간 예약)
+├── sync_orthanc_ocs.py                      # Orthanc DICOM 업로드 + OCS RIS 동기화
+├── sync_lis_ocs.py                          # LIS 파일 복사 + OCS LIS 동기화
+├── dummy data 업그레이드 계획.md              # OCS worker_result 양식 문서
 └── DB_SETUP_GUIDE.md                        # 이 문서
 ```
 
@@ -84,14 +88,27 @@ setup_dummy_data/
 ├─────────────────┼───────────────────┼─────────────────────┼──────────────────────────┤
 │ - DB 생성        │ - 환자 50명        │ - 확장 진료 150건    │ - 기간별 예약 생성        │
 │ - 마이그레이션   │ - 진료 20건        │ - 확장 OCS RIS 100건 │ - 의사당 10명/일          │
-│ - 역할 7개       │ - OCS (RIS 30건)   │ - 확장 OCS LIS 80건  │ - 주말 제외               │
-│ - 사용자 10명    │ - OCS (LIS 20건)   │ - 오늘 예약 진료     │ - 30분 간격 슬롯          │
+│ - 역할 7개       │ - OCS RIS 30건     │ - 확장 OCS LIS 80건  │ - 주말 제외               │
+│ - 사용자 10명    │ - OCS LIS 20건     │ - 오늘 예약 진료     │ - 30분 간격 슬롯          │
 │ - 메뉴/권한      │ - AI 모델 3개      │ - 공유 일정          │                          │
 │                 │ - 치료 계획 15건    │ - 개인 일정          │                          │
 │                 │ - 경과 추적 25건    │                     │                          │
 │                 │ - AI 요청 10건      │                     │                          │
 │                 │ - 처방 20건         │                     │                          │
 └─────────────────┴───────────────────┴─────────────────────┴──────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────────────┐
+│                           환자데이터 동기화 스크립트 (별도 실행)                         │
+├─────────────────────────────────────────────────────────────────────────────────────┤
+│  sync_orthanc_ocs.py                    │  sync_lis_ocs.py                          │
+│  (Orthanc DICOM + OCS RIS)               │  (LIS 파일 + OCS LIS)                      │
+├─────────────────────────────────────────┼───────────────────────────────────────────┤
+│ - 환자데이터/*/mri → Orthanc 업로드       │ - 환자데이터/*/rna → CDSS_STORAGE/LIS      │
+│ - OCS RIS worker_result 업데이트 (v1.2)  │ - 환자데이터/*/protein → CDSS_STORAGE/LIS  │
+│ - DICOM 있으면 CONFIRMED                 │ - OCS LIS worker_result 업데이트 (v1.2)    │
+│ - 없으면 ACCEPTED                        │ - 파일 있으면 CONFIRMED                    │
+│ - MRI만 생성 (CT, PET 제거)              │ - RNA_SEQ, BIOMARKER 지원                  │
+└─────────────────────────────────────────┴───────────────────────────────────────────┘
 ```
 
 ---
@@ -418,6 +435,190 @@ create_personal_schedules()   # 개인 일정
 
 ---
 
+## 환자데이터 동기화
+
+### 개요
+
+`환자데이터` 폴더의 실제 의료 데이터(MRI, RNA-seq, Protein)를 시스템에 동기화합니다.
+
+```
+c:/0000/환자데이터/
+├── TCGA-CS-4944/
+│   ├── mri/                    # MRI DICOM 파일 (5채널)
+│   │   ├── t1/                 # T1 강조 영상
+│   │   ├── t2/                 # T2 강조 영상
+│   │   ├── t1ce/               # T1 조영증강 영상
+│   │   ├── flair/              # FLAIR 영상
+│   │   └── seg/                # Segmentation 마스크
+│   ├── rna/                    # RNA 시퀀싱 데이터
+│   │   ├── gene_expression.csv # 유전자 발현 데이터
+│   │   └── rna_summary.json
+│   └── protein/                # 단백질 데이터
+│       ├── rppa.csv            # RPPA 데이터
+│       └── protein_summary.json
+├── TCGA-CS-6666/
+│   └── ...
+└── (15개 환자 폴더)
+```
+
+### sync_orthanc_ocs.py - Orthanc DICOM 동기화
+
+MRI DICOM 파일을 Orthanc PACS에 업로드하고 OCS RIS를 업데이트합니다.
+
+```bash
+# 전체 실행 (MRI 업로드 + OCS 업데이트)
+python setup_dummy_data/sync_orthanc_ocs.py
+
+# 테스트 모드 (실제 변경 없음)
+python setup_dummy_data/sync_orthanc_ocs.py --dry-run
+
+# 업로드 스킵 (OCS 상태만 업데이트)
+python setup_dummy_data/sync_orthanc_ocs.py --skip-upload
+
+# 처리 환자 수 제한
+python setup_dummy_data/sync_orthanc_ocs.py --limit 5
+```
+
+**동작 방식:**
+1. `환자데이터/*/mri` 폴더의 DICOM 파일을 Orthanc에 업로드
+2. OCS RIS의 `worker_result`를 v1.2 양식으로 업데이트
+3. DICOM 데이터가 있는 OCS → `CONFIRMED`
+4. 없는 OCS → `ACCEPTED`
+
+**OCS RIS worker_result v1.2 구조:**
+```json
+{
+  "_template": "RIS",
+  "_version": "1.2",
+  "_confirmed": true,
+  "_verifiedAt": "2026-01-15T06:00:00.000Z",
+  "_verifiedBy": "시스템관리자",
+  "orthanc": {
+    "patient_id": "P202600001",
+    "orthanc_study_id": "d33631a2-...",
+    "study_uid": "1.2.410.200001.0001.202600001.20260115...",
+    "series": [
+      {"orthanc_id": "...", "series_type": "T1", "instances_count": 155},
+      {"orthanc_id": "...", "series_type": "T2", "instances_count": 155},
+      {"orthanc_id": "...", "series_type": "T1C", "instances_count": 155},
+      {"orthanc_id": "...", "series_type": "FLAIR", "instances_count": 155},
+      {"orthanc_id": "...", "series_type": "SEG", "instances_count": 155}
+    ]
+  },
+  "dicom": {"study_uid": "...", "series_count": 5, "instance_count": 775},
+  "findings": "...",
+  "impression": "...",
+  "recommendation": "...",
+  "tumorDetected": true
+}
+```
+
+### sync_lis_ocs.py - LIS 파일 동기화
+
+RNA-seq, Protein 파일을 `CDSS_STORAGE/LIS`에 복사하고 OCS LIS를 업데이트합니다.
+
+```bash
+# 전체 실행 (파일 복사 + OCS 업데이트)
+python setup_dummy_data/sync_lis_ocs.py
+
+# 테스트 모드 (실제 변경 없음)
+python setup_dummy_data/sync_lis_ocs.py --dry-run
+
+# 처리 환자 수 제한
+python setup_dummy_data/sync_lis_ocs.py --limit 5
+```
+
+**파일 저장 규칙:**
+
+| OCS job_type | 소스 파일 | 저장 위치 |
+|--------------|----------|----------|
+| `RNA_SEQ` | `환자데이터/*/rna/gene_expression.csv` | `CDSS_STORAGE/LIS/{ocs_id}/gene_expression.csv` |
+| `BIOMARKER` | `환자데이터/*/protein/rppa.csv` | `CDSS_STORAGE/LIS/{ocs_id}/rppa.csv` |
+
+**저장소 구조:**
+```
+c:/0000/
+├── brain_tumor_dev/           # 프로젝트 폴더
+├── 환자데이터/                 # 원본 데이터 (읽기 전용)
+└── CDSS_STORAGE/              # 시스템 저장소 (프로젝트 외부)
+    └── LIS/
+        ├── ocs_0039/           # RNA_SEQ OCS
+        │   └── gene_expression.csv
+        ├── ocs_0044/           # BIOMARKER OCS
+        │   └── rppa.csv
+        └── ...
+```
+
+**OCS LIS worker_result v1.2 구조 (RNA_SEQ):**
+```json
+{
+  "_template": "LIS",
+  "_version": "1.2",
+  "_confirmed": true,
+  "test_type": "RNA_SEQ",
+  "RNA_seq": "CDSS_STORAGE/LIS/ocs_0039/gene_expression.csv",
+  "gene_expression": {
+    "file_path": "CDSS_STORAGE/LIS/ocs_0039/gene_expression.csv",
+    "file_size": 442823,
+    "top_expressed_genes": [
+      {"gene_symbol": "GFAP", "expression": 2554529.89},
+      {"gene_symbol": "CLU", "expression": 1981621.21}
+    ]
+  },
+  "sequencing_data": {
+    "method": "RNA-Seq (Illumina HiSeq)",
+    "coverage": 95.5,
+    "quality_score": 38.2
+  }
+}
+```
+
+**OCS LIS worker_result v1.2 구조 (BIOMARKER):**
+```json
+{
+  "_template": "LIS",
+  "_version": "1.2",
+  "_confirmed": true,
+  "test_type": "PROTEIN",
+  "protein": "CDSS_STORAGE/LIS/ocs_0044/rppa.csv",
+  "protein_markers": [
+    {"marker_name": "14-3-3_beta", "value": "-0.1172", "is_abnormal": false},
+    {"marker_name": "14-3-3_epsilon", "value": "0.0987", "is_abnormal": false}
+  ],
+  "protein_data": {
+    "method": "RPPA (Reverse Phase Protein Array)",
+    "file_path": "CDSS_STORAGE/LIS/ocs_0044/rppa.csv",
+    "total_markers": 20
+  }
+}
+```
+
+### 전체 동기화 순서
+
+```bash
+# 1. 기본 더미 데이터 생성
+python -m setup_dummy_data --reset -y
+
+# 2. Orthanc 서버 실행 확인 (localhost:8042)
+
+# 3. MRI DICOM 동기화
+python setup_dummy_data/sync_orthanc_ocs.py
+
+# 4. LIS 파일 동기화
+python setup_dummy_data/sync_lis_ocs.py
+
+# 5. 서버 실행
+python manage.py runserver
+```
+
+### 주의사항
+
+- **Orthanc 서버 필수**: `sync_orthanc_ocs.py` 실행 전 Orthanc 서버가 `localhost:8042`에서 실행 중이어야 함
+- **OCS RIS는 MRI만 생성**: CT, PET OCS는 더 이상 생성되지 않음
+- **환자 매핑 순서**: 환자번호 순서대로 환자데이터 폴더와 매핑됨 (P202600001 ↔ TCGA-CS-4944)
+
+---
+
 ## 진료 예약 스케줄 생성
 
 ### setup_dummy_data_4_encounter_schedule.py
@@ -534,23 +735,36 @@ python manage.py shell
 
 ## 생성되는 데이터 통계
 
-| 항목 | 기본/임상 | 확장 | 스케줄 | 합계 |
-|------|----------|------|--------|------|
-| 메뉴 | ~30개 | - | - | ~30개 |
-| 권한 | ~30개 | - | - | ~30개 |
-| 환자 | 50명 | - | - | 50명 |
-| 진료 | 20건 | 150건 | ~1,650건 | ~1,820건 |
-| OCS (RIS) | 30건 | 100건 | - | 130건 |
-| OCS (LIS) | 20건 | 80건 | - | 100건 |
-| 영상 검사 | 30건 | - | - | 30건 |
-| 치료 계획 | 15건 | - | - | 15건 |
-| 경과 기록 | 25건 | - | - | 25건 |
-| 처방전 | 20건 | - | - | 20건 |
-| 처방 항목 | ~60건 | - | - | ~60건 |
-| AI 모델 | 3개 | - | - | 3개 |
-| AI 요청 | 10건 | - | - | 10건 |
-| 공유 일정 | - | ~15건 | - | ~15건 |
-| 개인 일정 | - | ~50건 | - | ~50건 |
+| 항목 | 기본/임상 | 확장 | 스케줄 | 동기화 | 합계 |
+|------|----------|------|--------|--------|------|
+| 메뉴 | ~30개 | - | - | - | ~30개 |
+| 권한 | ~30개 | - | - | - | ~30개 |
+| 환자 | 50명 | - | - | - | 50명 |
+| 진료 | 20건 | 150건 | ~1,650건 | - | ~1,820건 |
+| OCS RIS (MRI) | 30건 | 100건 | - | 16건 CONFIRMED | 130건 |
+| OCS LIS | 20건 | 80건 | - | 15건 CONFIRMED | 100건 |
+| 영상 검사 | 30건 | - | - | - | 30건 |
+| 치료 계획 | 15건 | - | - | - | 15건 |
+| 경과 기록 | 25건 | - | - | - | 25건 |
+| 처방전 | 20건 | - | - | - | 20건 |
+| 처방 항목 | ~60건 | - | - | - | ~60건 |
+| AI 모델 | 3개 | - | - | - | 3개 |
+| AI 요청 | 10건 | - | - | - | 10건 |
+| 공유 일정 | - | ~15건 | - | - | ~15건 |
+| 개인 일정 | - | ~50건 | - | - | ~50건 |
+| Orthanc Studies | - | - | - | 16개 | 16개 |
+| CDSS_STORAGE/LIS | - | - | - | 15폴더 | 15폴더 |
+
+### OCS 데이터 상세
+
+| OCS 유형 | job_type | 생성 수 | CONFIRMED | ACCEPTED |
+|----------|----------|---------|-----------|----------|
+| RIS | MRI | ~130건 | 16건 (DICOM 연동) | ~114건 |
+| LIS | RNA_SEQ | ~7건 | 7건 (파일 연동) | 0건 |
+| LIS | BIOMARKER | ~8건 | 8건 (파일 연동) | 0건 |
+| LIS | 기타 | ~85건 | - | ~85건 |
+
+> **참고**: CT, PET OCS는 더 이상 생성되지 않음 (MRI만 생성)
 
 ---
 

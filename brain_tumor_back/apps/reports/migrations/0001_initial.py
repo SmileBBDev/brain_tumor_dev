@@ -169,12 +169,12 @@ class Migration(migrations.Migration):
                     models.BooleanField(default=False, verbose_name="삭제 여부"),
                 ),
                 (
-                    "ai_inference_requests",
+                    "ai_inferences",
                     models.ManyToManyField(
                         blank=True,
                         related_name="final_reports",
-                        to="ai_inference.aiinferencerequest",
-                        verbose_name="AI 추론 요청",
+                        to="ai_inference.aiinference",
+                        verbose_name="AI 추론",
                     ),
                 ),
                 (

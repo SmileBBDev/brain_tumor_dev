@@ -1,21 +1,45 @@
-from django.urls import path, include
-from rest_framework.routers import DefaultRouter
+from django.urls import path
 from .views import (
-    AIModelViewSet,
-    AIInferenceRequestViewSet,
-    AIInferenceResultViewSet,
-    PatientAIViewSet
+    M1InferenceView,
+    MGInferenceView,
+    MMInferenceView,
+    MMAvailableOCSView,
+    InferenceCallbackView,
+    AIInferenceListView,
+    AIInferenceDetailView,
+    AIInferenceDeleteByOCSView,
+    AIInferenceFileDownloadView,
+    AIInferenceFilesListView,
+    AIInferenceSegmentationView,
+    MGGeneExpressionView,
 )
 
-router = DefaultRouter()
-router.register(r'models', AIModelViewSet, basename='ai-models')
-router.register(r'requests', AIInferenceRequestViewSet, basename='ai-requests')
-router.register(r'results', AIInferenceResultViewSet, basename='ai-results')
+app_name = 'ai_inference'
 
 urlpatterns = [
-    path('', include(router.urls)),
-    # 환자별 AI 조회
-    path('patients/<int:pk>/requests/', PatientAIViewSet.as_view({'get': 'requests'}), name='patient-ai-requests'),
-    path('patients/<int:pk>/available-models/', PatientAIViewSet.as_view({'get': 'available_models'}), name='patient-available-models'),
-    path('patients/<int:pk>/ocs-for-model/', PatientAIViewSet.as_view({'get': 'ocs_for_model'}), name='patient-ocs-for-model'),
+    # M1 inference
+    path('m1/inference/', M1InferenceView.as_view(), name='m1-inference'),
+
+    # MG inference
+    path('mg/inference/', MGInferenceView.as_view(), name='mg-inference'),
+    path('mg/gene-expression/<int:ocs_id>/', MGGeneExpressionView.as_view(), name='mg-gene-expression'),
+
+    # MM inference (Multimodal)
+    path('mm/inference/', MMInferenceView.as_view(), name='mm-inference'),
+    path('mm/available-ocs/<str:patient_id>/', MMAvailableOCSView.as_view(), name='mm-available-ocs'),
+
+    # Callback (shared)
+    path('callback/', InferenceCallbackView.as_view(), name='callback'),
+
+    # Inference list/detail
+    path('inferences/', AIInferenceListView.as_view(), name='inference-list'),
+    path('inferences/by-ocs/<int:ocs_id>/', AIInferenceDeleteByOCSView.as_view(), name='inference-delete-by-ocs'),
+    path('inferences/<str:job_id>/', AIInferenceDetailView.as_view(), name='inference-detail'),
+
+    # Files
+    path('inferences/<str:job_id>/files/', AIInferenceFilesListView.as_view(), name='inference-files'),
+    path('inferences/<str:job_id>/files/<str:filename>/', AIInferenceFileDownloadView.as_view(), name='inference-file-download'),
+
+    # Segmentation data
+    path('inferences/<str:job_id>/segmentation/', AIInferenceSegmentationView.as_view(), name='inference-segmentation'),
 ]

@@ -52,6 +52,7 @@ INSTALLED_APPS = [
     "apps.imaging",         # 영상 관리
     "apps.ocs",             # OCS (Order Communication System)
     "apps.ai_inference",    # AI 추론 관리
+
     "apps.treatment",       # 치료 관리
     "apps.followup",        # 경과 추적
     "apps.prescriptions",   # 처방 관리

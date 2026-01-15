@@ -331,6 +331,54 @@
   font-weight: 500;
 }
 
+/* AI 분석 썸네일 */
+.ai-thumbnails-section {
+  margin-bottom: 16px;
+}
+
+.ai-thumbnails-section h4 {
+  margin: 0 0 12px 0;
+  font-size: 0.9rem;
+  color: #333;
+}
+
+.ai-thumbnails-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.ai-thumbnail-item {
+  aspect-ratio: 1;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #f0f0f0;
+  border: 1px solid #e0e0e0;
+}
+
+.ai-thumbnail-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.thumbnails-more {
+  margin: 8px 0 0 0;
+  font-size: 0.8rem;
+  color: #1976d2;
+  text-align: center;
+  cursor: pointer;
+}
+
+.thumbnails-more:hover {
+  text-decoration: underline;
+}
+
+/* compact 모드에서 썸네일 숨김 */
+.ai-analysis-panel.compact .ai-thumbnails-section {
+  display: none;
+}
+
 /* 면책 조항 */
 .disclaimer {
   padding: 12px;

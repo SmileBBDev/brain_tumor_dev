@@ -375,7 +375,7 @@ export default function UploadSection({ onUploaded, ocsInfo, existingStudy, onSt
             directory="true"
             multiple
             onChange={onFolderChange}
-            disabled={isUploading}
+            disabled={isUploading || hasExistingStudy}
           />
           <div className="metaRow">
             <span>선택 파일: {selectedFiles.length}</span>
@@ -407,7 +407,7 @@ export default function UploadSection({ onUploaded, ocsInfo, existingStudy, onSt
           <button
             className="btn ghost"
             onClick={() => resetAll({ clearPatientId: true, clearStudyDesc: true })}
-            disabled={isUploading}
+            disabled={isUploading || hasExistingStudy}
             title="파일 선택/상태/PatientID/StudyDescription 모두 초기화"
           >
             전체 초기화
@@ -416,7 +416,7 @@ export default function UploadSection({ onUploaded, ocsInfo, existingStudy, onSt
           <button
             className="btn ghost"
             onClick={() => resetAll({ clearPatientId: false, clearStudyDesc: false })}
-            disabled={isUploading}
+            disabled={isUploading || hasExistingStudy}
             title="파일 선택/상태만 초기화 (PatientID/StudyDescription 유지)"
           >
             파일만 초기화

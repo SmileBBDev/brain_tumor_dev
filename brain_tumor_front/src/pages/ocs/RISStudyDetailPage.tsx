@@ -12,6 +12,7 @@ import { getOCS, startOCS, saveOCSResult, confirmOCS } from '@/services/ocs.api'
 import type { OCSDetail, RISWorkerResult } from '@/types/ocs';
 import { OCS_STATUS_LABELS } from '@/types/ocs';
 import AIAnalysisPanel from './components/AIAnalysisPanel';
+import AIViewerPanel from './components/AIViewerPanel';
 import DicomViewerPopup, { type UploadResult, type ExistingStudyInfo } from '@/components/DicomViewerPopup';
 import { getSeries } from '@/api/orthancApi';
 import {
@@ -825,16 +826,6 @@ export default function RISStudyDetailPage() {
                 </div>
               )}
             </div>
-
-            {/* 우측: AI 분석 미리보기 */}
-            <div className="ai-preview">
-              <AIAnalysisPanel
-                ocsId={ocsDetail.id}
-                patientId={ocsDetail.patient.id}
-                jobType={ocsDetail.job_type}
-                compact
-              />
-            </div>
           </div>
         )}
 
@@ -898,6 +889,9 @@ export default function RISStudyDetailPage() {
                 </div>
               )}
             </div>
+
+            {/* AI 분석 뷰어 */}
+            <AIViewerPanel ocsId={ocsDetail.id} patientId={ocsDetail.patient.id} />
 
             {/* 검사 결과 항목 */}
             <div className="result-items-section">

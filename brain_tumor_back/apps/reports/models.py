@@ -2,7 +2,7 @@ from django.db import models
 from apps.patients.models import Patient
 from apps.accounts.models import User
 from apps.encounters.models import Encounter
-from apps.ai_inference.models import AIInferenceRequest
+from apps.ai_inference.models import AIInference
 
 
 class FinalReport(models.Model):
@@ -95,11 +95,11 @@ class FinalReport(models.Model):
     )
 
     # AI 분석 결과 참조
-    ai_inference_requests = models.ManyToManyField(
-        AIInferenceRequest,
+    ai_inferences = models.ManyToManyField(
+        AIInference,
         blank=True,
         related_name='final_reports',
-        verbose_name='AI 추론 요청'
+        verbose_name='AI 추론'
     )
 
     ai_analysis_summary = models.TextField(

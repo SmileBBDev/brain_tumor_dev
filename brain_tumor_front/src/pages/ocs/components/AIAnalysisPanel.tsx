@@ -30,6 +30,9 @@ export interface AIAnalysisResult {
 
   // 상세 분석
   details?: AIAnalysisDetail[];
+
+  // 시각화 이미지 경로 (썸네일용)
+  visualization_paths?: string[];
 }
 
 export interface AIFinding {
@@ -107,6 +110,7 @@ const convertToDisplayResult = (
     findings: findings,
     summary: summary,
     details: details.length > 0 ? details : undefined,
+    visualization_paths: inferenceResult.visualization_paths || [],
   };
 };
 
@@ -334,6 +338,29 @@ export default function AIAnalysisPanel({ ocsId, patientId, jobType: _jobType, c
             </div>
           )}
         </>
+      )}
+
+      {/* AI 분석 썸네일 이미지 */}
+      {result.visualization_paths && result.visualization_paths.length > 0 && (
+        <div className="ai-thumbnails-section">
+          <h4>분석 이미지</h4>
+          <div className="ai-thumbnails-grid">
+            {result.visualization_paths.slice(0, 4).map((path, idx) => (
+              <div key={idx} className="ai-thumbnail-item">
+                <img
+                  src={`${import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000'}${path}`}
+                  alt={`AI 분석 결과 ${idx + 1}`}
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).style.display = 'none';
+                  }}
+                />
+              </div>
+            ))}
+          </div>
+          {result.visualization_paths.length > 4 && (
+            <p className="thumbnails-more">+{result.visualization_paths.length - 4}개 더 보기</p>
+          )}
+        </div>
       )}
 
       {/* 면책 조항 */}
