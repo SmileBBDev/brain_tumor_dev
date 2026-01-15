@@ -129,6 +129,110 @@
   color: var(--text-main);
 }
 
+/* Section Header with Button */
+.admin-dashboard .section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.admin-dashboard .section-header h3 {
+  margin-bottom: 0;
+}
+
+.admin-dashboard .manage-btn {
+  padding: 6px 12px;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.admin-dashboard .manage-btn:hover {
+  background: var(--primary-dark, #2563eb);
+  transform: translateY(-1px);
+}
+
+/* Role List Table */
+.admin-dashboard .role-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.admin-dashboard .role-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.admin-dashboard .role-table th,
+.admin-dashboard .role-table td {
+  padding: 10px 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--card-border);
+}
+
+.admin-dashboard .role-table th {
+  background: var(--bg-main);
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text-sub);
+}
+
+.admin-dashboard .role-table td {
+  font-size: 14px;
+  color: var(--text-main);
+}
+
+.admin-dashboard .role-table tr.clickable {
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.admin-dashboard .role-table tr.clickable:hover {
+  background: var(--primary-light, #eff6ff);
+}
+
+/* Pagination */
+.admin-dashboard .pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.admin-dashboard .page-btn {
+  padding: 6px 12px;
+  background: var(--bg-main);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.admin-dashboard .page-btn:hover:not(:disabled) {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+
+.admin-dashboard .page-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.admin-dashboard .page-info {
+  font-size: 13px;
+  color: var(--text-sub);
+}
+
 .admin-dashboard .status-grid,
 .admin-dashboard .role-grid {
   display: flex;

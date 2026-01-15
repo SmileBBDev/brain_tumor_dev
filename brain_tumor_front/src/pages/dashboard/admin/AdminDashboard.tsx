@@ -15,6 +15,8 @@ interface ModalState {
   ocsStatusFilter?: OcsStatus;
 }
 
+const USERS_PER_PAGE = 5;
+
 export default function AdminDashboard() {
   const navigate = useNavigate();
   const [stats, setStats] = useState<AdminStats | null>(null);
@@ -24,6 +26,7 @@ export default function AdminDashboard() {
     type: 'users',
     title: '',
   });
+  const [roleUserPage, setRoleUserPage] = useState(1);
 
   const openModal = (type: ModalType, title: string, roleFilter?: string, ocsStatusFilter?: OcsStatus) => {
     setModal({ open: true, type, title, roleFilter, ocsStatusFilter });
@@ -53,17 +56,6 @@ export default function AdminDashboard() {
   return (
     <div className="admin-dashboard">
       <h2>관리자 대시보드</h2>
-
-      {/* 관리 버튼 영역 */}
-      <div className="admin-actions">
-        <button
-          className="action-btn calendar-btn"
-          onClick={() => navigate('/admin/shared-calendar')}
-        >
-          <span className="btn-icon">📅</span>
-          <span className="btn-text">권한별 캘린더 관리</span>
-        </button>
-      </div>
 
       {/* 요약 카드 */}
       <div className="summary-cards">
@@ -124,18 +116,66 @@ export default function AdminDashboard() {
       {/* 역할별 사용자 현황 + 캘린더 */}
       <div className="dashboard-main-row">
         <div className="dashboard-section">
-          <h3>역할별 사용자</h3>
-          <div className="role-grid">
-            {Object.entries(stats.users.by_role).map(([role, count]) => (
-              <div
-                key={role}
-                className="role-item clickable"
-                onClick={() => openModal('role', `${role} 사용자 목록`, role)}
-              >
-                <span className="role-name">{role}</span>
-                <span className="role-count">{count}명</span>
-              </div>
-            ))}
+          <div className="section-header">
+            <h3>역할별 사용자 현황</h3>
+            <button
+              className="manage-btn"
+              onClick={() => navigate('/admin/users')}
+            >
+              사용자 관리
+            </button>
+          </div>
+          <div className="role-list">
+            {(() => {
+              const roleEntries = Object.entries(stats.users.by_role);
+              const totalPages = Math.ceil(roleEntries.length / USERS_PER_PAGE);
+              const startIndex = (roleUserPage - 1) * USERS_PER_PAGE;
+              const paginatedRoles = roleEntries.slice(startIndex, startIndex + USERS_PER_PAGE);
+
+              return (
+                <>
+                  <table className="role-table">
+                    <thead>
+                      <tr>
+                        <th>역할</th>
+                        <th>인원</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {paginatedRoles.map(([role, count]) => (
+                        <tr
+                          key={role}
+                          className="clickable"
+                          onClick={() => openModal('role', `${role} 사용자 목록`, role)}
+                        >
+                          <td>{role}</td>
+                          <td>{count}명</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {totalPages > 1 && (
+                    <div className="pagination">
+                      <button
+                        className="page-btn"
+                        disabled={roleUserPage === 1}
+                        onClick={() => setRoleUserPage(roleUserPage - 1)}
+                      >
+                        이전
+                      </button>
+                      <span className="page-info">{roleUserPage} / {totalPages}</span>
+                      <button
+                        className="page-btn"
+                        disabled={roleUserPage === totalPages}
+                        onClick={() => setRoleUserPage(roleUserPage + 1)}
+                      >
+                        다음
+                      </button>
+                    </div>
+                  )}
+                </>
+              );
+            })()}
           </div>
         </div>
         <UnifiedCalendar

@@ -475,72 +475,100 @@ def patient_examination_summary(request, patient_id):
             {'error': '환자를 찾을 수 없습니다.'},
             status=status.HTTP_404_NOT_FOUND
         )
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return Response(
+            {'error': f'환자 조회 중 오류: {str(e)}'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
 
-    # 환자 기본 정보
+    # 환자 기본 정보 (age는 birth_date가 없을 수 있으므로 안전하게 처리)
+    try:
+        patient_age = patient.age if patient.birth_date else None
+    except Exception:
+        patient_age = None
+
     patient_data = {
         'id': patient.id,
         'patient_number': patient.patient_number,
         'name': patient.name,
-        'age': patient.age,
+        'age': patient_age,
         'gender': patient.gender,
         'blood_type': patient.blood_type,
         'allergies': patient.allergies or [],
         'chronic_diseases': patient.chronic_diseases or [],
-        'chief_complaint': patient.chief_complaint or '',
+        'chief_complaint': getattr(patient, 'chief_complaint', '') or '',
     }
 
     # 환자 주의사항 (활성만)
-    alerts = PatientAlert.objects.filter(
-        patient=patient, is_active=True
-    ).order_by('-severity', '-created_at')
-    alerts_data = PatientAlertListSerializer(alerts, many=True).data
+    try:
+        alerts = PatientAlert.objects.filter(
+            patient=patient, is_active=True
+        ).order_by('-severity', '-created_at')
+        alerts_data = PatientAlertListSerializer(alerts, many=True).data
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        alerts_data = []
 
     # 현재 진료 (진행중인 가장 최근 진료)
-    from apps.encounters.models import Encounter
-    from apps.encounters.serializers import EncounterDetailSerializer, EncounterListSerializer
+    try:
+        from apps.encounters.models import Encounter
+        from apps.encounters.serializers import EncounterDetailSerializer, EncounterListSerializer
 
-    current_encounter = Encounter.objects.filter(
-        patient=patient,
-        status__in=['scheduled', 'in_progress'],
-        is_deleted=False
-    ).order_by('-admission_date').first()
+        current_encounter = Encounter.objects.filter(
+            patient=patient,
+            status__in=['scheduled', 'in_progress'],
+            is_deleted=False
+        ).order_by('-admission_date').first()
 
-    current_encounter_data = None
-    if current_encounter:
-        current_encounter_data = EncounterDetailSerializer(current_encounter).data
+        current_encounter_data = None
+        if current_encounter:
+            current_encounter_data = EncounterDetailSerializer(current_encounter).data
 
-    # 최근 진료이력 (최근 5건, 현재 진료 제외)
-    recent_encounters = Encounter.objects.filter(
-        patient=patient,
-        is_deleted=False
-    ).order_by('-admission_date')
+        # 최근 진료이력 (최근 5건, 현재 진료 제외)
+        recent_encounters = Encounter.objects.filter(
+            patient=patient,
+            is_deleted=False
+        ).order_by('-admission_date')
 
-    if current_encounter:
-        recent_encounters = recent_encounters.exclude(id=current_encounter.id)
+        if current_encounter:
+            recent_encounters = recent_encounters.exclude(id=current_encounter.id)
 
-    recent_encounters = recent_encounters[:5]
-    recent_encounters_data = EncounterListSerializer(recent_encounters, many=True).data
+        recent_encounters = recent_encounters[:5]
+        recent_encounters_data = EncounterListSerializer(recent_encounters, many=True).data
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        current_encounter_data = None
+        recent_encounters_data = []
 
     # 최근 OCS (RIS/LIS 각각 5건)
-    from apps.ocs.models import OCS
-    from apps.ocs.serializers import OCSListSerializer
+    try:
+        from apps.ocs.models import OCS
+        from apps.ocs.serializers import OCSListSerializer
 
-    recent_ris = OCS.objects.filter(
-        patient=patient,
-        job_role='RIS',
-        is_deleted=False
-    ).order_by('-created_at')[:5]
+        recent_ris = OCS.objects.filter(
+            patient=patient,
+            job_role='RIS',
+            is_deleted=False
+        ).order_by('-created_at')[:5]
 
-    recent_lis = OCS.objects.filter(
-        patient=patient,
-        job_role='LIS',
-        is_deleted=False
-    ).order_by('-created_at')[:5]
+        recent_lis = OCS.objects.filter(
+            patient=patient,
+            job_role='LIS',
+            is_deleted=False
+        ).order_by('-created_at')[:5]
 
-    ocs_data = {
-        'ris': OCSListSerializer(recent_ris, many=True).data,
-        'lis': OCSListSerializer(recent_lis, many=True).data,
-    }
+        ocs_data = {
+            'ris': OCSListSerializer(recent_ris, many=True).data,
+            'lis': OCSListSerializer(recent_lis, many=True).data,
+        }
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        ocs_data = {'ris': [], 'lis': []}
 
     # 최근 AI 추론 결과 (1건)
     ai_summary = None

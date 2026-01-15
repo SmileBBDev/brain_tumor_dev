@@ -213,9 +213,14 @@ export function UnifiedCalendar({ title = '통합 캘린더', patientId, showMan
         <h3>{title}</h3>
         <div className="header-buttons">
           {showManageButton && onManageClick && (
-            <button className="btn btn-sm btn-primary" onClick={onManageClick}>
-              캘린더 관리
+            <button
+              className="action-btn calendar-btn"
+              onClick={onManageClick}
+            >
+              <span className="btn-icon">📅</span>
+              <span className="btn-text">권한별 캘린더 관리</span>
             </button>
+
           )}
           <button className="btn btn-sm btn-secondary" onClick={goToToday}>
             오늘
