@@ -177,6 +177,8 @@ class Patient(models.Model):
     @property
     def age(self):
         """현재 나이 계산"""
+        if not self.birth_date:
+            return None
         from django.utils import timezone
         today = timezone.now().date()
         age = today.year - self.birth_date.year
