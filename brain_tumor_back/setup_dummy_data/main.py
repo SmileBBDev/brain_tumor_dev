@@ -406,9 +406,8 @@ def main():
 
     success = True
 
-    # 0. --reset 모드인 경우 외부 저장소 초기화
-    if args.reset:
-        reset_external_storage()
+    # 0. 외부 저장소 초기화 (항상 실행)
+    reset_external_storage()
 
     # 1. 기본 데이터 생성 (역할, 사용자, 메뉴/권한)
     if not run_script(
