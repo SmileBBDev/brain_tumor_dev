@@ -3,6 +3,7 @@
  * - 실제 API 호출 없이 샘플 데이터로 UI 확인
  */
 import { useState } from 'react';
+import { DashboardHeader } from '../common/DashboardHeader';
 import '@/pages/patient/PatientDashboard.css';
 
 type TabType = 'info' | 'encounters' | 'results';
@@ -12,12 +13,10 @@ export default function PatientDashboardPreview() {
 
   return (
     <div className="patient-dashboard">
-      <header className="dashboard-header">
-        <h1>내 건강정보</h1>
-        <p className="subtitle">
-          환자 대시보드 미리보기 (샘플 데이터)
-        </p>
-      </header>
+      <DashboardHeader
+        role="PATIENT"
+        customSubtitle="환자 대시보드 미리보기 (샘플 데이터)"
+      />
 
       {/* 탭 네비게이션 */}
       <nav className="dashboard-tabs">

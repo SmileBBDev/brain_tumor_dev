@@ -7,8 +7,8 @@
 // 파일 저장 키 프리픽스
 const FILE_STORAGE_PREFIX = 'ocs_file_';
 
-// 메타데이터 저장 키
-const FILE_META_PREFIX = 'ocs_file_meta_';
+// 메타데이터 저장 키 (향후 사용 예정)
+// const FILE_META_PREFIX = 'ocs_file_meta_';
 
 // 파일 메타데이터 인터페이스
 export interface FileMetadata {

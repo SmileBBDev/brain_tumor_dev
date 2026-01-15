@@ -3,11 +3,13 @@ import { DoctorWorklist } from "./DoctorWorklist";
 import { UnifiedCalendar } from "@/components/calendar/UnifiedCalendar";
 import { AiAlertPanel } from "./AiAlertPanel";
 import PatientListWidget from "../common/PatientListWidget";
+import { DashboardHeader } from "../common/DashboardHeader";
 import '@/assets/style/patientListView.css';
 
 export default function DoctorDashboard() {
   return (
     <div className="dashboard doctor">
+      <DashboardHeader role="DOCTOR" />
       <DoctorSummaryCards />
       <div className="dashboard-row">
         <DoctorWorklist />

@@ -14,13 +14,15 @@ export default function MyVisitsPage() {
   const [visits, setVisits] = useState<MyEncounter[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [totalCount, setTotalCount] = useState(0);
 
   useEffect(() => {
     const fetchVisits = async () => {
       try {
         setError(null);
-        const encounters = await getMyEncounters();
-        setVisits(encounters);
+        const encountersResult = await getMyEncounters();
+        setVisits(encountersResult.results || []);
+        setTotalCount(encountersResult.count || 0);
       } catch (err) {
         console.error('Failed to fetch visits:', err);
         setError('진료 기록을 불러오는데 실패했습니다.');
@@ -52,7 +54,7 @@ export default function MyVisitsPage() {
     <div className="patient-portal-page">
       <div className="page-header">
         <h1>진료 기록</h1>
-        <span className="result-count">{visits.length}건</span>
+        <span className="result-count">{totalCount}건</span>
       </div>
 
       {visits.length === 0 ? (
@@ -65,8 +67,8 @@ export default function MyVisitsPage() {
           {visits.map((visit) => (
             <div key={visit.id} className="visit-card">
               <div className="visit-header">
-                <div className="visit-date">{visit.encounter_date}</div>
-                <div className={`visit-status status-${visit.status_display === '완료' ? 'completed' : 'scheduled'}`}>
+                <div className="visit-date">{visit.admission_date?.split('T')[0]}</div>
+                <div className={`visit-status status-${visit.status === 'completed' ? 'completed' : 'scheduled'}`}>
                   {visit.status_display}
                 </div>
               </div>

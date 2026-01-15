@@ -8,6 +8,7 @@ import LISDashboard from '../lis/LISDashboard';
 import RISDashboard from '../ris/RISDashboard';
 import PatientDashboardPreview from '../patient/PatientDashboardPreview';
 import ExternalDashboard from '../external/ExternalDashboard';
+import { DashboardHeader } from '../common/DashboardHeader';
 import './SystemManagerDashboard.css';
 
 type TabType = 'OVERVIEW' | 'ADMIN' | 'DOCTOR' | 'NURSE' | 'LIS' | 'RIS' | 'PATIENT' | 'EXTERNAL';
@@ -54,6 +55,7 @@ export default function SystemManagerDashboard() {
 
   return (
     <div className="system-manager-dashboard">
+      <DashboardHeader role="SYSTEM_MANAGER" />
       <div className="sm-tabs">
         {(Object.keys(tabLabels) as TabType[]).map((tab) => (
           <button
@@ -69,8 +71,6 @@ export default function SystemManagerDashboard() {
       <div className="sm-content">
         {active === 'OVERVIEW' ? (
           <div className="sm-overview">
-            <h2>시스템 현황</h2>
-
             {loading ? (
               <div className="loading">통계 로딩 중...</div>
             ) : !stats ? (

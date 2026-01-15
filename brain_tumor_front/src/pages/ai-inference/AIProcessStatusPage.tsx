@@ -3,11 +3,10 @@
  * - AI 추론 요청 상태별 통계 대시보드
  * - 실시간 처리 현황 모니터링
  */
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAIRequestList, useAIModels } from '@/hooks';
 import { LoadingSpinner } from '@/components/common';
-import type { AIInferenceRequest } from '@/services/ai.api';
 import './AIProcessStatusPage.css';
 
 // 상태 라벨
@@ -32,7 +31,8 @@ const STATUS_COLORS: Record<string, string> = {
 
 export default function AIProcessStatusPage() {
   const navigate = useNavigate();
-  const [timeRange, setTimeRange] = useState<'today' | 'week' | 'month'>('today');
+  // TODO: 시간 범위 필터 기능 추가 예정
+  const [_timeRange, _setTimeRange] = useState<'today' | 'week' | 'month'>('today');
 
   // 데이터 조회 (폴링으로 실시간 업데이트)
   const { requests, loading, error, refresh } = useAIRequestList({

@@ -14,20 +14,17 @@ export default function Sidebar() {
   if (!isAuthReady) return null;
 
   return (
-    <aside className="sidebar">
-      <nav className="sidebar-nav">
-
-        <ul  className="menu-list">
-          {menus.map(menu => (
-            <SidebarItem
-              key={menu.id}
-              menu={menu}
-              isOpen={openGroup === menu.code}
-              onToggle={()=> handleToggle(menu.code)}
-            />
-          ))}
-        </ul>
-      </nav>
-    </aside>
+    <nav className="sidebar-nav">
+      <ul className="menu-list">
+        {menus.map(menu => (
+          <SidebarItem
+            key={menu.id}
+            menu={menu}
+            isOpen={openGroup === menu.code}
+            onToggle={()=> handleToggle(menu.code)}
+          />
+        ))}
+      </ul>
+    </nav>
   );
 }

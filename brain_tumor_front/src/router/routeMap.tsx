@@ -4,7 +4,8 @@ import { lazy, type ComponentType } from 'react';
 const DashboardPage = lazy(() => import('@/pages/dashboard/DashboardPage'));
 const PatientListPage = lazy(() => import('@/pages/patient/PatientListPage'));
 const PatientDetailPage = lazy(() => import('@/pages/patient/PatientDetailPage'));
-const ImagingListPage = lazy(() => import('@/pages/imaging/ImagingListPage'));
+// 레거시: OCS RIS 워크리스트로 대체됨
+// const ImagingListPage = lazy(() => import('@/pages/imaging/ImagingListPage'));
 const PatientImagingHistoryPage = lazy(() => import('@/pages/imaging/PatientImagingHistoryPage'));
 const MenuPermissionPage = lazy(() => import('@/pages/admin/MenuPermissionPage'));
 const UserList = lazy(() => import('@/pages/admin/usersManagement/UserList'));
@@ -28,7 +29,8 @@ const RISUploadPage = lazy(() => import('@/pages/ocs/RISUploadPage'));
 const OCSProcessStatusPage = lazy(() => import('@/pages/ocs/OCSProcessStatusPage'));
 
 // Lab, Clinic
-const LabListPage = lazy(() => import('@/pages/lab/LabListPage'));
+// 레거시: OCS LIS 워크리스트로 대체됨
+// const LabListPage = lazy(() => import('@/pages/lab/LabListPage'));
 const ClinicPage = lazy(() => import('@/pages/clinic/ClinicPage'));
 
 // Encounter
@@ -82,7 +84,8 @@ export const routeMap: Record<string, ComponentType> = {
   OCS_PROCESS_STATUS: OCSProcessStatusPage, // OCS 통합 처리 현황
 
   // === IMAGING 그룹 ===
-  IMAGE_VIEWER: ImagingListPage,
+  // IMAGE_VIEWER: OCS RIS 워크리스트로 통합 (레거시 ImagingListPage 대체)
+  IMAGE_VIEWER: OCSRISWorklistPage,
   PATIENT_IMAGING_HISTORY: PatientImagingHistoryPage,
   OCS_RIS: OCSRISWorklistPage,
   OCS_RIS_DETAIL: RISStudyDetailPage,
@@ -90,7 +93,8 @@ export const routeMap: Record<string, ComponentType> = {
   RIS_RESULT_UPLOAD: RISUploadPage,
 
   // === LAB 그룹 ===
-  LAB_RESULT_VIEW: LabListPage,
+  // LAB_RESULT_VIEW: OCS LIS 워크리스트로 통합 (레거시 LabListPage 대체)
+  LAB_RESULT_VIEW: LISWorklistPage,
   LAB_RESULT_UPLOAD: LISUploadPage,
   OCS_LIS: LISWorklistPage,
   OCS_LIS_DETAIL: LISStudyDetailPage,

@@ -13,9 +13,14 @@ import {
 import type {
   MyPatientInfo,
   MyEncounter,
-  MyOCSResult,
+  MyOCSItem,
   MyAlert,
 } from '@/types/patient-portal';
+
+interface OCSResults {
+  ris: MyOCSItem[];
+  lis: MyOCSItem[];
+}
 import './PatientDashboard.css';
 
 type TabType = 'info' | 'encounters' | 'results';
@@ -28,7 +33,7 @@ export default function PatientDashboard() {
   // 데이터 상태
   const [patientInfo, setPatientInfo] = useState<MyPatientInfo | null>(null);
   const [encounters, setEncounters] = useState<MyEncounter[]>([]);
-  const [ocsResults, setOcsResults] = useState<MyOCSResult | null>(null);
+  const [ocsResults, setOcsResults] = useState<OCSResults>({ ris: [], lis: [] });
   const [alerts, setAlerts] = useState<MyAlert[]>([]);
 
   // 데이터 로드
@@ -40,15 +45,19 @@ export default function PatientDashboard() {
     setLoading(true);
     setError(null);
     try {
-      const [infoData, encountersData, ocsData, alertsData] = await Promise.all([
+      const [infoData, encountersData, risData, lisData, alertsData] = await Promise.all([
         getMyPatientInfo(),
         getMyEncounters(),
-        getMyOCS(),
+        getMyOCS({ job_role: 'RIS' }),
+        getMyOCS({ job_role: 'LIS' }),
         getMyAlerts(),
       ]);
       setPatientInfo(infoData);
-      setEncounters(encountersData);
-      setOcsResults(ocsData);
+      setEncounters(encountersData.results || []);
+      setOcsResults({
+        ris: risData.results || [],
+        lis: lisData.results || [],
+      });
       setAlerts(alertsData);
     } catch (err: any) {
       console.error('데이터 로드 실패:', err);
@@ -271,7 +280,7 @@ function MyEncountersTab({ encounters }: MyEncountersTabProps) {
           {encounters.map((encounter) => (
             <div key={encounter.id} className="encounter-item">
               <div className="encounter-date">
-                {new Date(encounter.encounter_date).toLocaleDateString('ko-KR')}
+                {new Date(encounter.admission_date).toLocaleDateString('ko-KR')}
               </div>
               <div className="encounter-info">
                 <div className="encounter-type">
@@ -307,12 +316,12 @@ function MyEncountersTab({ encounters }: MyEncountersTabProps) {
 // 검사 결과 탭
 // ============================================================================
 interface MyTestResultsTabProps {
-  ocsResults: MyOCSResult | null;
+  ocsResults: OCSResults;
 }
 
 function MyTestResultsTab({ ocsResults }: MyTestResultsTabProps) {
-  const risList = ocsResults?.ris || [];
-  const lisList = ocsResults?.lis || [];
+  const risList = ocsResults.ris;
+  const lisList = ocsResults.lis;
 
   if (risList.length === 0 && lisList.length === 0) {
     return (
@@ -341,8 +350,8 @@ function MyTestResultsTab({ ocsResults }: MyTestResultsTabProps) {
                   </span>
                 </div>
                 <div className="result-status">{item.ocs_status_display}</div>
-                {item.result_summary && (
-                  <div className="result-summary">{item.result_summary}</div>
+                {item.ocs_result && (
+                  <div className="result-summary">{item.ocs_result}</div>
                 )}
               </div>
             ))}
@@ -364,8 +373,8 @@ function MyTestResultsTab({ ocsResults }: MyTestResultsTabProps) {
                   </span>
                 </div>
                 <div className="result-status">{item.ocs_status_display}</div>
-                {item.result_summary && (
-                  <div className="result-summary">{item.result_summary}</div>
+                {item.ocs_result && (
+                  <div className="result-summary">{item.ocs_result}</div>
                 )}
               </div>
             ))}

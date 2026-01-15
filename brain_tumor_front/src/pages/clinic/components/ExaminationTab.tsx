@@ -96,7 +96,7 @@ export default function ExaminationTab({
   encounter,
   ocsList,
   encounters,
-  onUpdate,
+  onUpdate: _onUpdate,
 }: ExaminationTabProps) {
   const navigate = useNavigate();
 

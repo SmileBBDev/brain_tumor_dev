@@ -143,7 +143,7 @@ export default function AIModelsPage() {
                     <div className="detail-section">
                       <h4>필요 데이터</h4>
                       <div className="required-keys">
-                        {(model.required_keys || []).map((key) => (
+                        {Object.keys(model.required_keys || {}).map((key) => (
                           <span key={key} className="key-badge">{key}</span>
                         ))}
                       </div>
@@ -203,11 +203,11 @@ export default function AIModelsPage() {
                     <td>{details.category}</td>
                     <td>
                       <div className="required-keys compact">
-                        {(model.required_keys || []).slice(0, 3).map((key) => (
+                        {Object.keys(model.required_keys || {}).slice(0, 3).map((key) => (
                           <span key={key} className="key-badge small">{key}</span>
                         ))}
-                        {(model.required_keys || []).length > 3 && (
-                          <span className="key-badge small more">+{(model.required_keys || []).length - 3}</span>
+                        {Object.keys(model.required_keys || {}).length > 3 && (
+                          <span className="key-badge small more">+{Object.keys(model.required_keys || {}).length - 3}</span>
                         )}
                       </div>
                     </td>

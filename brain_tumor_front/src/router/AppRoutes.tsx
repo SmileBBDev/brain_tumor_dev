@@ -8,6 +8,8 @@ import FullScreenLoader from '@/pages/common/FullScreenLoader';
 
 // Lazy loaded pages (메뉴에 없는 특수 페이지들)
 const OCSResultReportPage = lazy(() => import('@/pages/ocs/OCSResultReportPage'));
+const RISStudyDetailPage = lazy(() => import('@/pages/ocs/RISStudyDetailPage'));
+const LISStudyDetailPage = lazy(() => import('@/pages/ocs/LISStudyDetailPage'));
 const MyPage = lazy(() => import('@/pages/mypage/MyPage'));
 const PatientDashboard = lazy(() => import('@/pages/patient/PatientDashboard'));
 const PatientDetailPage = lazy(() => import('@/pages/patient/PatientDetailPage'));
@@ -43,46 +45,19 @@ function flattenAccessibleMenus(
 export default function AppRoutes() {
   const { menus, permissions, isAuthReady, role } = useAuth();
 
-  // PATIENT 역할은 메뉴/권한 없이도 대시보드 접근 가능
+  // 인증 준비 전엔 로딩
   if (!isAuthReady) {
     return <FullScreenLoader />;
   }
 
-  // PATIENT 역할은 전용 대시보드로 이동
-  if (role === 'PATIENT') {
-    return (
-      <Suspense fallback={<FullScreenLoader />}>
-        <Routes>
-          <Route index element={<Navigate to="/patient/dashboard" replace />} />
-          <Route
-            path="/patient/dashboard"
-            element={
-              <ProtectedRoute allowedRoles={['PATIENT']}>
-                <PatientDashboard />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/mypage"
-            element={
-              <ProtectedRoute>
-                <MyPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route path="*" element={<Navigate to="/patient/dashboard" replace />} />
-        </Routes>
-      </Suspense>
-    );
-  }
+  // PATIENT 역할은 메뉴 기반 라우팅 + 기본 경로만 다름
+  const isPatient = role === 'PATIENT';
+  const defaultPath = isPatient ? '/my/summary' : '/dashboard';
 
-  // 준비 전엔 로딩 (PATIENT 외 역할)
+  // 메뉴/권한 준비 전엔 로딩
   if (menus.length === 0 || permissions.length === 0) {
     return <FullScreenLoader />;
   }
-
-  // 기본 홈 경로는 Dashboard로 고정
-  const homePath = '/dashboard';
 
   // 라우트 등록용: breadcrumbOnly 메뉴도 포함
   const accessibleMenus = flattenAccessibleMenus(menus, permissions, true);
@@ -91,7 +66,7 @@ export default function AppRoutes() {
     <Suspense fallback={<FullScreenLoader />}>
       <Routes>
         {/* 홈 */}
-        <Route index element={<Navigate to={homePath} replace />} />
+        <Route index element={<Navigate to={defaultPath} replace />} />
 
         {/* OCS 결과 보고서 페이지 (메뉴에 없는 특수 페이지) */}
         <Route
@@ -99,6 +74,26 @@ export default function AppRoutes() {
           element={
             <ProtectedRoute>
               <OCSResultReportPage />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* RIS 영상 검사 상세 페이지 */}
+        <Route
+          path="/ocs/ris/:ocsId"
+          element={
+            <ProtectedRoute>
+              <RISStudyDetailPage />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* LIS 검사 결과 상세 페이지 */}
+        <Route
+          path="/ocs/lis/:ocsId"
+          element={
+            <ProtectedRoute>
+              <LISStudyDetailPage />
             </ProtectedRoute>
           }
         />
@@ -170,7 +165,7 @@ export default function AppRoutes() {
           );
         })}
 
-        <Route path="*" element={<Navigate to="/403" replace />} />
+        <Route path="*" element={<Navigate to={isPatient ? defaultPath : "/403"} replace />} />
       </Routes>
     </Suspense>
   );

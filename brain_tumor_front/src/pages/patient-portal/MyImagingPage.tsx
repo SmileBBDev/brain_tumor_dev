@@ -20,13 +20,15 @@ export default function MyImagingPage() {
   const [selectedReportId, setSelectedReportId] = useState<number | null>(null);
   const [showViewerWarning, setShowViewerWarning] = useState(false);
   const [pendingStudyId, setPendingStudyId] = useState<number | null>(null);
+  const [totalCount, setTotalCount] = useState(0);
 
   useEffect(() => {
     const fetchStudies = async () => {
       try {
         setError(null);
-        const ocsResult = await getMyOCS();
-        setStudies(ocsResult.ris || []);
+        const ocsResult = await getMyOCS({ job_role: 'RIS' });
+        setStudies(ocsResult.results || []);
+        setTotalCount(ocsResult.count || 0);
       } catch (err) {
         console.error('Failed to fetch imaging studies:', err);
         setError('영상 검사 결과를 불러오는데 실패했습니다.');
@@ -91,7 +93,7 @@ export default function MyImagingPage() {
     <div className="patient-portal-page">
       <div className="page-header">
         <h1>내 영상 결과</h1>
-        <span className="result-count">{studies.length}건</span>
+        <span className="result-count">{totalCount}건</span>
       </div>
 
       {studies.length === 0 ? (
@@ -112,16 +114,14 @@ export default function MyImagingPage() {
                 <div className="imaging-info">
                   <div className="info-row">
                     <span className="label">상태</span>
-                    <span className={`status-badge status-${study.ocs_status_display === '확정' ? 'completed' : 'pending'}`}>
+                    <span className={`status-badge status-${study.ocs_status === 'CONFIRMED' ? 'completed' : 'pending'}`}>
                       {study.ocs_status_display}
                     </span>
                   </div>
-                  {study.result_summary && (
-                    <div className="info-row">
-                      <span className="label">결과 요약</span>
-                      <span className="value">{study.result_summary}</span>
-                    </div>
-                  )}
+                  <div className="info-row">
+                    <span className="label">담당의</span>
+                    <span className="value">{study.doctor_name}</span>
+                  </div>
                 </div>
               </div>
 
@@ -129,6 +129,7 @@ export default function MyImagingPage() {
                 <button
                   className="btn btn-secondary"
                   onClick={() => handleViewReport(study.id)}
+                  disabled={study.ocs_status !== 'CONFIRMED'}
                 >
                   판독문 보기
                 </button>

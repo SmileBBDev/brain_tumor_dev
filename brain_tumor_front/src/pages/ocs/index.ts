@@ -9,7 +9,6 @@ export { default as RISWorklistPage } from './RISWorklistPage';
 export { default as RISStudyDetailPage } from './RISStudyDetailPage';
 export { default as LISWorklistPage } from './LISWorklistPage';
 export { default as LISStudyDetailPage } from './LISStudyDetailPage';
-export { default as RISDashboardPage } from './RISDashboardPage';
 export { default as LISUploadPage } from './LISUploadPage';
 export { default as LISProcessStatusPage } from './LISProcessStatusPage';
 export { default as RISUploadPage } from './RISUploadPage';

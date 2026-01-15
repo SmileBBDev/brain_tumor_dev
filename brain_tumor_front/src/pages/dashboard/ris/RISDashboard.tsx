@@ -4,6 +4,7 @@ import { RISWorklist } from "./RISWorklist";
 import { RISPendingReports } from "./RISPendingReports";
 import { WorkflowPipeline } from "../common/WorkflowPipeline";
 import { StatusBarChart } from "../common/StatusBarChart";
+import { DashboardHeader } from "../common/DashboardHeader";
 import { UnifiedCalendar } from "@/components/calendar/UnifiedCalendar";
 import { getOCSProcessStatus, type OCSJobStats } from '@/services/ocs.api';
 
@@ -39,6 +40,7 @@ export default function RISDashboard() {
 
   return (
     <div className="dashboard ris">
+      <DashboardHeader role="RIS" />
       <RISSummaryCards />
       <WorkflowPipeline stats={stats} type="RIS" onStepClick={handleStepClick} />
       <div className="dashboard-row">

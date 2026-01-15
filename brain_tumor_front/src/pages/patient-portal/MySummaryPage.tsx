@@ -9,7 +9,7 @@
 import { useState, useEffect } from 'react';
 import '@/assets/style/patient-portal.css';
 import { getMyPatientInfo, getMyOCS, getMyEncounters } from '@/services/patient-portal.api';
-import type { MyPatientInfo, MyOCSResult, MyEncounter } from '@/types/patient-portal';
+import type { MyPatientInfo, MyEncounter } from '@/types/patient-portal';
 
 interface NextAppointment {
   date: string;
@@ -17,9 +17,14 @@ interface NextAppointment {
   doctor: string;
 }
 
+interface OCSCounts {
+  ris: number;
+  lis: number;
+}
+
 export default function MySummaryPage() {
   const [patientInfo, setPatientInfo] = useState<MyPatientInfo | null>(null);
-  const [ocsResult, setOcsResult] = useState<MyOCSResult | null>(null);
+  const [ocsCounts, setOcsCounts] = useState<OCSCounts>({ ris: 0, lis: 0 });
   const [nextAppointment, setNextAppointment] = useState<NextAppointment | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -29,20 +34,24 @@ export default function MySummaryPage() {
       try {
         setError(null);
         // 병렬로 API 호출
-        const [patient, ocs, encounters] = await Promise.all([
+        const [patient, risOcs, lisOcs, encounters] = await Promise.all([
           getMyPatientInfo(),
-          getMyOCS(),
+          getMyOCS({ job_role: 'RIS' }),
+          getMyOCS({ job_role: 'LIS' }),
           getMyEncounters(),
         ]);
 
         setPatientInfo(patient);
-        setOcsResult(ocs);
+        setOcsCounts({
+          ris: risOcs.count || 0,
+          lis: lisOcs.count || 0,
+        });
 
         // 가장 최근 예정된 진료 찾기
-        const scheduled = encounters.find((e: MyEncounter) => e.status_display === '예정');
+        const scheduled = (encounters.results || []).find((e: MyEncounter) => e.status === 'scheduled');
         if (scheduled) {
           setNextAppointment({
-            date: scheduled.encounter_date,
+            date: scheduled.admission_date,
             department: scheduled.department_display || '미정',
             doctor: scheduled.attending_doctor_name,
           });
@@ -138,11 +147,11 @@ export default function MySummaryPage() {
           <div className="card-body">
             <div className="result-counts">
               <div className="result-item">
-                <span className="count">{ocsResult?.ris?.length || 0}</span>
+                <span className="count">{ocsCounts.ris}</span>
                 <span className="label">영상 검사</span>
               </div>
               <div className="result-item">
-                <span className="count">{ocsResult?.lis?.length || 0}</span>
+                <span className="count">{ocsCounts.lis}</span>
                 <span className="label">검사 결과</span>
               </div>
             </div>

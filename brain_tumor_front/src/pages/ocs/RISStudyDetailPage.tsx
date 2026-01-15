@@ -731,37 +731,9 @@ export default function RISStudyDetailPage() {
                     <span className="mono text-ellipsis">{workerResult.dicom.study_uid || '-'}</span>
                   </div>
                   <div className="info-row">
-                    <label>Accession Number</label>
-                    <span>{workerResult.dicom.accession_number || '-'}</span>
-                  </div>
-                  <div className="info-row">
                     <label>Series / Instance</label>
                     <span>{workerResult.dicom.series_count || 0}개 시리즈 / {workerResult.dicom.instance_count || 0}장</span>
                   </div>
-                  {workerResult.dicom.series?.length > 0 && (
-                    <div className="info-row series-row">
-                      <label>Series 목록</label>
-                      <div className="series-list">
-                        {workerResult.dicom.series.map((s: any, idx: number) => (
-                          <div key={idx} className="series-item">
-                            {s.series_type && (
-                              <span className={`series-type type-${s.series_type?.toLowerCase()}`}>
-                                {s.series_type}
-                              </span>
-                            )}
-                            <span className="modality">{s.modality}</span>
-                            <span className="desc text-ellipsis">{s.description}</span>
-                            <span className="count">{s.instance_count}장</span>
-                            {s.series_id && (
-                              <span className="series-id mono text-ellipsis" title={s.series_id}>
-                                {s.series_id.substring(0, 8)}...
-                              </span>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
                 </div>
               </div>
             )}

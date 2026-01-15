@@ -6,6 +6,7 @@ import type { AdminStats } from '@/services/dashboard.api';
 import type { User } from '@/types/user';
 import { UnifiedCalendar } from '@/components/calendar/UnifiedCalendar';
 import DashboardDetailModal, { type ModalType } from './DashboardDetailModal';
+import { DashboardHeader } from '../common/DashboardHeader';
 import type { OcsStatus } from '@/types/ocs';
 import './AdminDashboard.css';
 
@@ -103,7 +104,7 @@ export default function AdminDashboard() {
 
   return (
     <div className="admin-dashboard">
-      <h2>관리자 대시보드</h2>
+      <DashboardHeader role="ADMIN" />
 
       {/* 요약 카드 */}
       <div className="summary-cards">

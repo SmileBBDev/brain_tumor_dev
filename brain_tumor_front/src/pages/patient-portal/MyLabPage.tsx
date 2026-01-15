@@ -14,13 +14,15 @@ export default function MyLabPage() {
   const [results, setResults] = useState<MyOCSItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [totalCount, setTotalCount] = useState(0);
 
   useEffect(() => {
     const fetchResults = async () => {
       try {
         setError(null);
-        const ocsResult = await getMyOCS();
-        setResults(ocsResult.lis || []);
+        const ocsResult = await getMyOCS({ job_role: 'LIS' });
+        setResults(ocsResult.results || []);
+        setTotalCount(ocsResult.count || 0);
       } catch (err) {
         console.error('Failed to fetch lab results:', err);
         setError('검사 결과를 불러오는데 실패했습니다.');
@@ -52,7 +54,7 @@ export default function MyLabPage() {
     <div className="patient-portal-page">
       <div className="page-header">
         <h1>내 검사 결과</h1>
-        <span className="result-count">{results.length}건</span>
+        <span className="result-count">{totalCount}건</span>
       </div>
 
       {results.length === 0 ? (
@@ -70,20 +72,24 @@ export default function MyLabPage() {
                   <div className="lab-date">{result.created_at?.split('T')[0]}</div>
                 </div>
                 <div className="lab-status-wrapper">
-                  <span className={`status-badge status-${result.ocs_status_display === '확정' ? 'completed' : 'pending'}`}>
+                  <span className={`status-badge status-${result.ocs_status === 'CONFIRMED' ? 'completed' : 'pending'}`}>
                     {result.ocs_status_display}
                   </span>
                 </div>
               </div>
 
-              {result.result_summary && (
-                <div className="lab-body">
-                  <div className="result-summary">
-                    <span className="label">결과 요약</span>
-                    <span className="value">{result.result_summary}</span>
-                  </div>
+              <div className="lab-body">
+                <div className="result-summary">
+                  <span className="label">담당의</span>
+                  <span className="value">{result.doctor_name}</span>
                 </div>
-              )}
+                {result.confirmed_at && (
+                  <div className="result-summary">
+                    <span className="label">확정일</span>
+                    <span className="value">{result.confirmed_at.split('T')[0]}</span>
+                  </div>
+                )}
+              </div>
             </div>
           ))}
         </div>

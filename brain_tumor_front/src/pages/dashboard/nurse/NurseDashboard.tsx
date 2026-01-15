@@ -15,6 +15,7 @@ import Pagination from '@/layout/Pagination';
 import PatientListWidget from '../common/PatientListWidget';
 import { UnifiedCalendar } from '@/components/calendar/UnifiedCalendar';
 import EncounterCreateModal from '@/pages/encounter/EncounterCreateModal';
+import { DashboardHeader } from '../common/DashboardHeader';
 import '@/assets/style/patientListView.css';
 import './NurseDashboard.css';
 
@@ -197,6 +198,7 @@ export default function NurseDashboard() {
 
   return (
     <div className="dashboard nurse nurse-dashboard">
+      <DashboardHeader role="NURSE" />
       {/* 오늘 요약 카드 */}
       <section className="summary-cards nurse-summary">
         <div className="card summary total">

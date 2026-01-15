@@ -21,7 +21,7 @@ interface TodayAppointmentCardProps {
   compact?: boolean; // 사이드바용 컴팩트 모드
 }
 
-export default function TodayAppointmentCard({ compact = false }: TodayAppointmentCardProps) {
+export default function TodayAppointmentCard({ compact: _compact = false }: TodayAppointmentCardProps) {
   const navigate = useNavigate();
   const { user, role } = useAuth();
 

@@ -4,6 +4,7 @@ import { LISWorklist } from "./LISWorklist";
 import { LISAbnormalAlert } from "./LISAbnormalAlert";
 import { WorkflowPipeline } from "../common/WorkflowPipeline";
 import { StatusBarChart } from "../common/StatusBarChart";
+import { DashboardHeader } from "../common/DashboardHeader";
 import { UnifiedCalendar } from "@/components/calendar/UnifiedCalendar";
 import { getOCSProcessStatus, type OCSJobStats } from '@/services/ocs.api';
 
@@ -39,6 +40,7 @@ export default function LISDashboard() {
 
   return (
     <div className="dashboard lis">
+      <DashboardHeader role="LIS" />
       <LISSummary />
       <WorkflowPipeline stats={stats} type="LIS" onStepClick={handleStepClick} />
       <div className="dashboard-row">

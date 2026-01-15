@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { getExternalStats } from '@/services/dashboard.api';
 import type { ExternalStats } from '@/services/dashboard.api';
 import { UnifiedCalendar } from '@/components/calendar/UnifiedCalendar';
+import { DashboardHeader } from '../common/DashboardHeader';
 import './ExternalDashboard.css';
 
 export default function ExternalDashboard() {
@@ -27,7 +28,7 @@ export default function ExternalDashboard() {
 
   return (
     <div className="external-dashboard">
-      <h2>외부기관 업로드 현황</h2>
+      <DashboardHeader role="EXTERNAL" />
 
       {/* 요약 카드 */}
       <div className="summary-cards">

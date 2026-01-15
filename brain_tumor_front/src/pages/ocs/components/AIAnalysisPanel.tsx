@@ -110,7 +110,7 @@ const convertToDisplayResult = (
   };
 };
 
-export default function AIAnalysisPanel({ ocsId, patientId, jobType, compact = false }: AIAnalysisPanelProps) {
+export default function AIAnalysisPanel({ ocsId, patientId, jobType: _jobType, compact = false }: AIAnalysisPanelProps) {
   const [result, setResult] = useState<AIAnalysisResult | null>(null);
   const [aiRequest, setAiRequest] = useState<AIInferenceRequest | null>(null);
   const [loading, setLoading] = useState(true);

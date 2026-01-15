@@ -32,11 +32,14 @@ interface ScheduleModalData {
 
 // 일정 유형별 배경색 (연한 버전)
 const SCHEDULE_BG_COLORS: Record<ScheduleType, string> = {
-  meeting: '#e8f0fe',   // 연한 파랑
-  leave: '#fce8e8',     // 연한 빨강
-  training: '#fef4e6',  // 연한 주황
-  personal: '#e6f7f4',  // 연한 청록
-  other: '#f3f4f6',     // 연한 회색
+  meeting: '#e8f0fe',      // 연한 파랑
+  leave: '#fce8e8',        // 연한 빨강
+  training: '#fef4e6',     // 연한 주황
+  personal: '#e6f7f4',     // 연한 청록
+  announcement: '#fff8e6', // 연한 노랑
+  event: '#f0e6ff',        // 연한 보라
+  other: '#f3f4f6',        // 연한 회색
+  patient: '#e6ffe6',      // 연한 초록
 };
 
 export function DoctorScheduleCalendar() {

@@ -13,55 +13,56 @@
 // PDF 출력 유틸리티
 // ============================================
 
-// 패키지 설치 여부 확인용 플래그
-let jspdfAvailable: boolean | null = null;
-let xlsxAvailable: boolean | null = null;
+// 패키지 설치 여부 확인용 플래그 (향후 사용 예정)
+// let jspdfAvailable: boolean | null = null;
+// let xlsxAvailable: boolean | null = null;
 
-// jspdf 사용 가능 여부 확인
-const checkJspdfAvailable = async (): Promise<boolean> => {
-  if (jspdfAvailable !== null) return jspdfAvailable;
-  try {
-    await import('jspdf');
-    jspdfAvailable = true;
-    return true;
-  } catch {
-    jspdfAvailable = false;
-    return false;
-  }
-};
+// jspdf 사용 가능 여부 확인 (향후 사용 예정)
+// const _checkJspdfAvailable = async (): Promise<boolean> => {
+//   if (jspdfAvailable !== null) return jspdfAvailable;
+//   try {
+//     await import('jspdf');
+//     jspdfAvailable = true;
+//     return true;
+//   } catch {
+//     jspdfAvailable = false;
+//     return false;
+//   }
+// };
 
-// xlsx 사용 가능 여부 확인
-const checkXlsxAvailable = async (): Promise<boolean> => {
-  if (xlsxAvailable !== null) return xlsxAvailable;
-  try {
-    await import('xlsx');
-    xlsxAvailable = true;
-    return true;
-  } catch {
-    xlsxAvailable = false;
-    return false;
-  }
-};
+// xlsx 사용 가능 여부 확인 (향후 사용 예정)
+// const _checkXlsxAvailable = async (): Promise<boolean> => {
+//   if (xlsxAvailable !== null) return xlsxAvailable;
+//   try {
+//     await import('xlsx');
+//     xlsxAvailable = true;
+//     return true;
+//   } catch {
+//     xlsxAvailable = false;
+//     return false;
+//   }
+// };
 
-interface PDFReportData {
-  title: string;
-  subtitle?: string;
-  patientInfo: {
-    name: string;
-    patientNumber: string;
-    birthDate?: string;
-    gender?: string;
-  };
-  sections: {
-    title: string;
-    content: string | string[];
-  }[];
-  footer?: {
-    author?: string;
-    date?: string;
-    hospital?: string;
-  };
-}
+// 향후 사용 예정
+// interface PDFReportData {
+//   title: string;
+//   subtitle?: string;
+//   patientInfo: {
+//     name: string;
+//     patientNumber: string;
+//     birthDate?: string;
+//     gender?: string;
+//   };
+//   sections: {
+//     title: string;
+//     content: string | string[];
+//   }[];
+//   footer?: {
+//     author?: string;
+//     date?: string;
+//     hospital?: string;
+//   };
+// }
 
 /**
  * RIS 판독 리포트 PDF 생성
@@ -288,11 +289,17 @@ export const generateLISReportPDF = async (data: {
       columnStyles: {
         4: {
           fontStyle: 'bold',
-          textColor: (cell: any) => {
-            const value = cell.raw;
-            if (value === 'Critical') return [229, 107, 111];
-            if (value === '이상') return [242, 166, 90];
-            return [95, 179, 162];
+        }
+      },
+      didParseCell: (data) => {
+        if (data.section === 'body' && data.column.index === 4) {
+          const value = data.cell.raw;
+          if (value === 'Critical') {
+            data.cell.styles.textColor = [229, 107, 111];
+          } else if (value === '이상') {
+            data.cell.styles.textColor = [242, 166, 90];
+          } else {
+            data.cell.styles.textColor = [95, 179, 162];
           }
         }
       }
