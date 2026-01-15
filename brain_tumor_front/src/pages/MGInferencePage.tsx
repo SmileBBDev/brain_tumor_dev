@@ -3,7 +3,7 @@ import { OCSTable, OCSItem } from '../components/OCSTable'
 import MGResultViewer from '../components/MGResultViewer'
 import GeneVisualization, { GeneExpressionData } from '../components/GeneVisualization'
 import { useAIInferenceWebSocket } from '../hooks/useAIInferenceWebSocket'
-import { ocsApi, aiApi } from '../services/api'
+import { ocsApi, aiApi } from '../services/ai.api'
 
 interface MGResult {
   survival_risk?: {

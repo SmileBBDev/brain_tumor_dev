@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { aiApi } from '../services/api'
+import { aiApi } from '../services/ai.api'
 
 interface GradeResult {
   predicted_class: string

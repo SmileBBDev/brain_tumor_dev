@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import MMResultViewer from '../components/MMResultViewer'
 import { useAIInferenceWebSocket } from '../hooks/useAIInferenceWebSocket'
-import { ocsApi, aiApi } from '../services/api'
+import { ocsApi, aiApi } from '../services/ai.api'
 
 // OCS Item type
 interface OCSItem {

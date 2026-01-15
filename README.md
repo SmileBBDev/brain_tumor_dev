@@ -106,7 +106,11 @@ cd front_code <br/>
 npm install <br/>
 npm run dev <br/>
 
+
 * 브라우저에서 http://localhost:5173 접속 -> 로그인 화면 호출됨
+
+
+
 
 <h3>3단계: 백엔드 실행</h3>
 cd back_code <br/>

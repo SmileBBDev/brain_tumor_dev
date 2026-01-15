@@ -3,7 +3,7 @@ import { OCSTable, OCSItem } from '../components/OCSTable'
 import { InferenceResult } from '../components/InferenceResult'
 import SegMRIViewer, { SegmentationData } from '../components/SegMRIViewer'
 import { useAIInferenceWebSocket } from '../hooks/useAIInferenceWebSocket'
-import { ocsApi, aiApi } from '../services/api'
+import { ocsApi, aiApi } from '../services/ai.api'
 
 interface M1Result {
   grade?: {
