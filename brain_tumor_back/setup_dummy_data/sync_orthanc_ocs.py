@@ -107,6 +107,41 @@ def orthanc_delete(path):
     return r.json() if r.text else {}
 
 
+def reset_orthanc_all():
+    """
+    Orthanc의 모든 데이터 삭제
+
+    Returns:
+        삭제된 study 수
+    """
+    try:
+        # 모든 study 조회
+        studies = orthanc_get("/studies")
+        if not studies:
+            print("  Orthanc에 데이터가 없습니다.")
+            return 0
+
+        print(f"  Orthanc에 {len(studies)}개의 Study가 있습니다. 삭제 중...")
+
+        deleted_count = 0
+        for study_id in studies:
+            try:
+                orthanc_delete(f"/studies/{study_id}")
+                deleted_count += 1
+            except Exception as e:
+                print(f"    [WARNING] Study {study_id} 삭제 실패: {e}")
+
+        print(f"  [OK] {deleted_count}개의 Study 삭제 완료")
+        return deleted_count
+
+    except requests.exceptions.ConnectionError:
+        print("  [WARNING] Orthanc 서버에 연결할 수 없습니다. 리셋 스킵.")
+        return 0
+    except Exception as e:
+        print(f"  [ERROR] Orthanc 리셋 실패: {e}")
+        return 0
+
+
 def check_orthanc_patient_exists(patient_number):
     """
     Orthanc에 해당 환자의 Study가 이미 존재하는지 확인

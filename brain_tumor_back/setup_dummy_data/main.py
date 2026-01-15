@@ -298,6 +298,33 @@ def run_schedule_generator(start_date='2026-01-15', end_date='2026-02-28', per_d
     )
 
 
+def reset_external_storage():
+    """
+    외부 저장소 초기화 (CDSS_STORAGE/LIS, Orthanc)
+
+    setup_dummy_data --reset 실행 시 호출됨
+    """
+    print("\n" + "=" * 60)
+    print("[사전 작업] 외부 저장소 초기화")
+    print("=" * 60)
+
+    # 1. CDSS_STORAGE/LIS 초기화
+    print("\n[1] CDSS_STORAGE/LIS 초기화...")
+    try:
+        from setup_dummy_data.sync_lis_ocs import reset_cdss_storage_lis
+        reset_cdss_storage_lis()
+    except Exception as e:
+        print(f"  [WARNING] CDSS_STORAGE/LIS 초기화 실패: {e}")
+
+    # 2. Orthanc 초기화
+    print("\n[2] Orthanc 초기화...")
+    try:
+        from setup_dummy_data.sync_orthanc_ocs import reset_orthanc_all
+        reset_orthanc_all()
+    except Exception as e:
+        print(f"  [WARNING] Orthanc 초기화 실패: {e}")
+
+
 def main():
     """메인 실행 함수"""
     parser = argparse.ArgumentParser(description='Brain Tumor CDSS 더미 데이터 생성 (통합)')
@@ -378,6 +405,10 @@ def main():
         script_args.append('-y')
 
     success = True
+
+    # 0. --reset 모드인 경우 외부 저장소 초기화
+    if args.reset:
+        reset_external_storage()
 
     # 1. 기본 데이터 생성 (역할, 사용자, 메뉴/권한)
     if not run_script(

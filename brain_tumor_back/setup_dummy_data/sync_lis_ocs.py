@@ -82,6 +82,45 @@ FILE_MAPPING = {
 }
 
 
+def reset_cdss_storage_lis():
+    """
+    CDSS_STORAGE/LIS 폴더의 모든 데이터 삭제
+
+    Returns:
+        삭제된 폴더 수
+    """
+    try:
+        if not CDSS_STORAGE_PATH.exists():
+            print("  CDSS_STORAGE/LIS 폴더가 없습니다.")
+            return 0
+
+        # 하위 폴더 목록 조회
+        folders = list(CDSS_STORAGE_PATH.iterdir())
+        if not folders:
+            print("  CDSS_STORAGE/LIS에 데이터가 없습니다.")
+            return 0
+
+        print(f"  CDSS_STORAGE/LIS에 {len(folders)}개의 폴더가 있습니다. 삭제 중...")
+
+        deleted_count = 0
+        for folder in folders:
+            try:
+                if folder.is_dir():
+                    shutil.rmtree(folder)
+                else:
+                    folder.unlink()
+                deleted_count += 1
+            except Exception as e:
+                print(f"    [WARNING] {folder.name} 삭제 실패: {e}")
+
+        print(f"  [OK] {deleted_count}개 삭제 완료")
+        return deleted_count
+
+    except Exception as e:
+        print(f"  [ERROR] CDSS_STORAGE/LIS 리셋 실패: {e}")
+        return 0
+
+
 # ============================================================
 # 파일 복사 및 OCS 업데이트
 # ============================================================
