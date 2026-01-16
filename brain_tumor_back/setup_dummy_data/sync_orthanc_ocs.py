@@ -39,14 +39,15 @@ from django.utils import timezone
 from django.db import transaction
 from apps.ocs.models import OCS
 from apps.patients.models import Patient
-
+from django.conf import settings
 
 # ============================================================
 # 설정
 # ============================================================
 
-ORTHANC_URL = "http://localhost:8042"
-PATIENT_DATA_PATH = Path("c:/0000/환자데이터")
+ORTHANC_URL = settings.ORTHANC_BASE_URL
+PATIENT_DATA_PATH = settings.PATIENT_DATA_ROOT
+
 
 # 환자 폴더 목록 (순서대로 15개)
 PATIENT_FOLDERS = [

@@ -23,8 +23,8 @@ DEBUG = env.bool('DEBUG', default=False)
 # ALLOWED_HOSTS = [] # 운영 시 실제 도메인 입력
 
 # 추후 실제 배포시 (수정필요)
-DEBUG = True
-ALLOWED_HOSTS = ["*"]
+DEBUG = env.bool("DEBUG", default=True)
+ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["*"])
 
 
 # Application definition
@@ -238,3 +238,35 @@ DEFAULT_FROM_EMAIL = f"BrainTumor System <{EMAIL_HOST_USER}>"
 ORTHANC_BASE_URL = os.getenv("ORTHANC_URL", "http://localhost:8042")
 DATA_UPLOAD_MAX_NUMBER_FILES = None
 ORTHANC_DEBUG_LOG = True
+
+# ==================================================
+# External Patient Raw Data
+# (TCGA, MRI, RNA, Genomics, etc.)
+# ==================================================
+PATIENT_DATA_ROOT: Path = Path(
+    os.environ.get(
+        "PATIENT_DATA_ROOT",
+        str(BASE_DIR.parent / "patient_data")  # ✅ 안전한 기본값
+    )
+)
+
+# ==================================================
+# CDSS STORAGE (Single Source of Truth)
+# ==================================================
+CDSS_STORAGE_ROOT = BASE_DIR.parent / "CDSS_STORAGE"
+
+CDSS_LIS_STORAGE = CDSS_STORAGE_ROOT / "LIS"
+CDSS_RIS_STORAGE = CDSS_STORAGE_ROOT / "RIS"
+
+CDSS_LIS_STORAGE.mkdir(parents=True, exist_ok=True)
+CDSS_RIS_STORAGE.mkdir(parents=True, exist_ok=True)
+
+# ==================================================
+# AI MODEL PATHS
+# ==================================================
+MODAI_ROOT = BASE_DIR.parent / "modAI"
+
+MODAI_MODEL_DIR = MODAI_ROOT / "model"
+
+M1_CLS_WEIGHTS = MODAI_MODEL_DIR / "M1_Cls_best.pth"
+M1_SEG_WEIGHTS = MODAI_MODEL_DIR / "M1_Seg_separate_best.pth"

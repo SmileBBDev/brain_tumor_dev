@@ -86,3 +86,8 @@ modAI/model/
 # ======================
 CDSS_STORAGE/
 
+
+# local docker 저장소
+orthanc-docker/
+openemr-docker/
+patient_data/
