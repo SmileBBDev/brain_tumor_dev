@@ -382,3 +382,34 @@
   font-size: 0.9375rem;
   color: #1e3a5f;
 }
+
+/* MG Viewers Section */
+.ai-mg-viewers-section {
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.ai-mg-viewers-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+}
+
+.ai-mg-viewer-left,
+.ai-mg-viewer-right {
+  min-width: 0;
+}
+
+@media (max-width: 1200px) {
+  .ai-mg-viewers-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* MM Viewer Section */
+.ai-mm-viewer-section {
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid #e5e7eb;
+}

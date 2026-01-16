@@ -10,6 +10,9 @@ import { api } from '@/services/api'
 import { useAIInferenceWebSocket } from '@/hooks/useAIInferenceWebSocket'
 import { useAIInference } from '@/context/AIInferenceContext'
 import SegMRIViewer, { type SegmentationData } from '@/components/ai/SegMRIViewer/SegMRIViewer'
+import GeneVisualization, { type GeneExpressionData } from '@/components/ai/GeneVisualization/GeneVisualization'
+import MGResultViewer, { type MGResult } from '@/components/ai/MGResultViewer/MGResultViewer'
+import MMResultViewer, { type MMResult } from '@/components/ai/MMResultViewer/MMResultViewer'
 import './AIAnalysisBlock.css'
 
 // ============================================================================
@@ -495,10 +498,15 @@ function MGPanel() {
   const [loading, setLoading] = useState(true)
   const [selectedId, setSelectedId] = useState<number | null>(null)
   const [inferring, setInferring] = useState(false)
-  const [result, setResult] = useState<any>(null)
+  const [result, setResult] = useState<MGResult | null>(null)
   const [error, setError] = useState('')
   const [lastJobId, setLastJobId] = useState<string | null>(null)
   const abortRef = useRef(false)
+
+  // Gene Expression 데이터 상태
+  const [geneData, setGeneData] = useState<GeneExpressionData | null>(null)
+  const [geneLoading, setGeneLoading] = useState(false)
+  const [geneError, setGeneError] = useState('')
 
   const { lastMessage } = useAIInferenceWebSocket()
   const { isFastAPIAvailable, requestInference } = useAIInference()
@@ -624,6 +632,34 @@ function MGPanel() {
     }
   }
 
+  // Gene Expression 데이터 로드 함수
+  const loadGeneExpressionData = async (ocsId: number) => {
+    setGeneLoading(true)
+    setGeneError('')
+    setGeneData(null)
+
+    try {
+      const res = await api.get(`/ai/mg/gene-expression/${ocsId}/`)
+      setGeneData(res.data)
+      console.log('[MGPanel] Gene expression data loaded:', res.data)
+    } catch (err: any) {
+      console.error('[MGPanel] Failed to load gene expression:', err)
+      setGeneError(err.response?.data?.detail || '유전자 발현 데이터 로드 실패')
+    } finally {
+      setGeneLoading(false)
+    }
+  }
+
+  // OCS 선택 시 Gene Expression 데이터 로드
+  useEffect(() => {
+    if (selectedId) {
+      loadGeneExpressionData(selectedId)
+    } else {
+      setGeneData(null)
+      setGeneError('')
+    }
+  }, [selectedId])
+
   return (
     <div className="ai-panel">
       <p className="ai-panel-desc">유전자 발현 데이터 분석</p>
@@ -686,13 +722,37 @@ function MGPanel() {
               </button>
             </div>
           )}
-          {result ? (
-            <pre className="ai-result-json">{JSON.stringify(result, null, 2)}</pre>
-          ) : (
+          {!result && !error && (
             <div className="ai-no-result">OCS를 선택하고 추론을 요청하세요</div>
           )}
         </div>
       </div>
+
+      {/* MG 결과 뷰어 섹션 */}
+      {(geneLoading || geneData || geneError || result) && (
+        <div className="ai-mg-viewers-section">
+          <div className="ai-mg-viewers-grid">
+            {/* 왼쪽: Gene Visualization */}
+            <div className="ai-mg-viewer-left">
+              <GeneVisualization
+                data={geneData}
+                patientId={ocsList.find(o => o.id === selectedId)?.patient_number}
+                loading={geneLoading}
+                error={geneError || undefined}
+              />
+            </div>
+
+            {/* 오른쪽: MG Result Viewer */}
+            <div className="ai-mg-viewer-right">
+              <MGResultViewer
+                result={result}
+                loading={inferring}
+                error={error || undefined}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -709,7 +769,7 @@ function MMPanel() {
   const [selectedGene, setSelectedGene] = useState<number | null>(null)
   const [selectedProtein, setSelectedProtein] = useState<number | null>(null)
   const [inferring, setInferring] = useState(false)
-  const [result, setResult] = useState<any>(null)
+  const [result, setResult] = useState<MMResult | null>(null)
   const [error, setError] = useState('')
   const [lastJobId, setLastJobId] = useState<string | null>(null)
   const abortRef = useRef(false)
@@ -999,12 +1059,21 @@ function MMPanel() {
                 </button>
               </div>
             )}
-            {result ? (
-              <pre className="ai-result-json">{JSON.stringify(result, null, 2)}</pre>
-            ) : (
+            {!result && !error && (
               <div className="ai-no-result">3개 데이터 선택 후 추론 요청</div>
             )}
           </div>
+        </div>
+      )}
+
+      {/* MM 결과 뷰어 섹션 */}
+      {(inferring || result || error) && (
+        <div className="ai-mm-viewer-section">
+          <MMResultViewer
+            result={result}
+            loading={inferring}
+            error={error || undefined}
+          />
         </div>
       )}
     </div>
