@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import MMResultViewer from '@/components/MMResultViewer'
 import { useAIInferenceWebSocket } from '@/hooks/useAIInferenceWebSocket'
 import { ocsApi, aiApi } from '@/services/ai.api'
@@ -72,7 +72,7 @@ interface InferenceRecord {
 
 export default function MMInferencePage() {
   // State
-  const [loading, setLoading] = useState(false)
+  const [_loading, setLoading] = useState(false)
   const [patients, setPatients] = useState<PatientOption[]>([])
   const [selectedPatient, setSelectedPatient] = useState<string>('')
 

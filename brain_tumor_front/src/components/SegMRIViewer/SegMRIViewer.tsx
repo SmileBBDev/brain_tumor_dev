@@ -102,7 +102,7 @@ const SegMRIViewer: React.FC<SegMRIViewerProps> = ({
   // State
   const [currentSlice, setCurrentSlice] = useState(0)
   const [viewMode, setViewMode] = useState<ViewMode>(initialViewMode)
-  const [displayMode, setDisplayMode] = useState<DisplayMode>(initialDisplayMode)
+  const [displayMode, _setDisplayMode] = useState<DisplayMode>(initialDisplayMode)
   const [initialized, setInitialized] = useState(false)
   const [sliceDims, setSliceDims] = useState({ width: 128, height: 128 })
 

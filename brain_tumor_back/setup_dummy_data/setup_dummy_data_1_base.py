@@ -653,6 +653,7 @@ def load_menu_permission_seed():
         ('ADMIN_SYSTEM_MONITOR', '시스템 모니터링', '시스템 모니터링 화면'),
         # 진료 보고서
         ('REPORT', '진료 보고서', '진료 보고서 메뉴'),
+        ('REPORT_DASHBOARD', '보고서 대시보드', '통합 보고서 대시보드 (OCS+AI+Final)'),
         ('REPORT_LIST', '보고서 목록', '보고서 목록 화면'),
         ('REPORT_CREATE', '보고서 작성', '보고서 작성 화면'),
         ('REPORT_DETAIL', '보고서 상세', '보고서 상세 화면'),
@@ -789,9 +790,10 @@ def load_menu_permission_seed():
 
     # 진료 보고서 메뉴
     menu_report, _ = create_menu(38, code='REPORT', path=None, icon='file-text', group_label='보고서', order=8, is_active=True)
-    menu_report_list, _ = create_menu(39, code='REPORT_LIST', path='/reports', icon='list', order=1, is_active=True, parent=menu_report)
-    create_menu(40, code='REPORT_CREATE', path='/reports/create', breadcrumb_only=True, order=2, is_active=True, parent=menu_report_list)
-    create_menu(41, code='REPORT_DETAIL', path='/reports/:id', breadcrumb_only=True, order=3, is_active=True, parent=menu_report_list)
+    create_menu(52, code='REPORT_DASHBOARD', path='/reports', icon='view-dashboard', order=1, is_active=True, parent=menu_report)
+    menu_report_list, _ = create_menu(39, code='REPORT_LIST', path='/reports/list', icon='list', order=2, is_active=True, parent=menu_report)
+    create_menu(40, code='REPORT_CREATE', path='/reports/create', breadcrumb_only=True, order=3, is_active=True, parent=menu_report_list)
+    create_menu(41, code='REPORT_DETAIL', path='/reports/:id', breadcrumb_only=True, order=4, is_active=True, parent=menu_report_list)
 
     # 환자 전용 메뉴 (MY_CARE) - PATIENT 역할만 접근
     menu_my_care, _ = create_menu(45, code='MY_CARE', path=None, icon='user', group_label='내 진료', order=9, is_active=True)
@@ -898,7 +900,12 @@ def load_menu_permission_seed():
         (11, 'DEFAULT', '시스템 모니터링'),
         # REPORT
         (38, 'DEFAULT', '보고서'),
-        (39, 'DEFAULT', '보고서 목록'),
+        (52, 'DEFAULT', '보고서 대시보드'),
+        (52, 'DOCTOR', '통합 보고서'),
+        (52, 'NURSE', '검사 결과'),
+        (52, 'RIS', '검사 결과'),
+        (52, 'LIS', '검사 결과'),
+        (39, 'DEFAULT', '최종 보고서'),
         (40, 'DEFAULT', '보고서 작성'),
         (41, 'DEFAULT', '보고서 상세'),
         # MY_CARE (환자 전용)
@@ -944,13 +951,13 @@ def load_menu_permission_seed():
             'IMAGING', 'IMAGE_VIEWER', 'RIS_WORKLIST', 'RIS_DASHBOARD', 'RIS_RESULT_UPLOAD',
             'LAB', 'LAB_RESULT_VIEW', 'LAB_RESULT_UPLOAD', 'LIS_PROCESS_STATUS',
             'AI', 'AI_VIEWER', 'AI_REQUEST_LIST', 'AI_REQUEST_CREATE', 'AI_REQUEST_DETAIL', 'AI_PROCESS_STATUS', 'AI_MODELS',
-            'REPORT', 'REPORT_LIST', 'REPORT_CREATE', 'REPORT_DETAIL',
+            'REPORT', 'REPORT_DASHBOARD', 'REPORT_LIST', 'REPORT_CREATE', 'REPORT_DETAIL',
             'ADMIN', 'ADMIN_USER', 'ADMIN_USER_DETAIL', 'ADMIN_ROLE', 'ADMIN_MENU_PERMISSION', 'ADMIN_AUDIT_LOG', 'ADMIN_SYSTEM_MONITOR'
         ],
-        'DOCTOR': ['DASHBOARD', 'PATIENT_LIST', 'PATIENT_DETAIL', 'PATIENT_CARE', 'ENCOUNTER_LIST', 'OCS_STATUS', 'OCS_CREATE', 'OCS_PROCESS_STATUS', 'IMAGE_VIEWER', 'RIS_WORKLIST', 'LAB_RESULT_VIEW', 'AI', 'AI_VIEWER', 'AI_REQUEST_LIST', 'AI_REQUEST_CREATE', 'AI_REQUEST_DETAIL', 'REPORT', 'REPORT_LIST', 'REPORT_CREATE', 'REPORT_DETAIL'],
-        'NURSE': ['DASHBOARD', 'PATIENT_LIST', 'PATIENT_DETAIL', 'ENCOUNTER_LIST', 'OCS_STATUS', 'OCS_PROCESS_STATUS', 'IMAGE_VIEWER', 'LAB_RESULT_VIEW'],  # PATIENT_CARE 제거 (DOCTOR, SYSTEMMANAGER만), NURSE_RECEPTION은 Dashboard로 통합됨
-        'RIS': ['DASHBOARD', 'IMAGE_VIEWER', 'RIS_WORKLIST', 'OCS_RIS', 'OCS_RIS_DETAIL', 'RIS_DASHBOARD', 'RIS_RESULT_UPLOAD', 'AI', 'AI_VIEWER', 'AI_REQUEST_LIST'],
-        'LIS': ['DASHBOARD', 'LAB_RESULT_VIEW', 'LAB_RESULT_UPLOAD', 'OCS_LIS', 'OCS_LIS_DETAIL', 'LIS_PROCESS_STATUS', 'AI', 'AI_VIEWER', 'AI_REQUEST_LIST'],
+        'DOCTOR': ['DASHBOARD', 'PATIENT_LIST', 'PATIENT_DETAIL', 'PATIENT_CARE', 'ENCOUNTER_LIST', 'OCS_STATUS', 'OCS_CREATE', 'OCS_PROCESS_STATUS', 'IMAGE_VIEWER', 'RIS_WORKLIST', 'LAB_RESULT_VIEW', 'AI', 'AI_VIEWER', 'AI_REQUEST_LIST', 'AI_REQUEST_CREATE', 'AI_REQUEST_DETAIL', 'REPORT', 'REPORT_DASHBOARD', 'REPORT_LIST', 'REPORT_CREATE', 'REPORT_DETAIL'],
+        'NURSE': ['DASHBOARD', 'PATIENT_LIST', 'PATIENT_DETAIL', 'ENCOUNTER_LIST', 'OCS_STATUS', 'OCS_PROCESS_STATUS', 'IMAGE_VIEWER', 'LAB_RESULT_VIEW', 'REPORT', 'REPORT_DASHBOARD'],  # 보고서 대시보드 추가
+        'RIS': ['DASHBOARD', 'IMAGE_VIEWER', 'RIS_WORKLIST', 'OCS_RIS', 'OCS_RIS_DETAIL', 'RIS_DASHBOARD', 'RIS_RESULT_UPLOAD', 'AI', 'AI_VIEWER', 'AI_REQUEST_LIST', 'REPORT', 'REPORT_DASHBOARD'],
+        'LIS': ['DASHBOARD', 'LAB_RESULT_VIEW', 'LAB_RESULT_UPLOAD', 'OCS_LIS', 'OCS_LIS_DETAIL', 'LIS_PROCESS_STATUS', 'AI', 'AI_VIEWER', 'AI_REQUEST_LIST', 'REPORT', 'REPORT_DASHBOARD'],
         # 환자 전용 메뉴 (MY_CARE 그룹)
         'PATIENT': ['DASHBOARD', 'MY_CARE', 'MY_SUMMARY', 'MY_VISITS', 'MY_IMAGING', 'MY_LAB', 'ABOUT_HOSPITAL'],
     }

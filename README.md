@@ -105,7 +105,7 @@ Python 3.10 이상 설치
 cd front_code <br/>
 npm install <br/>
 npm run dev <br/>
-
+npm run build
 
 * 브라우저에서 http://localhost:5173 접속 -> 로그인 화면 호출됨
 
@@ -128,8 +128,20 @@ pip freeze > requirements.txt
 
 
 
+방법 1: Docker Compose (권장)
+cd c:\0000\docker
+docker compose -f docker-compose.fastapi.yml up -d
 
+<!-- 
+cd /mnt/c/0000/brain_tumor_dev/modAI
 
+venv\Scripts\activate
+
+# 1. Celery Worker (백그라운드 작업 처리)
+celery -A celery_app worker --loglevel=info
+
+# 2. FastAPI 서버 (별도 터미널)
+uvicorn main:app --reload --host 0.0.0.0 --port 8001 -->
 
 
 

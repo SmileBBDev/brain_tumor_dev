@@ -3,7 +3,7 @@
  * - 썸네일 + 정보를 카드 형태로 표시
  * - OCS_RIS: 4채널 DICOM 이미지 썸네일 (T1, T1C, T2, FLAIR)
  */
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import type { UnifiedReport, ChannelThumbnail } from '@/services/report.api';
 import './ReportCard.css';
 

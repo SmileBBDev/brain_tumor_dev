@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react'
-import { OCSTable, OCSItem } from '@/components/OCSTable'
+import { useState, useEffect } from 'react'
+import { OCSTable, type OCSItem } from '@/components/OCSTable'
 import { InferenceResult } from '@/components/InferenceResult'
-import SegMRIViewer, { SegmentationData } from '@/components/SegMRIViewer'
+import SegMRIViewer, { type SegmentationData } from '@/components/SegMRIViewer'
 import { useAIInferenceWebSocket } from '@/hooks/useAIInferenceWebSocket'
 import { ocsApi, aiApi } from '@/services/ai.api'
 

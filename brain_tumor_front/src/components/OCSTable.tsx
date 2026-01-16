@@ -1,4 +1,3 @@
-import React from 'react'
 
 export interface OCSItem {
   id: number

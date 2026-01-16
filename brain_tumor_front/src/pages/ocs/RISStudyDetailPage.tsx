@@ -85,8 +85,8 @@ export default function RISStudyDetailPage() {
   const [viewerOpen, setViewerOpen] = useState(false);
 
   // AI 추론 상태
-  const [aiInferenceStatus, setAiInferenceStatus] = useState<'none' | 'pending' | 'processing' | 'completed' | 'failed'>('none');
-  const [aiJobId, setAiJobId] = useState<string | null>(null);
+  const [_aiInferenceStatus, setAiInferenceStatus] = useState<'none' | 'pending' | 'processing' | 'completed' | 'failed'>('none');
+  const [_aiJobId, setAiJobId] = useState<string | null>(null);
   const [aiRequesting, setAiRequesting] = useState(false);
 
   // URL 쿼리 파라미터 처리 (tab, openViewer)

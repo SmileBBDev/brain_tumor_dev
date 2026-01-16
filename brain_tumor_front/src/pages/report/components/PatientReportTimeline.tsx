@@ -43,7 +43,7 @@ export default function PatientReportTimeline({
   const [timeline, setTimeline] = useState<TimelineItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [patientName, setPatientName] = useState<string>('');
+  const [_patientName, setPatientName] = useState<string>('');
 
   useEffect(() => {
     const fetchTimeline = async () => {
