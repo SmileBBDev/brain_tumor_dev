@@ -1,0 +1,219 @@
+@startuml AI Inference Sequence Diagram
+!theme plain
+
+title AI 추론 시퀀스 다이어그램 (비동기 구조)
+
+skinparam backgroundColor #FEFEFE
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam noteFontSize 10
+
+actor User as user
+participant "React\nFrontend" as react
+participant "Django\nDaphne:8000" as django
+participant "FastAPI\n:8001" as fastapi
+participant "Celery\nWorker" as celery
+database "Redis\n:6379" as redis
+database "MySQL" as mysql
+database "CDSS_STORAGE\n/AI/<job_id>/" as storage
+
+== 1. WebSocket 연결 (AIAnalysisBlock 마운트 시) ==
+
+react -> django : WS Connect\nws://server/ws/ai-inference/?token=xxx
+activate django
+django -> django : JwtAuthMiddleware\n토큰 검증
+django -> redis : channel_layer.group_add\n('ai_inference', channel_name)
+django --> react : WS Accept
+deactivate django
+
+note over react, django
+  WebSocket 연결 유지
+  30초마다 ping/pong
+end note
+
+== 2. 사용자 AI 추론 요청 (NON-BLOCKING) ==
+
+user -> react : M1 추론 버튼 클릭
+activate react
+react -> react : setInferring(true)\nsetError('')
+
+react -> django : POST /api/ai/m1/inference/\n{ ocs_id: 123, mode: 'manual' }
+activate django
+
+django -> mysql : AIInference.objects.create()\nstatus=PENDING
+
+django -> mysql : OCS.ai_status = PENDING\nai_requested_at = now()
+
+django -> fastapi : POST /api/v1/m1/inference\n{ job_id, study_uid, callback_url }
+activate fastapi
+
+note right of fastapi
+  FastAPI는 즉시 응답
+  (작업은 Celery로 위임)
+end note
+
+fastapi -> celery : m1_inference_task.delay()\njob_id, study_uid
+fastapi --> django : { status: 'accepted' }
+deactivate fastapi
+
+django -> mysql : AIInference.status = PROCESSING\nOCS.ai_status = PROCESSING
+
+note over django #LightGreen
+  **즉시 응답 (Non-Blocking)**
+  Django는 Celery 작업 완료를
+  기다리지 않고 바로 응답
+end note
+
+django --> react : { job_id, status: 'processing',\n  cached: false }
+deactivate django
+
+react -> react : setLastJobId(job_id)
+react -> react : pollResult(job_id) 시작\n(fallback)
+deactivate react
+
+== 3. Celery Worker 추론 실행 (비동기) ==
+
+note over celery #LightYellow
+  React는 이 시점에서 UI 블럭 없이
+  다른 작업 가능 (폴링은 백그라운드)
+end note
+
+celery -> redis : Task 수신
+activate celery
+celery -> celery : AI 모델 로드
+celery -> celery : Orthanc에서 MRI DICOM 로드
+celery -> celery : 데이터 전처리
+celery -> celery : Grade/IDH/MGMT/Survival 예측
+celery -> celery : 결과 파일 생성\n(JSON, NPZ, PNG)
+
+note right of celery
+  10~60초 소요
+  결과물:
+  - result.json (메타데이터)
+  - predictions.npz (예측값)
+  - gradcam.png (시각화)
+end note
+
+celery -> fastapi : 추론 완료\n{ job_id, result_data, files }
+deactivate celery
+
+== 4. FastAPI → Django Callback (파일 저장 포함) ==
+
+activate fastapi
+fastapi -> django : POST /api/ai/callback/\n{ job_id, status: 'completed',\n  result_data, files: { base64... } }
+deactivate fastapi
+activate django
+
+django -> django : IP 화이트리스트 검증\n_is_ip_allowed(client_ip)
+
+alt IP 허용됨
+
+  == 4-1. CDSS_STORAGE 파일 저장 ==
+
+  django -> storage : mkdir -p\nCDSS_STORAGE/AI/<job_id>/
+  activate storage
+
+  loop 각 파일 처리
+    alt file_type == 'json'
+      django -> storage : result.json 저장\n(UTF-8 텍스트)
+    else file_type == 'npz'
+      django -> storage : predictions.npz 저장\n(base64 디코딩 → 바이너리)
+    else file_type == 'png'
+      django -> storage : gradcam.png 저장\n(base64 디코딩 → 이미지)
+    end
+  end
+
+  storage --> django : 저장 완료\nsaved_files: { result, predictions, gradcam }
+  deactivate storage
+
+  note over django, storage
+    result_data['saved_files'] = {
+      'job_id': '<job_id>',
+      'result': 'result.json',
+      'predictions': 'predictions.npz',
+      'gradcam': 'gradcam.png'
+    }
+  end note
+
+  == 4-2. DB 업데이트 ==
+
+  django -> mysql : AIInference 업데이트\nstatus = COMPLETED\nresult_data = {..., saved_files}\ncompleted_at = now()
+
+  django -> mysql : OCS.ai_status = COMPLETED\nai_completed_at = now()
+
+  == 5. WebSocket으로 결과 알림 ==
+
+  django -> redis : channel_layer.group_send(\n  'ai_inference',\n  { type: 'ai_inference_result',\n    job_id, status, result })
+
+  redis -> django : AIInferenceConsumer\nai_inference_result() 호출
+
+  django -> react : WS Message\n{ type: 'AI_INFERENCE_RESULT',\n  job_id, status: 'COMPLETED',\n  result: {...} }
+
+else IP 차단됨
+  django --> fastapi : 403 Forbidden\n'허용되지 않은 IP입니다.'
+end
+
+deactivate django
+
+== 6. React 결과 수신 및 표시 ==
+
+activate react
+react -> react : lastMessage 수신\njob_id 일치 확인
+
+alt WebSocket으로 수신 성공
+  react -> react : abortRef.current = true\n(폴링 중단)
+  react -> react : setResult(result)\nsetInferring(false)
+else WebSocket 실패 시 폴링 Fallback
+  react -> django : GET /api/ai/inferences/<job_id>/
+  activate django
+  django -> mysql : AIInference.objects.get(job_id)
+  django --> react : { status, result_data }
+  deactivate django
+  react -> react : 결과 확인 후 처리
+end
+
+react -> user : 결과 화면 표시\n(Grade, IDH, MGMT, Survival)
+deactivate react
+
+== 7. 대용량 결과 조회 (필요시) ==
+
+note over react, storage #LightBlue
+  result_data에 saved_files 정보 포함
+  대용량 파일(NPZ, PNG)은 별도 API로 조회
+end note
+
+user -> react : GradCAM 이미지 보기 클릭
+activate react
+react -> django : GET /api/ai/files/<job_id>/gradcam.png
+activate django
+django -> storage : 파일 읽기
+storage --> django : gradcam.png (binary)
+django --> react : 이미지 바이너리
+deactivate django
+react -> user : GradCAM 시각화 표시
+deactivate react
+
+== 8. WebSocket 종료 (페이지 이탈 시) ==
+
+user -> react : 다른 페이지로 이동
+activate react
+react -> react : useEffect cleanup\ndisconnect() 호출
+react -> django : WS Close
+activate django
+django -> redis : channel_layer.group_discard\n('ai_inference', channel_name)
+deactivate django
+deactivate react
+
+== 에러 처리 시나리오 ==
+
+note over fastapi, celery #Salmon
+  **추론 실패 시:**
+  1. Celery에서 에러 발생
+  2. FastAPI → Django callback (status: 'failed')
+  3. Django: AIInference.status = FAILED
+  4. Django: OCS.ai_status = FAILED
+  5. WebSocket: 에러 메시지 전송
+  6. React: 에러 UI 표시
+end note
+
+@enduml
