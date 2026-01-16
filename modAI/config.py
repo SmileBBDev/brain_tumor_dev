@@ -63,7 +63,7 @@ class Settings(BaseSettings):
     # Model weights
     M1_WEIGHTS_PATH: Path = Path(os.environ.get(
         "M1_WEIGHTS_PATH",
-        str(Path(os.environ.get("MODEL_DIR", str(BASE_DIR / "model"))) / "m1_best.pth")
+        str(Path(os.environ.get("MODEL_DIR", str(BASE_DIR / "model"))) / "M1_Cls_best.pth")
     ))
     M1_SEG_WEIGHTS_PATH: Path = Path(os.environ.get(
         "M1_SEG_WEIGHTS_PATH",

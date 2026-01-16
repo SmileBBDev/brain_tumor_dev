@@ -61,6 +61,7 @@ docker/
 
 ```bash
 cd docker
+# cd C:\0000\brain_tumor_dev\docker
 
 # .env 파일 생성
 cp .env.example .env
@@ -72,9 +73,9 @@ cp .env.example .env
 
 ```bash
 # 기본 인프라 (Orthanc + Redis)
-docker compose -f docker-compose.yml up -d
+# docker compose -f docker-compose.yml up -d
 
-# Django + MySQL
+# Django + MySQL + 기본 인프라 (Orthanc + Redis)
 docker compose -f docker-compose.django.yml up -d
 
 # OpenEMR + HAPI FHIR (필요시)
@@ -95,7 +96,23 @@ python setup.py
 
 # 4. Docker 빌드 및 실행
 docker compose -f docker-compose.fastapi.yml up -d --build
+
+
 ```
+
+
+
+
+cd C:\0000\brain_tumor_dev\docker
+docker compose -f docker-compose.fastapi.yml down
+docker compose -f docker-compose.django.yml down
+docker compose -f docker-compose.django.yml up -d --build
+
+docker compose -f docker-compose.fastapi.yml down
+docker compose -f docker-compose.fastapi.yml up -d --build
+
+
+
 
 ---
 
