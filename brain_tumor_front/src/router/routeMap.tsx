@@ -52,6 +52,9 @@ const MyImagingPage = lazy(() => import('@/pages/patient-portal/MyImagingPage'))
 const MyLabPage = lazy(() => import('@/pages/patient-portal/MyLabPage'));
 const AboutHospitalPage = lazy(() => import('@/pages/patient-portal/AboutHospitalPage'));
 
+// Report (보고서 대시보드)
+const ReportDashboardPage = lazy(() => import('@/pages/report/ReportDashboardPage'));
+
 
 /**
  * DB 메뉴 code ↔ React 컴포넌트 매핑 (계약서)
@@ -122,4 +125,7 @@ export const routeMap: Record<string, ComponentType> = {
   MY_IMAGING: MyImagingPage,
   MY_LAB: MyLabPage,
   ABOUT_HOSPITAL: AboutHospitalPage,
+
+  // === REPORT 그룹 ===
+  REPORT_DASHBOARD: ReportDashboardPage,
 };

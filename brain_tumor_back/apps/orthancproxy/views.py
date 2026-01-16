@@ -638,3 +638,119 @@ def delete_patient(request, patient_id: str):
         data = {"detail": str(e)}
         dlog("delete_patient error", data)
         return Response(data, status=500)
+
+
+# -------------------------------------------------------------
+# 7) 썸네일 API - DICOM 이미지 미리보기
+#    - Series의 중간 슬라이스 이미지를 PNG로 반환
+#    - 4개 채널 (T1, T1CE, T2, FLAIR) 썸네일 지원
+# -------------------------------------------------------------
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def get_series_thumbnail(request, series_id: str):
+    """
+    시리즈의 중간 슬라이스 썸네일 이미지 반환
+
+    Orthanc의 preview 기능을 활용하여 DICOM 이미지를 PNG로 변환
+    """
+    try:
+        # 시리즈 정보 조회
+        series_info = _get(f"/series/{series_id}")
+        instances = series_info.get("Instances", [])
+
+        if not instances:
+            return Response({"detail": "No instances in series"}, status=404)
+
+        # 중간 슬라이스 선택
+        middle_idx = len(instances) // 2
+        middle_instance_id = instances[middle_idx]
+
+        # Orthanc의 preview 기능 사용 (PNG 반환)
+        preview_url = f"{ORTHANC}/instances/{middle_instance_id}/preview"
+        r = requests.get(preview_url, timeout=10)
+        r.raise_for_status()
+
+        return HttpResponse(r.content, content_type="image/png")
+
+    except requests.exceptions.HTTPError as e:
+        if e.response.status_code == 404:
+            return Response({"detail": "Series not found"}, status=404)
+        raise
+    except Exception as e:
+        logger.exception("get_series_thumbnail error")
+        return Response({"detail": str(e)}, status=500)
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def get_study_thumbnails(request, study_id: str):
+    """
+    스터디의 모든 시리즈에 대한 썸네일 정보 반환
+
+    MRI 4채널 (T1, T1CE, T2, FLAIR)에 대한 썸네일 URL 목록 제공
+    """
+    try:
+        study_info = _get(f"/studies/{study_id}")
+        series_ids = study_info.get("Series", [])
+
+        thumbnails = []
+        for ser_id in series_ids:
+            try:
+                ser = _get(f"/series/{ser_id}")
+                tags = ser.get("MainDicomTags", {}) or {}
+                series_desc = tags.get("SeriesDescription", "")
+                series_type = _parse_series_type(series_desc)
+
+                # SEG는 썸네일에서 제외 (마스크 이미지)
+                if series_type == "SEG":
+                    continue
+
+                instances = ser.get("Instances", [])
+                if not instances:
+                    continue
+
+                thumbnails.append({
+                    "series_id": ser_id,
+                    "series_type": series_type,
+                    "description": series_desc,
+                    "instances_count": len(instances),
+                    "thumbnail_url": f"/api/orthanc/series/{ser_id}/thumbnail/",
+                })
+            except Exception as e:
+                logger.warning("series thumbnail failed %s: %s", ser_id, e)
+
+        # 채널 순서 정렬: T1 -> T1C -> T2 -> FLAIR -> OTHER
+        channel_order = {"T1": 0, "T1C": 1, "T2": 2, "FLAIR": 3, "DWI": 4, "SWI": 5, "OTHER": 6}
+        thumbnails.sort(key=lambda x: channel_order.get(x["series_type"], 99))
+
+        return Response({
+            "study_id": study_id,
+            "count": len(thumbnails),
+            "thumbnails": thumbnails
+        })
+
+    except Exception as e:
+        logger.exception("get_study_thumbnails error")
+        return Response({"detail": str(e)}, status=500)
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def get_instance_preview(request, instance_id: str):
+    """
+    특정 인스턴스의 미리보기 이미지 반환 (PNG)
+    """
+    try:
+        preview_url = f"{ORTHANC}/instances/{instance_id}/preview"
+        r = requests.get(preview_url, timeout=10)
+        r.raise_for_status()
+
+        return HttpResponse(r.content, content_type="image/png")
+
+    except requests.exceptions.HTTPError as e:
+        if e.response.status_code == 404:
+            return Response({"detail": "Instance not found"}, status=404)
+        raise
+    except Exception as e:
+        logger.exception("get_instance_preview error")
+        return Response({"detail": str(e)}, status=500)

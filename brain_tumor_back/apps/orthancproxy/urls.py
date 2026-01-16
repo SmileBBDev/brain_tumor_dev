@@ -10,6 +10,11 @@ urlpatterns = [
 
     path("instances/<str:instance_id>/file/", views.get_instance_file),
 
+    # ===== 썸네일 API =====
+    path("series/<str:series_id>/thumbnail/", views.get_series_thumbnail),
+    path("studies/<str:study_id>/thumbnails/", views.get_study_thumbnails),
+    path("instances/<str:instance_id>/preview/", views.get_instance_preview),
+
     # ===== 삭제 API (REST 스타일 지원) =====
     path("patients/<str:patient_id>/", views.delete_patient),
     path("studies/<str:study_id>/", views.delete_study),

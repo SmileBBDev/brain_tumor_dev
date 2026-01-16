@@ -5,9 +5,17 @@ from .views import (
     FinalReportSubmitView,
     FinalReportApproveView,
     FinalReportFinalizeView,
+    UnifiedReportDashboardView,
+    PatientReportTimelineView,
 )
 
 urlpatterns = [
+    # 통합 보고서 대시보드 (모든 보고서 조회)
+    path('dashboard/', UnifiedReportDashboardView.as_view(), name='report-dashboard'),
+
+    # 환자별 보고서 타임라인
+    path('patient/<int:patient_id>/timeline/', PatientReportTimelineView.as_view(), name='patient-report-timeline'),
+
     # 보고서 목록/생성
     path('', FinalReportListCreateView.as_view(), name='report-list-create'),
 

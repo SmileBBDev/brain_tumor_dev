@@ -7,10 +7,18 @@ from drf_spectacular.views import (
     SpectacularAPIView,
     SpectacularSwaggerView,
 )
-from apps.common.views import AdminDashboardStatsView, ExternalDashboardStatsView, DoctorDashboardStatsView
+from apps.common.views import (
+    AdminDashboardStatsView,
+    ExternalDashboardStatsView,
+    DoctorDashboardStatsView,
+    HealthCheckView,
+)
 
 
 urlpatterns = [
+    # Health Check (Docker/K8s용 - 인증 불필요)
+    path("health/", HealthCheckView.as_view(), name="health_check"),
+
     path("admin/", admin.site.urls),
     path("api/auth/", include("apps.authorization.urls")), 
     path("api/token/", CustomTokenObtainPairView.as_view(), name="token_obtain_pair"),

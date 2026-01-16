@@ -3,8 +3,10 @@ import logging
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.permissions import AllowAny
 from django.utils import timezone
 from django.db.models import Count, Q
+from django.db import connection
 from datetime import timedelta
 from drf_spectacular.utils import extend_schema, OpenApiResponse
 
@@ -15,6 +17,44 @@ from apps.encounters.models import Encounter
 from apps.common.permission import IsAdmin, IsExternalOrAdmin, IsDoctorOrAdmin
 
 logger = logging.getLogger(__name__)
+
+
+class HealthCheckView(APIView):
+    """
+    헬스 체크 엔드포인트
+    Docker/Kubernetes 헬스 체크 및 로드밸런서용
+    """
+    permission_classes = [AllowAny]
+    authentication_classes = []
+
+    @extend_schema(
+        tags=["Health"],
+        summary="서버 헬스 체크",
+        description="서버 상태 및 데이터베이스 연결을 확인합니다.",
+        responses={
+            200: OpenApiResponse(description="정상"),
+            503: OpenApiResponse(description="서비스 불가"),
+        }
+    )
+    def get(self, request):
+        health_status = {
+            "status": "healthy",
+            "database": "unknown",
+            "timestamp": timezone.now().isoformat(),
+        }
+
+        # Database 연결 확인
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT 1")
+            health_status["database"] = "connected"
+        except Exception as e:
+            logger.error(f"Health check - DB error: {str(e)}")
+            health_status["status"] = "unhealthy"
+            health_status["database"] = "disconnected"
+            return Response(health_status, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+
+        return Response(health_status, status=status.HTTP_200_OK)
 
 
 @extend_schema(
