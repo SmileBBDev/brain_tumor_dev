@@ -253,7 +253,7 @@ PATIENT_DATA_ROOT: Path = Path(
 # ==================================================
 # CDSS STORAGE (Single Source of Truth)
 # ==================================================
-CDSS_STORAGE_ROOT = BASE_DIR.parent / "CDSS_STORAGE"
+CDSS_STORAGE_ROOT = BASE_DIR / "CDSS_STORAGE"
 
 CDSS_LIS_STORAGE = CDSS_STORAGE_ROOT / "LIS"
 CDSS_RIS_STORAGE = CDSS_STORAGE_ROOT / "RIS"
