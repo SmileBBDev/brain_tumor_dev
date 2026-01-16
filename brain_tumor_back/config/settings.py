@@ -252,14 +252,18 @@ PATIENT_DATA_ROOT: Path = Path(
 
 # ==================================================
 # CDSS STORAGE (Single Source of Truth)
+# brain_tumor_dev/CDSS_STORAGE를 기준으로 통일
 # ==================================================
-CDSS_STORAGE_ROOT = BASE_DIR / "CDSS_STORAGE"
+CDSS_STORAGE_ROOT = BASE_DIR.parent / "CDSS_STORAGE"
 
 CDSS_LIS_STORAGE = CDSS_STORAGE_ROOT / "LIS"
 CDSS_RIS_STORAGE = CDSS_STORAGE_ROOT / "RIS"
+CDSS_AI_STORAGE = CDSS_STORAGE_ROOT / "AI"
 
+CDSS_STORAGE_ROOT.mkdir(parents=True, exist_ok=True)
 CDSS_LIS_STORAGE.mkdir(parents=True, exist_ok=True)
 CDSS_RIS_STORAGE.mkdir(parents=True, exist_ok=True)
+CDSS_AI_STORAGE.mkdir(parents=True, exist_ok=True)
 
 # ==================================================
 # AI MODEL PATHS

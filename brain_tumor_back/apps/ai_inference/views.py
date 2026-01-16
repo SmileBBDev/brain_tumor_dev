@@ -13,6 +13,7 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 
+from django.conf import settings as django_settings
 from apps.ocs.models import OCS
 from .models import AIInference
 from .serializers import InferenceRequestSerializer, InferenceCallbackSerializer, AIInferenceSerializer
@@ -22,14 +23,11 @@ logger = logging.getLogger(__name__)
 # FastAPI modAI URL (환경변수로 유연하게 설정)
 FASTAPI_URL = os.getenv("FASTAPI_URL", "http://localhost:8001")
 
-# CDSS_STORAGE 경로 동적 설정
-# 현재 파일 위치: brain_tumor_back/apps/ai_inference/views.py
-# CDSS_STORAGE 위치: ../CDSS_STORAGE (프로젝트 루트 기준)
-_CURRENT_FILE = Path(__file__).resolve()
-_PROJECT_ROOT = _CURRENT_FILE.parent.parent.parent.parent  # brain_tumor_dev
-CDSS_STORAGE_BASE = _PROJECT_ROOT / "CDSS_STORAGE"
-CDSS_STORAGE_AI = CDSS_STORAGE_BASE / "AI"
-CDSS_STORAGE_LIS = CDSS_STORAGE_BASE / "LIS"
+# CDSS_STORAGE 경로 (settings.py에서 정의된 Single Source of Truth 사용)
+# 경로: brain_tumor_dev/CDSS_STORAGE
+CDSS_STORAGE_BASE = django_settings.CDSS_STORAGE_ROOT
+CDSS_STORAGE_AI = django_settings.CDSS_AI_STORAGE
+CDSS_STORAGE_LIS = django_settings.CDSS_LIS_STORAGE
 
 
 class M1InferenceView(APIView):

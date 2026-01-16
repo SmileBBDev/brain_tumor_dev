@@ -54,10 +54,11 @@ class Settings(BaseSettings):
     BASE_DIR: Path = Path(__file__).parent
     MODEL_DIR: Path = Path(os.environ.get("MODEL_DIR", str(BASE_DIR / "model")))
     # STORAGE_DIR: 환경변수 우선, 없으면 로컬 경로 사용
-    # Docker: /app/CDSS_STORAGE/AI, Local: source/CDSS_STORAGE/AI
+    # Docker: /app/CDSS_STORAGE/AI, Local: brain_tumor_dev/CDSS_STORAGE/AI
+    # BASE_DIR = modAI/, BASE_DIR.parent = brain_tumor_dev/
     STORAGE_DIR: Path = Path(os.environ.get(
         "STORAGE_DIR",
-        str(BASE_DIR.parent.parent / "CDSS_STORAGE" / "AI")
+        str(BASE_DIR.parent / "CDSS_STORAGE" / "AI")
     ))
 
     # Model weights
