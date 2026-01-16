@@ -9,6 +9,7 @@ import { useState, useEffect, useRef } from 'react'
 import { api } from '@/services/api'
 import { useAIInferenceWebSocket } from '@/hooks/useAIInferenceWebSocket'
 import { useAIInference } from '@/context/AIInferenceContext'
+import SegMRIViewer, { type SegmentationData } from '@/components/ai/SegMRIViewer/SegMRIViewer'
 import './AIAnalysisBlock.css'
 
 // ============================================================================
@@ -30,6 +31,13 @@ interface InferenceResult {
   mgmt?: { predicted_class: string }
   survival?: { risk_score: number; risk_category: string }
   processing_time_ms?: number
+  segmentation?: {
+    wt_volume: number
+    tc_volume: number
+    et_volume: number
+    ncr_volume: number
+    ed_volume: number
+  }
 }
 
 type TabType = 'm1' | 'mg' | 'mm'
@@ -92,6 +100,11 @@ function M1Panel() {
   const [error, setError] = useState('')
   const [lastJobId, setLastJobId] = useState<string | null>(null)
   const abortRef = useRef(false)
+
+  // 세그멘테이션 뷰어 관련 상태
+  const [segData, setSegData] = useState<SegmentationData | null>(null)
+  const [segLoading, setSegLoading] = useState(false)
+  const [segError, setSegError] = useState('')
 
   const { lastMessage } = useAIInferenceWebSocket()
   const { isFastAPIAvailable, requestInference } = useAIInference()
@@ -193,11 +206,13 @@ function M1Panel() {
         return
       }
 
+      // job_id 항상 설정 (캐시/신규 모두 세그멘테이션 로드에 필요)
+      setLastJobId(job.job_id)
+
       if (job.cached && job.result) {
         setResult(job.result)
         setInferring(false)
       } else {
-        setLastJobId(job.job_id)
         pollResult(job.job_id)
       }
     } catch (err: any) {
@@ -216,6 +231,133 @@ function M1Panel() {
       handleInference()
     }
   }
+
+  // 세그멘테이션 데이터 로드 함수
+  const loadSegmentationData = async (jobId: string) => {
+    setSegLoading(true)
+    setSegError('')
+    setSegData(null)
+
+    try {
+      // enc=binary로 base64 인코딩된 데이터 요청 (더 효율적)
+      const res = await api.get(`/ai/inferences/${jobId}/segmentation/`, {
+        params: { enc: 'binary' }
+      })
+
+      const data = res.data
+      console.log('[M1Panel] Segmentation data loaded:', {
+        shape: data.shape,
+        encoding: data.encoding,
+        hasMri: !!data.mri,
+        hasPrediction: !!data.prediction
+      })
+
+      // base64 디코딩하여 3D 배열로 변환 (Django API는 모든 데이터를 float32로 인코딩)
+      const decodeBase64ToArray = (b64: string, shape: number[], roundToInt = false): number[][][] => {
+        const binary = atob(b64)
+        const bytes = new Uint8Array(binary.length)
+        for (let i = 0; i < binary.length; i++) {
+          bytes[i] = binary.charCodeAt(i)
+        }
+
+        // Django API는 모든 배열을 float32로 인코딩함
+        const flatArray = new Float32Array(bytes.buffer)
+
+        // 3D 배열로 변환 [X][Y][Z]
+        const [X, Y, Z] = shape
+        const result: number[][][] = []
+        for (let x = 0; x < X; x++) {
+          const plane: number[][] = []
+          for (let y = 0; y < Y; y++) {
+            const row: number[] = []
+            for (let z = 0; z < Z; z++) {
+              let val = flatArray[x * Y * Z + y * Z + z]
+              // 세그멘테이션 마스크는 정수 레이블(0,1,2,3)이므로 반올림
+              if (roundToInt) val = Math.round(val)
+              row.push(val)
+            }
+            plane.push(row)
+          }
+          result.push(plane)
+        }
+        return result
+      }
+
+      // MRI 데이터 (float32)
+      let mriVolume: number[][][] = []
+      if (data.mri && data.encoding === 'base64') {
+        mriVolume = decodeBase64ToArray(data.mri, data.shape, false)
+      } else if (data.mri && Array.isArray(data.mri)) {
+        mriVolume = data.mri
+      }
+
+      // Prediction 데이터 (float32로 인코딩된 정수 레이블 -> 정수로 변환)
+      let predVolume: number[][][] = []
+      if (data.prediction && data.encoding === 'base64') {
+        predVolume = decodeBase64ToArray(data.prediction, data.shape, true)
+      } else if (data.prediction && Array.isArray(data.prediction)) {
+        predVolume = data.prediction
+      }
+
+      // 디버그: prediction 데이터의 고유 값 확인
+      const uniqueLabels = new Set<number>()
+      if (predVolume.length > 0) {
+        const midX = Math.floor(predVolume.length / 2)
+        for (let y = 0; y < predVolume[midX].length; y++) {
+          for (let z = 0; z < predVolume[midX][y].length; z++) {
+            uniqueLabels.add(predVolume[midX][y][z])
+          }
+        }
+      }
+      console.log('[M1Panel] Prediction unique labels in middle slice:', Array.from(uniqueLabels))
+
+      // SegmentationData 구성
+      const segmentationData: SegmentationData = {
+        mri: mriVolume,
+        groundTruth: [], // GT는 없음 (추론 결과만)
+        prediction: predVolume,
+        shape: data.shape as [number, number, number],
+      }
+
+      // MRI 채널 데이터가 있으면 추가 (MRI는 float 값이므로 roundToInt=false)
+      if (data.mri_channels) {
+        segmentationData.mri_channels = {}
+        for (const ch of ['t1', 't1ce', 't2', 'flair']) {
+          if (data.mri_channels[ch]) {
+            if (data.encoding === 'base64') {
+              segmentationData.mri_channels[ch as keyof typeof segmentationData.mri_channels] =
+                decodeBase64ToArray(data.mri_channels[ch], data.shape, false)
+            } else {
+              segmentationData.mri_channels[ch as keyof typeof segmentationData.mri_channels] =
+                data.mri_channels[ch]
+            }
+          }
+        }
+      }
+
+      setSegData(segmentationData)
+      console.log('[M1Panel] SegmentationData ready:', {
+        mriShape: segmentationData.mri.length,
+        predShape: segmentationData.prediction.length,
+        hasChannels: !!segmentationData.mri_channels
+      })
+    } catch (err: any) {
+      console.error('[M1Panel] Failed to load segmentation:', err)
+      setSegError(err.response?.data?.detail || '세그멘테이션 데이터 로드 실패')
+    } finally {
+      setSegLoading(false)
+    }
+  }
+
+  // M1 결과가 있고 job_id가 있으면 세그멘테이션 데이터 로드
+  // (M1 추론은 항상 m1_segmentation.npz 파일을 생성함)
+  useEffect(() => {
+    if (result && lastJobId) {
+      loadSegmentationData(lastJobId)
+    } else {
+      setSegData(null)
+    }
+  }, [result, lastJobId])
 
   return (
     <div className="ai-panel">
@@ -315,6 +457,32 @@ function M1Panel() {
           )}
         </div>
       </div>
+
+      {/* 세그멘테이션 뷰어 섹션 */}
+      {(segLoading || segData || segError) && (
+        <div className="ai-segmentation-section">
+          <div className="ai-section-title">세그멘테이션 결과</div>
+          {segLoading && (
+            <div className="ai-loading">세그멘테이션 데이터 로딩 중...</div>
+          )}
+          {segError && (
+            <div className="ai-error">{segError}</div>
+          )}
+          {segData && (
+            <SegMRIViewer
+              data={segData}
+              title="M1 세그멘테이션 결과"
+              diceScores={result?.segmentation ? {
+                wt: result.segmentation.wt_volume,
+                tc: result.segmentation.tc_volume,
+                et: result.segmentation.et_volume,
+              } : undefined}
+              initialViewMode="axial"
+              initialDisplayMode="overlay"
+            />
+          )}
+        </div>
+      )}
     </div>
   )
 }
