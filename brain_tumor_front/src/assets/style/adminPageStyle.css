@@ -229,6 +229,62 @@
   border-left-color: #f97316;
 }
 
+.monitor-card.error {
+  border-left-color: #dc2626;
+}
+
+.monitor-card h3 {
+  font-size: 13px;
+  font-weight: 500;
+  color: #6b7280;
+  margin-bottom: 8px;
+}
+
+.monitor-card p {
+  font-size: 24px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.monitor-card .sub-text {
+  font-size: 12px;
+  font-weight: 400;
+  color: #9ca3af;
+  margin-top: 4px;
+}
+
+.monitor-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 200px;
+  color: #6b7280;
+}
+
+.monitor-error {
+  text-align: center;
+  padding: 40px;
+  color: #dc2626;
+}
+
+.monitor-error button {
+  margin-top: 16px;
+  background: #2563eb;
+  color: #fff;
+}
+
+@media (max-width: 768px) {
+  .monitor-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .monitor-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* 사용자 관리 */
 /* 상단 검색 / 필터 영역 정리 (툴바)*/
 .admin-toolbar {

@@ -341,6 +341,9 @@ class UnifiedReportDashboardView(APIView):
             for ai in ai_queryset.order_by('-completed_at')[:limit]:
                 thumbnail = self._get_ai_thumbnail(ai)
 
+                # 모델 타입에 따른 상세 페이지 경로
+                model_type_path = ai.model_type.lower()  # M1 -> m1, MG -> mg, MM -> mm
+
                 reports.append({
                     'id': f'ai_{ai.job_id}',
                     'type': f'AI_{ai.model_type}',
@@ -359,7 +362,7 @@ class UnifiedReportDashboardView(APIView):
                     'author': ai.requested_by.name if ai.requested_by else None,
                     'doctor': None,
                     'thumbnail': thumbnail,
-                    'link': f'/ai/results/{ai.job_id}',
+                    'link': f'/ai/{model_type_path}/{ai.job_id}',
                 })
 
         # 3. 최종 진료 보고서
@@ -617,6 +620,7 @@ class PatientReportTimelineView(APIView):
 
         for ai in ai_list:
             result_data = ai.result_data or {}
+            model_type_path = ai.model_type.lower()  # M1 -> m1, MG -> mg, MM -> mm
             timeline.append({
                 'id': f'ai_{ai.job_id}',
                 'type': f'AI_{ai.model_type}',
@@ -628,7 +632,7 @@ class PatientReportTimelineView(APIView):
                 'result': self._get_ai_result_display(ai),
                 'result_flag': 'ai',
                 'author': ai.requested_by.name if ai.requested_by else None,
-                'link': f'/ai/results/{ai.job_id}',
+                'link': f'/ai/{model_type_path}/{ai.job_id}',
             })
 
         # 3. 최종 보고서

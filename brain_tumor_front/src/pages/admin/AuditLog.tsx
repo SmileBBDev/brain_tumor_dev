@@ -31,8 +31,8 @@ export default function AuditLog() {
       if (dateFilter) params.date = dateFilter;
 
       const response = await getAuditLogs(params);
-      setLogs(response.results);
-      setTotalCount(response.count);
+      setLogs(response.results || []);
+      setTotalCount(response.count || 0);
     } catch (error) {
       console.error('Failed to fetch audit logs:', error);
     } finally {

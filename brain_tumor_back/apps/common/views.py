@@ -1,4 +1,5 @@
 import logging
+import psutil
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -14,6 +15,7 @@ from apps.accounts.models import User
 from apps.patients.models import Patient
 from apps.ocs.models import OCS
 from apps.encounters.models import Encounter
+from apps.audit.models import AuditLog
 from apps.common.permission import IsAdmin, IsExternalOrAdmin, IsDoctorOrAdmin
 
 logger = logging.getLogger(__name__)
@@ -259,5 +261,108 @@ class DoctorDashboardStatsView(APIView):
             logger.error(f"Doctor dashboard stats error: {str(e)}")
             return Response(
                 {'detail': '통계를 불러오는 중 오류가 발생했습니다.'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+@extend_schema(
+    tags=["System Monitor"],
+    summary="시스템 모니터링 통계",
+    description="시스템 상태, CPU/메모리 사용량, 활성 세션, 로그인 통계 등을 조회합니다. ADMIN, SYSTEMMANAGER 역할 접근 가능합니다.",
+    responses={
+        200: OpenApiResponse(description="통계 조회 성공"),
+        403: OpenApiResponse(description="권한 없음"),
+        500: OpenApiResponse(description="서버 오류"),
+    }
+)
+class SystemMonitorView(APIView):
+    """시스템 모니터링 API"""
+    permission_classes = [IsAdmin]
+
+    def get(self, request):
+        try:
+            now = timezone.now()
+            today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+
+            # 1. 서버 상태 (Health Check)
+            server_status = "healthy"
+            database_status = "connected"
+            try:
+                with connection.cursor() as cursor:
+                    cursor.execute("SELECT 1")
+            except Exception:
+                server_status = "unhealthy"
+                database_status = "disconnected"
+
+            # 2. 시스템 리소스 (CPU, Memory)
+            cpu_percent = psutil.cpu_percent(interval=0.1)
+            memory = psutil.virtual_memory()
+            disk = psutil.disk_usage('/')
+
+            # 3. 활성 세션 수 (최근 30분 이내 last_seen이 있는 사용자)
+            session_threshold = now - timedelta(minutes=30)
+            active_sessions = User.objects.filter(
+                is_active=True,
+                last_seen__gte=session_threshold
+            ).count()
+
+            # 4. 금일 로그인 통계 (AuditLog 기반)
+            today_login_success = AuditLog.objects.filter(
+                action='LOGIN_SUCCESS',
+                created_at__gte=today_start
+            ).count()
+
+            today_login_fail = AuditLog.objects.filter(
+                action='LOGIN_FAIL',
+                created_at__gte=today_start
+            ).count()
+
+            # 5. 오류 발생 건수 (금일 로그인 실패 + 잠금)
+            today_login_locked = AuditLog.objects.filter(
+                action='LOGIN_LOCKED',
+                created_at__gte=today_start
+            ).count()
+
+            error_count = today_login_fail + today_login_locked
+
+            # 6. 서버 상태 판단 (warning/error 조건)
+            if server_status == "unhealthy":
+                status_level = "error"
+            elif cpu_percent > 90 or memory.percent > 90 or error_count > 10:
+                status_level = "warning"
+            else:
+                status_level = "ok"
+
+            return Response({
+                'server': {
+                    'status': status_level,
+                    'database': database_status,
+                },
+                'resources': {
+                    'cpu_percent': round(cpu_percent, 1),
+                    'memory_percent': round(memory.percent, 1),
+                    'memory_used_gb': round(memory.used / (1024**3), 2),
+                    'memory_total_gb': round(memory.total / (1024**3), 2),
+                    'disk_percent': round(disk.percent, 1),
+                },
+                'sessions': {
+                    'active_count': active_sessions,
+                },
+                'logins': {
+                    'today_total': today_login_success + today_login_fail,
+                    'today_success': today_login_success,
+                    'today_fail': today_login_fail,
+                    'today_locked': today_login_locked,
+                },
+                'errors': {
+                    'count': error_count,
+                },
+                'timestamp': now.isoformat(),
+            })
+
+        except Exception as e:
+            logger.error(f"System monitor error: {str(e)}")
+            return Response(
+                {'detail': '시스템 모니터링 데이터를 불러오는 중 오류가 발생했습니다.'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )

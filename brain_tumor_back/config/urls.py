@@ -12,6 +12,7 @@ from apps.common.views import (
     ExternalDashboardStatsView,
     DoctorDashboardStatsView,
     HealthCheckView,
+    SystemMonitorView,
 )
 
 
@@ -66,6 +67,9 @@ urlpatterns = [
     path("api/dashboard/admin/stats/", AdminDashboardStatsView.as_view()),
     path("api/dashboard/external/stats/", ExternalDashboardStatsView.as_view()),
     path("api/dashboard/doctor/stats/", DoctorDashboardStatsView.as_view()),
+
+    # System Monitor API
+    path("api/system/monitor/", SystemMonitorView.as_view(), name="system_monitor"),
 
     # 진료 보고서 API
     path("api/reports/", include("apps.reports.urls")),

@@ -271,11 +271,15 @@ export default function MMInferencePage() {
       }
     } catch (err: any) {
       setInferenceStatus('failed')
-      setError(
+      // 다양한 에러 응답 형식 처리
+      const errorMessage =
+        err.response?.data?.detail ||  // DRF 기본 에러 형식
         err.response?.data?.error ||
-          err.message ||
-          '추론 요청에 실패했습니다.'
-      )
+        err.response?.data?.message ||
+        err.message ||
+        '추론 요청에 실패했습니다.'
+      setError(errorMessage)
+      console.error('MM Inference error:', err.response?.data || err)
     }
   }
 
