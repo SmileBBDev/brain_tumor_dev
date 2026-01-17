@@ -601,6 +601,108 @@ def create_dummy_lis_orders(num_orders=30, force=False):
     return True
 
 
+def create_additional_ocs_orders(num_orders=15, force=False):
+    """
+    추가 OCS 오더 생성 (ORDERED 상태 유지)
+
+    ※ 환자데이터 폴더가 없는 환자(P202600016~)에게 OCS 생성
+    ※ sync 스크립트와 매칭되지 않으므로 ORDERED 상태 유지
+    ※ RIS 5건, LIS(RNA_SEQ) 5건, LIS(BIOMARKER) 5건 = 총 15건
+    """
+    print(f"\n[4-1단계] 추가 OCS 오더 생성 - ORDERED 상태 (목표: {num_orders}건)...")
+    print(f"  ※ 환자데이터 폴더가 없는 환자에게 생성 (ORDERED 상태 유지)")
+
+    from apps.ocs.models import OCS
+    from apps.patients.models import Patient
+    from apps.encounters.models import Encounter
+    from django.contrib.auth import get_user_model
+    User = get_user_model()
+
+    # 환자데이터 폴더가 없는 환자 (P202600016 ~ P202600050)
+    target_patients = list(Patient.objects.filter(
+        is_deleted=False
+    ).order_by('patient_number')[15:50])  # 16번째부터
+
+    if len(target_patients) < 5:
+        print(f"[WARNING] 추가 환자가 부족합니다. ({len(target_patients)}명)")
+        return True
+
+    # 의사 목록
+    doctors = list(User.objects.filter(role__code='DOCTOR'))
+    if not doctors:
+        print("[ERROR] 의사가 없습니다.")
+        return False
+
+    # 각 타입별 5건씩 생성 (RIS 5 + RNA_SEQ 5 + BIOMARKER 5 = 15)
+    job_configs = [
+        ('RIS', 'MRI', 5),
+        ('LIS', 'RNA_SEQ', 5),
+        ('LIS', 'BIOMARKER', 5),
+    ]
+
+    created_count = 0
+    patient_idx = 0
+
+    for job_role, job_type, count in job_configs:
+        for i in range(count):
+            if patient_idx >= len(target_patients):
+                patient_idx = 0  # 환자 순환
+
+            patient = target_patients[patient_idx]
+            patient_idx += 1
+
+            # 해당 환자의 진료 기록 찾기
+            encounter = Encounter.objects.filter(
+                patient=patient,
+                attending_doctor__isnull=False
+            ).first()
+
+            doctor = encounter.attending_doctor if encounter else random.choice(doctors)
+
+            # doctor_request 데이터
+            if job_role == 'RIS':
+                request_detail = "MRI Head 촬영 요청"
+                clinical_info = f"brain tumor evaluation - {patient.name}"
+            else:
+                test_name = "RNA 발현 분석" if job_type == 'RNA_SEQ' else "단백질 마커 분석"
+                request_detail = f"{test_name} 요청"
+                clinical_info = f"{patient.name} - 뇌종양 검사"
+
+            doctor_request = {
+                "_template": "default",
+                "_version": "1.0",
+                "clinical_info": clinical_info,
+                "request_detail": request_detail,
+                "special_instruction": "",
+            }
+
+            try:
+                with transaction.atomic():
+                    ocs = OCS.objects.create(
+                        patient=patient,
+                        doctor=doctor,
+                        worker=None,
+                        encounter=encounter,
+                        job_role=job_role,
+                        job_type=job_type,
+                        ocs_status='ORDERED',  # ORDERED 상태 유지
+                        priority='normal',
+                        doctor_request=doctor_request,
+                        worker_result={},
+                        ocs_result=None,
+                    )
+                    created_count += 1
+                    print(f"  [+] {patient.patient_number} -> {job_role}/{job_type} ({ocs.ocs_id})")
+
+            except Exception as e:
+                print(f"  [ERROR] {patient.patient_number} {job_role}/{job_type}: {e}")
+
+    print(f"\n[OK] 추가 OCS 생성: {created_count}건 (모두 ORDERED 상태)")
+    print(f"  - RIS: {OCS.objects.filter(job_role='RIS').count()}건")
+    print(f"  - LIS: {OCS.objects.filter(job_role='LIS').count()}건")
+    return True
+
+
 def create_ai_models():
     """AI 모델 시드 데이터 생성 (현재 AIInference 단일 모델 사용으로 스킵)"""
     print(f"\n[5단계] AI 모델 데이터 생성...")
@@ -1282,6 +1384,9 @@ def main():
 
     # 검사 오더 (LIS) - RNA_SEQ 15건 + BIOMARKER 15건 = 30건 (동일 환자)
     create_dummy_lis_orders(30, force=force)
+
+    # 추가 OCS 15건 (ORDERED 상태) - 총 60건 맞추기
+    create_additional_ocs_orders(15, force=force)
 
     # AI 모델
     create_ai_models()

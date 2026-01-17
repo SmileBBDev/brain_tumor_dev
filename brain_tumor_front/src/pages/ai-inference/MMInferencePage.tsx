@@ -132,15 +132,28 @@ export default function MMInferencePage() {
   const loadAllOcsData = async () => {
     try {
       setLoading(true)
-      const response = await ocsApi.getAllOcsList()
-      const rawData = response.results || response || []
 
-      // 디버깅: 전체 API 응답 확인
-      console.log('MM Page - API Response sample (first item):', rawData[0])
-      console.log('MM Page - Total items:', rawData.length)
+      // 병렬로 3개 API 호출 (백엔드에서 이미 필터링됨)
+      const [mriResponse, geneResponse, proteinResponse] = await Promise.all([
+        ocsApi.getMriOcsList(),
+        ocsApi.getRnaSeqOcsList(),
+        ocsApi.getBiomarkerOcsList(),
+      ])
 
+      const mriData = mriResponse.results || mriResponse || []
+      const geneData = geneResponse.results || geneResponse || []
+      const proteinData = proteinResponse.results || proteinResponse || []
+
+      console.log('MM Page - API Results:', {
+        mri: mriData.length,
+        gene: geneData.length,
+        protein: proteinData.length
+      })
+
+      // 환자 목록 추출 (모든 데이터에서)
       const patientMap = new Map<string, PatientOption>()
-      rawData.forEach((item: any) => {
+      const allData = [...mriData, ...geneData, ...proteinData]
+      allData.forEach((item: any) => {
         if (item.patient?.patient_number) {
           patientMap.set(item.patient.patient_number, {
             patient_number: item.patient.patient_number,
@@ -150,61 +163,12 @@ export default function MMInferencePage() {
       })
       setPatients(Array.from(patientMap.values()))
 
-      const confirmed = rawData.filter((item: any) => item.ocs_status === 'CONFIRMED')
-      console.log('MM Page - Confirmed items:', confirmed.length)
+      // 각 모달리티별 데이터 매핑
+      const mriList = mriData.map(mapOcsItem)
+      const geneList = geneData.map(mapOcsItem)
+      const proteinList = proteinData.map(mapOcsItem)
 
-      // 디버깅: job_type 값 확인
-      const lisItems = confirmed.filter((item: any) => item.job_role === 'LIS')
-      console.log('MM Page - LIS items count:', lisItems.length)
-
-      // 모든 job_type 값 출력 (첫 5개만)
-      console.log('MM Page - LIS items sample (first 5):', lisItems.slice(0, 5).map((i: any) => ({
-        id: i.id,
-        ocs_id: i.ocs_id,
-        job_role: i.job_role,
-        job_type: i.job_type,
-        job_type_typeof: typeof i.job_type
-      })))
-
-      const jobTypes = [...new Set(lisItems.map((item: any) => item.job_type))]
-      console.log('MM Page - LIS unique job_types:', jobTypes)
-      console.log('MM Page - LIS items count by type:', {
-        RNA_SEQ: lisItems.filter((i: any) => i.job_type === 'RNA_SEQ').length,
-        BIOMARKER: lisItems.filter((i: any) => i.job_type === 'BIOMARKER').length,
-        GENE_PANEL: lisItems.filter((i: any) => i.job_type === 'GENE_PANEL').length,
-        DNA_SEQ: lisItems.filter((i: any) => i.job_type === 'DNA_SEQ').length,
-        CBC: lisItems.filter((i: any) => i.job_type === 'CBC').length,
-        OTHER: lisItems.filter((i: any) => !['RNA_SEQ', 'BIOMARKER', 'GENE_PANEL', 'DNA_SEQ', 'CBC', 'CMP', 'Coagulation', 'Tumor Markers'].includes(i.job_type)).length
-      })
-
-      // MRI: RIS + MRI (대소문자 무시)
-      const mriList = confirmed
-        .filter((item: any) => {
-          const jobRole = (item.job_role || '').toUpperCase()
-          const jobType = (item.job_type || '').toUpperCase()
-          return jobRole === 'RIS' && jobType === 'MRI'
-        })
-        .map(mapOcsItem)
-
-      // Gene: LIS + RNA_SEQ (대소문자 무시)
-      const geneList = confirmed
-        .filter((item: any) => {
-          const jobRole = (item.job_role || '').toUpperCase()
-          const jobType = (item.job_type || '').toUpperCase()
-          return jobRole === 'LIS' && jobType === 'RNA_SEQ'
-        })
-        .map(mapOcsItem)
-
-      // Protein: LIS + BIOMARKER (대소문자 무시)
-      const proteinList = confirmed
-        .filter((item: any) => {
-          const jobRole = (item.job_role || '').toUpperCase()
-          const jobType = (item.job_type || '').toUpperCase()
-          return jobRole === 'LIS' && jobType === 'BIOMARKER'
-        })
-        .map(mapOcsItem)
-
-      console.log('MM Page - Final filtered counts:', { mri: mriList.length, gene: geneList.length, protein: proteinList.length })
+      console.log('MM Page - Final counts:', { mri: mriList.length, gene: geneList.length, protein: proteinList.length })
 
       setMriOcsList(mriList)
       setGeneOcsList(geneList)

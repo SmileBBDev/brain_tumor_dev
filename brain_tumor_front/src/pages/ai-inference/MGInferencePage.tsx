@@ -139,12 +139,12 @@ export default function MGInferencePage() {
   const loadOcsData = async () => {
     try {
       setLoading(true)
-      const response = await ocsApi.getAllOcsList()
+
+      // 백엔드에서 이미 필터링된 데이터 조회 (LIS + RNA_SEQ + CONFIRMED)
+      const response = await ocsApi.getRnaSeqOcsList()
       const rawData = response.results || response || []
 
-      // 디버깅: API 응답 확인
-      console.log('MG Page - Total items:', rawData.length)
-      console.log('MG Page - API Response sample (first item):', rawData[0])
+      console.log('MG Page - RNA_SEQ CONFIRMED count:', rawData.length)
 
       // 환자 목록 추출
       const patientMap = new Map<string, PatientOption>()
@@ -158,39 +158,20 @@ export default function MGInferencePage() {
       })
       setPatients(Array.from(patientMap.values()))
 
-      // 디버깅: LIS 데이터 분석
-      const lisItems = rawData.filter((item: any) => (item.job_role || '').toUpperCase() === 'LIS')
-      const lisJobTypes = [...new Set(lisItems.map((item: any) => item.job_type))]
-      console.log('MG Page - LIS unique job_types:', lisJobTypes)
-      console.log('MG Page - LIS items count by type:', {
-        RNA_SEQ: lisItems.filter((i: any) => (i.job_type || '').toUpperCase() === 'RNA_SEQ').length,
-        BIOMARKER: lisItems.filter((i: any) => (i.job_type || '').toUpperCase() === 'BIOMARKER').length,
-        TOTAL_LIS: lisItems.length
-      })
-
-      // LIS + RNA_SEQ + CONFIRMED만 필터링 (대소문자 무시)
-      const mappedData: OCSItem[] = rawData
-        .filter((item: any) => {
-          const jobRole = (item.job_role || '').toUpperCase()
-          const jobType = (item.job_type || '').toUpperCase()
-          const ocsStatus = (item.ocs_status || '').toUpperCase()
-          return jobRole === 'LIS' && jobType === 'RNA_SEQ' && ocsStatus === 'CONFIRMED'
-        })
-        .map((item: any) => ({
-          id: item.id,
-          ocs_id: item.ocs_id,
-          patient_name: item.patient?.name || '',
-          patient_number: item.patient?.patient_number || '',
-          job_role: item.job_role || '',
-          job_type: item.job_type || '',
-          ocs_status: item.ocs_status || '',
-          confirmed_at: item.confirmed_at || '',
-          ocs_result: item.ocs_result || null,
-          attachments: item.attachments || {},
-          worker_result: item.worker_result || {},
-        }))
-
-      console.log('MG Page - Final RNA_SEQ CONFIRMED count:', mappedData.length)
+      // 데이터 매핑
+      const mappedData: OCSItem[] = rawData.map((item: any) => ({
+        id: item.id,
+        ocs_id: item.ocs_id,
+        patient_name: item.patient?.name || '',
+        patient_number: item.patient?.patient_number || '',
+        job_role: item.job_role || '',
+        job_type: item.job_type || '',
+        ocs_status: item.ocs_status || '',
+        confirmed_at: item.confirmed_at || '',
+        ocs_result: item.ocs_result || null,
+        attachments: item.attachments || {},
+        worker_result: item.worker_result || {},
+      }))
 
       setOcsData(mappedData)
     } catch (err) {

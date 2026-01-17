@@ -338,25 +338,40 @@ export const ocsApi = {
     return response.data;
   },
 
-  // MRI OCS 목록 조회
+  // MRI OCS 목록 조회 (RIS + MRI + CONFIRMED)
   getMriOcsList: async () => {
     const response = await api.get('/ocs/', {
       params: {
         job_role: 'RIS',
         job_type: 'MRI',
         ocs_status: 'CONFIRMED',
+        page_size: 100,
       },
     });
     return response.data;
   },
 
-  // LIS RNA_SEQ OCS 목록 조회
+  // LIS RNA_SEQ OCS 목록 조회 (Gene Expression)
   getRnaSeqOcsList: async () => {
     const response = await api.get('/ocs/', {
       params: {
         job_role: 'LIS',
         job_type: 'RNA_SEQ',
         ocs_status: 'CONFIRMED',
+        page_size: 100,
+      },
+    });
+    return response.data;
+  },
+
+  // LIS BIOMARKER OCS 목록 조회 (Protein)
+  getBiomarkerOcsList: async () => {
+    const response = await api.get('/ocs/', {
+      params: {
+        job_role: 'LIS',
+        job_type: 'BIOMARKER',
+        ocs_status: 'CONFIRMED',
+        page_size: 100,
       },
     });
     return response.data;

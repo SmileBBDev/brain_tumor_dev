@@ -91,6 +91,9 @@ class OCSViewSet(viewsets.ModelViewSet):
         if params.get('job_role'):
             queryset = queryset.filter(job_role=params.get('job_role'))
 
+        if params.get('job_type'):
+            queryset = queryset.filter(job_type=params.get('job_type'))
+
         if params.get('priority'):
             queryset = queryset.filter(priority=params.get('priority'))
 

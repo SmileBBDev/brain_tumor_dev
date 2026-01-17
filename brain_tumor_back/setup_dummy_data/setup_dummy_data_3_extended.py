@@ -877,17 +877,14 @@ def main():
     # 1. 확장 진료
     create_extended_encounters(150, force=force)
 
-    # 2. 확장 OCS (RIS) - 스킵
-    # ※ OCS RIS는 setup_dummy_data_2_clinical.py에서 16건만 생성
-    # ※ 환자데이터 폴더(16개)와 1:1 매칭되도록 제한
-    # ※ sync_orthanc_ocs.py로 Orthanc 연동 후 worker_result 업데이트
-    print("\n[2단계] 확장 OCS RIS 생성 스킵")
-    print("  ※ OCS RIS는 환자데이터 폴더 수(16개)에 맞춰 제한됨")
-    print("  ※ setup_dummy_data_2_clinical.py에서 16건 생성")
-    print("  ※ sync_orthanc_ocs.py로 Orthanc 연동 필요")
-
-    # 3. 확장 OCS (LIS)
-    create_extended_ocs_lis(80, force=force)
+    # 2. 확장 OCS - 스킵
+    # ※ OCS는 setup_dummy_data_2_clinical.py에서 60건 생성
+    #   - 기본 45건: RIS 15건, LIS 30건 (환자데이터 폴더와 매칭 → CONFIRMED)
+    #   - 추가 15건: RIS 5건, LIS 10건 (환자데이터 없음 → ORDERED 유지)
+    print("\n[2단계] 확장 OCS 생성 스킵")
+    print("  ※ OCS는 setup_dummy_data_2_clinical.py에서 60건 생성 완료")
+    print("  ※ 기본 45건 (CONFIRMED): RIS 15 + RNA_SEQ 15 + BIOMARKER 15")
+    print("  ※ 추가 15건 (ORDERED): RIS 5 + RNA_SEQ 5 + BIOMARKER 5")
 
     # 4. 오늘 예약 환자
     create_today_encounters(reset=args.reset)
