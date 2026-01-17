@@ -8,6 +8,9 @@
 #   CPU 버전: docker compose -f docker-compose.fastapi.yml up -d
 #   GPU 버전: docker compose -f docker-compose.fastapi.yml up -d --build
 #             (USE_GPU=true 설정 필요 - 아래 build args 참고)
+#
+# 로컬 테스트 모드:
+#   USE_HOST_REDIS=true 설정 시 호스트 PC의 Redis 사용 (Redis 컨테이너 불필요)
 # =============================================================
 
 services:
@@ -27,14 +30,16 @@ services:
         condition: service_healthy
     ports:
       - "9000:9000"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     environment:
       # FastAPI Settings
       - APP_ENV=${APP_ENV:-production}
       - DEBUG=${FASTAPI_DEBUG:-false}
-      # Redis (local to this VM)
-      - REDIS_URL=redis://fastapi-redis:6379/0
-      - CELERY_BROKER_URL=redis://fastapi-redis:6379/1
-      - CELERY_RESULT_BACKEND=redis://fastapi-redis:6379/2
+      # Redis: 로컬 테스트 시 host.docker.internal 사용
+      - REDIS_URL=${REDIS_URL:-redis://fastapi-redis:6379/0}
+      - CELERY_BROKER_URL=${CELERY_BROKER_URL:-redis://fastapi-redis:6379/1}
+      - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND:-redis://fastapi-redis:6379/2}
       # External Services (Main VM - configure with actual IP)
       - MAIN_VM_IP=${MAIN_VM_IP:-192.168.x.x}
       - DJANGO_URL=http://${MAIN_VM_IP}:8000
@@ -78,10 +83,12 @@ services:
         condition: service_healthy
       fastapi:
         condition: service_started
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     environment:
-      # Celery Settings
-      - CELERY_BROKER_URL=redis://fastapi-redis:6379/1
-      - CELERY_RESULT_BACKEND=redis://fastapi-redis:6379/2
+      # Celery Settings: 로컬 테스트 시 host.docker.internal 사용
+      - CELERY_BROKER_URL=${CELERY_BROKER_URL:-redis://fastapi-redis:6379/1}
+      - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND:-redis://fastapi-redis:6379/2}
       # External Services
       - MAIN_VM_IP=${MAIN_VM_IP:-192.168.x.x}
       - DJANGO_URL=http://${MAIN_VM_IP}:8000
@@ -108,6 +115,7 @@ services:
               capabilities: [gpu]
 
   # --- Redis for FastAPI/Celery (Local to this VM) ---
+  # 로컬 테스트 시 USE_HOST_REDIS=true로 설정하면 이 컨테이너 대신 호스트 Redis 사용
   fastapi-redis:
     image: redis:7-alpine
     container_name: nn-fastapi-redis
