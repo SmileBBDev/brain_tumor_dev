@@ -32,6 +32,13 @@ export interface OCSItem {
     // LIS 결과 경로
     file_path?: string
   }
+  // AI 추론 완료 상태 (MM 모델용)
+  ai_inference_info?: {
+    model_type: 'M1' | 'MG' | null
+    status: 'completed' | 'not_run' | 'not_required'
+    job_id?: string
+    completed_at?: string
+  }
 }
 
 interface OCSTableProps {
@@ -65,6 +72,25 @@ export function OCSTable({ data, selectedId, onSelect, loading }: OCSTableProps)
     )
   }
 
+  // AI 추론 배지 렌더링
+  const renderAIBadge = (ocs: OCSItem) => {
+    const info = ocs.ai_inference_info
+    if (!info || info.status === 'not_required') return null
+
+    if (info.status === 'completed') {
+      return (
+        <span className="ocs-badge ocs-badge-ai-completed" title={`Job: ${info.job_id}`}>
+          {info.model_type} 완료
+        </span>
+      )
+    }
+    return (
+      <span className="ocs-badge ocs-badge-ai-pending">
+        {info.model_type} 필요
+      </span>
+    )
+  }
+
   return (
     <div className="ocs-table-container">
       <table className="ocs-table">
@@ -76,6 +102,7 @@ export function OCSTable({ data, selectedId, onSelect, loading }: OCSTableProps)
             <th>환자번호</th>
             <th>작업</th>
             <th>검사</th>
+            <th>AI</th>
             <th>Result</th>
           </tr>
         </thead>
@@ -99,6 +126,9 @@ export function OCSTable({ data, selectedId, onSelect, loading }: OCSTableProps)
               </td>
               <td>
                 <span className="ocs-badge ocs-badge-type">{ocs.job_type}</span>
+              </td>
+              <td className="ocs-td-ai">
+                {renderAIBadge(ocs)}
               </td>
               <td className="ocs-td-result" title={ocs.worker_result?.impression || ''}>
                 {ocs.worker_result?.impression || '-'}

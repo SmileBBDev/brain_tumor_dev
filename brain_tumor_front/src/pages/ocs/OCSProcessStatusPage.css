@@ -390,3 +390,269 @@
     gap: 12px;
   }
 }
+
+/* =============================================================================
+   사용자 로그인 현황 섹션
+============================================================================= */
+
+.ocs-process-status-page .user-login-section {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+  margin-top: 24px;
+}
+
+.ocs-process-status-page .user-login-card {
+  background: var(--card-bg, #fff);
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: var(--shadow-card, 0 4px 12px rgba(0, 0, 0, 0.08));
+}
+
+.ocs-process-status-page .user-login-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.ocs-process-status-page .user-login-header h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-main, #1f2937);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ocs-process-status-page .login-count {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--primary, #5b6fd6);
+  background: #eef2ff;
+  padding: 4px 12px;
+  border-radius: 16px;
+}
+
+.ocs-process-status-page .user-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.ocs-process-status-page .user-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  border-radius: 8px;
+  background: #f9fafb;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.ocs-process-status-page .user-item:hover {
+  background: #f3f4f6;
+  transform: translateX(4px);
+}
+
+.ocs-process-status-page .user-item.online {
+  border-left: 3px solid #10b981;
+}
+
+.ocs-process-status-page .user-item.offline {
+  border-left: 3px solid #f59e0b;
+}
+
+.ocs-process-status-page .user-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ocs-process-status-page .user-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-main, #1f2937);
+}
+
+.ocs-process-status-page .user-id {
+  font-size: 12px;
+  color: var(--text-sub, #6b7280);
+}
+
+.ocs-process-status-page .user-status {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.ocs-process-status-page .last-activity {
+  font-size: 12px;
+  color: var(--text-sub, #6b7280);
+}
+
+.ocs-process-status-page .status-badge {
+  font-size: 12px;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+.ocs-process-status-page .status-badge.online {
+  background: #d1fae5;
+  color: #059669;
+}
+
+.ocs-process-status-page .status-badge.offline {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.ocs-process-status-page .no-users {
+  padding: 20px;
+  text-align: center;
+  color: var(--text-sub, #6b7280);
+  font-size: 14px;
+}
+
+/* =============================================================================
+   사용자 상세 정보 모달
+============================================================================= */
+
+.ocs-process-status-page .user-detail-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.ocs-process-status-page .user-detail-modal {
+  background: #fff;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 400px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+  animation: modalSlideIn 0.2s ease-out;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.ocs-process-status-page .modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.ocs-process-status-page .modal-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-main, #1f2937);
+}
+
+.ocs-process-status-page .close-btn {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: var(--text-sub, #6b7280);
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+  transition: color 0.2s;
+}
+
+.ocs-process-status-page .close-btn:hover {
+  color: var(--text-main, #1f2937);
+}
+
+.ocs-process-status-page .modal-content {
+  padding: 20px;
+}
+
+.ocs-process-status-page .detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.ocs-process-status-page .detail-row:last-child {
+  border-bottom: none;
+}
+
+.ocs-process-status-page .detail-label {
+  font-size: 14px;
+  color: var(--text-sub, #6b7280);
+}
+
+.ocs-process-status-page .detail-value {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-main, #1f2937);
+}
+
+.ocs-process-status-page .detail-value.status.online {
+  color: #059669;
+}
+
+.ocs-process-status-page .detail-value.status.offline {
+  color: #d97706;
+}
+
+/* 반응형 - 사용자 로그인 현황 */
+@media (max-width: 900px) {
+  .ocs-process-status-page .user-login-section {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .ocs-process-status-page .user-login-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .ocs-process-status-page .user-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .ocs-process-status-page .user-status {
+    align-items: flex-start;
+    width: 100%;
+    flex-direction: row;
+    justify-content: space-between;
+  }
+
+  .ocs-process-status-page .user-detail-modal {
+    margin: 20px;
+    max-width: calc(100% - 40px);
+  }
+}

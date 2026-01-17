@@ -323,12 +323,12 @@ def patient_summary(request, patient_id):
     ocs_data = OCSListSerializer(ocs_list, many=True).data
 
     # AI 추론 이력 (최근 5건)
-    from apps.ai_inference.models import AIInferenceRequest
-    from apps.ai_inference.serializers import AIInferenceRequestListSerializer
-    ai_requests = AIInferenceRequest.objects.filter(
+    from apps.ai_inference.models import AIInference
+    from apps.ai_inference.serializers import AIInferenceSerializer
+    ai_requests = AIInference.objects.filter(
         patient=patient
     ).order_by('-created_at')[:5]
-    ai_data = AIInferenceRequestListSerializer(ai_requests, many=True).data
+    ai_data = AIInferenceSerializer(ai_requests, many=True).data
 
     # 치료 계획 (최근 5건)
     try:

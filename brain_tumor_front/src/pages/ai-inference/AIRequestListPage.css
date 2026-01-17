@@ -403,3 +403,31 @@
   padding: 1rem 1.5rem;
   border-top: 1px solid #e5e7eb;
 }
+
+/* Modal Buttons - 모달은 fixed position이므로 별도 스코프 필요 */
+.modal-content .btn {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.modal-content .btn-primary {
+  background: #2563eb;
+  color: #fff;
+}
+
+.modal-content .btn-primary:hover {
+  background: #1d4ed8;
+}
+
+.modal-content .btn-secondary {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.modal-content .btn-secondary:hover {
+  background: #d1d5db;
+}

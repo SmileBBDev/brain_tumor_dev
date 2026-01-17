@@ -433,6 +433,42 @@ export const getOCSProcessStatus = async (): Promise<OCSProcessStatus> => {
 };
 
 // =============================================================================
+// 사용자 로그인 현황 API
+// =============================================================================
+
+// 사용자 정보 타입
+export type UserLoginInfo = {
+  id: number;
+  login_id: string;
+  name: string;
+  email: string | null;
+  is_online: boolean;
+  last_activity: string | null;
+  last_activity_text: string;
+  last_login_ip: string | null;
+  created_at: string | null;
+};
+
+// 권한별 사용자 현황 타입
+export type RoleLoginStatus = {
+  online_count: number;
+  total_count: number;
+  users: UserLoginInfo[];
+};
+
+// 사용자 로그인 현황 응답 타입
+export type UserLoginStatus = {
+  ris: RoleLoginStatus;
+  lis: RoleLoginStatus;
+};
+
+// 사용자 로그인 현황 조회
+export const getUserLoginStatus = async (): Promise<UserLoginStatus> => {
+  const response = await api.get<UserLoginStatus>('/ocs/user-login-status/');
+  return response.data;
+};
+
+// =============================================================================
 // localStorage 유틸리티
 // =============================================================================
 

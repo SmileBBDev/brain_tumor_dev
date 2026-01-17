@@ -355,6 +355,14 @@ class SystemMonitorView(APIView):
             else:
                 status_level = "ok"
 
+            # 7. 확인된 경고 목록 조회
+            from .models import MonitorAlertAcknowledge
+            today_date = now.date()
+            acknowledged_alerts = list(
+                MonitorAlertAcknowledge.objects.filter(target_date=today_date)
+                .values_list('alert_type', flat=True)
+            )
+
             return Response({
                 'server': {
                     'status': status_level,
@@ -378,7 +386,10 @@ class SystemMonitorView(APIView):
                 },
                 'errors': {
                     'count': error_count,
+                    'login_fail': today_login_fail,
+                    'login_locked': today_login_locked,
                 },
+                'acknowledged_alerts': acknowledged_alerts,
                 'timestamp': now.isoformat(),
             })
 
@@ -390,66 +401,88 @@ class SystemMonitorView(APIView):
             )
 
 
-# 모니터링 알림 설정 기본값
+# 모니터링 알림 설정 기본값 (배열 형태)
 DEFAULT_MONITOR_ALERTS = {
-    "server_warning": {
-        "title": "서버 상태 주의",
-        "description": "CPU 또는 메모리 사용률이 임계값을 초과했습니다.",
-        "actions": [
-            "불필요한 프로세스 종료",
-            "서버 리소스 확장 검토",
-            "메모리 누수 점검"
-        ]
-    },
-    "server_error": {
-        "title": "서버 상태 오류",
-        "description": "데이터베이스 연결에 실패했습니다.",
-        "actions": [
-            "DB 서버 상태 확인",
-            "네트워크 연결 점검",
-            "DB 서비스 재시작"
-        ]
-    },
-    "cpu_warning": {
-        "title": "CPU 사용률 주의",
-        "description": "CPU 사용률이 임계값을 초과했습니다.",
-        "threshold": 90,
-        "actions": [
-            "CPU 집약적 작업 확인",
-            "프로세스 모니터링",
-            "서버 스케일업 검토"
-        ]
-    },
-    "memory_warning": {
-        "title": "메모리 사용률 주의",
-        "description": "메모리 사용률이 임계값을 초과했습니다.",
-        "threshold": 90,
-        "actions": [
-            "메모리 누수 점검",
-            "캐시 정리",
-            "불필요한 프로세스 종료"
-        ]
-    },
-    "disk_warning": {
-        "title": "디스크 사용률 주의",
-        "description": "디스크 사용률이 임계값을 초과했습니다.",
-        "threshold": 90,
-        "actions": [
-            "로그 파일 정리",
-            "불필요한 파일 삭제",
-            "디스크 용량 확장"
-        ]
-    },
-    "error_warning": {
-        "title": "오류 발생 주의",
-        "description": "로그인 실패 및 계정 잠금이 다수 발생했습니다.",
-        "threshold": 10,
-        "actions": [
-            "로그인 실패 원인 분석",
-            "보안 점검",
-            "비정상 접근 시도 확인"
-        ]
-    }
+    "alerts": [
+        {
+            "id": "server_warning",
+            "title": "서버 상태 주의",
+            "description": "CPU 또는 메모리 사용률이 임계값을 초과했습니다.",
+            "metric": "server_status",
+            "threshold": None,
+            "isBuiltIn": True,
+            "actions": [
+                "불필요한 프로세스 종료",
+                "서버 리소스 확장 검토",
+                "메모리 누수 점검"
+            ]
+        },
+        {
+            "id": "server_error",
+            "title": "서버 상태 오류",
+            "description": "데이터베이스 연결에 실패했습니다.",
+            "metric": "server_status",
+            "threshold": None,
+            "isBuiltIn": True,
+            "actions": [
+                "DB 서버 상태 확인",
+                "네트워크 연결 점검",
+                "DB 서비스 재시작"
+            ]
+        },
+        {
+            "id": "cpu_warning",
+            "title": "CPU 사용률 주의",
+            "description": "CPU 사용률이 임계값을 초과했습니다.",
+            "metric": "cpu_percent",
+            "threshold": 90,
+            "isBuiltIn": True,
+            "actions": [
+                "CPU 집약적 작업 확인",
+                "프로세스 모니터링",
+                "서버 스케일업 검토"
+            ]
+        },
+        {
+            "id": "memory_warning",
+            "title": "메모리 사용률 주의",
+            "description": "메모리 사용률이 임계값을 초과했습니다.",
+            "metric": "memory_percent",
+            "threshold": 90,
+            "isBuiltIn": True,
+            "actions": [
+                "메모리 누수 점검",
+                "캐시 정리",
+                "불필요한 프로세스 종료"
+            ]
+        },
+        {
+            "id": "disk_warning",
+            "title": "디스크 사용률 주의",
+            "description": "디스크 사용률이 임계값을 초과했습니다.",
+            "metric": "disk_percent",
+            "threshold": 90,
+            "isBuiltIn": True,
+            "actions": [
+                "로그 파일 정리",
+                "불필요한 파일 삭제",
+                "디스크 용량 확장"
+            ]
+        },
+        {
+            "id": "error_warning",
+            "title": "오류 발생 주의",
+            "description": "로그인 실패 및 계정 잠금이 다수 발생했습니다.",
+            "metric": "error_count",
+            "threshold": 10,
+            "isBuiltIn": True,
+            "actions": [
+                "로그인 실패 원인 분석",
+                "보안 점검",
+                "비정상 접근 시도 확인"
+            ]
+        }
+    ]
 }
 
 
@@ -476,13 +509,18 @@ class MonitorAlertConfigView(APIView):
         try:
             data = request.data
 
-            # 유효성 검사: 필수 키 확인
-            required_keys = ['server_warning', 'server_error', 'cpu_warning',
-                           'memory_warning', 'disk_warning', 'error_warning']
-            for key in required_keys:
-                if key not in data:
+            # 유효성 검사: alerts 배열 필수
+            if 'alerts' not in data or not isinstance(data['alerts'], list):
+                return Response(
+                    {'detail': 'alerts 배열이 필요합니다.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # 각 알림 항목 유효성 검사
+            for alert in data['alerts']:
+                if not alert.get('id') or not alert.get('title'):
                     return Response(
-                        {'detail': f'필수 설정 항목이 누락되었습니다: {key}'},
+                        {'detail': '각 알림에는 id와 title이 필요합니다.'},
                         status=status.HTTP_400_BAD_REQUEST
                     )
 
@@ -506,4 +544,72 @@ class MonitorAlertConfigView(APIView):
             return Response(
                 {'detail': '설정 저장 중 오류가 발생했습니다.'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class MonitorAlertAcknowledgeView(APIView):
+    """
+    모니터링 경고 확인 API
+    - POST: 경고 확인 처리
+    - DELETE: 확인 취소
+    """
+    permission_classes = [IsAdmin]
+
+    def post(self, request):
+        """경고 확인 처리"""
+        from .models import MonitorAlertAcknowledge
+
+        alert_type = request.data.get('alert_type')
+        note = request.data.get('note', '')
+
+        if not alert_type:
+            return Response(
+                {'detail': 'alert_type이 필요합니다.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        today = timezone.now().date()
+
+        # 이미 확인된 경우 업데이트
+        ack, created = MonitorAlertAcknowledge.objects.update_or_create(
+            alert_type=alert_type,
+            target_date=today,
+            defaults={
+                'acknowledged_by': request.user,
+                'note': note,
+            }
+        )
+
+        return Response({
+            'detail': '경고가 확인 처리되었습니다.',
+            'alert_type': alert_type,
+            'acknowledged_at': ack.acknowledged_at.isoformat(),
+            'acknowledged_by': request.user.name or request.user.login_id,
+        })
+
+    def delete(self, request):
+        """확인 취소"""
+        from .models import MonitorAlertAcknowledge
+
+        alert_type = request.query_params.get('alert_type')
+
+        if not alert_type:
+            return Response(
+                {'detail': 'alert_type이 필요합니다.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        today = timezone.now().date()
+
+        deleted, _ = MonitorAlertAcknowledge.objects.filter(
+            alert_type=alert_type,
+            target_date=today
+        ).delete()
+
+        if deleted:
+            return Response({'detail': '확인이 취소되었습니다.'})
+        else:
+            return Response(
+                {'detail': '확인 기록이 없습니다.'},
+                status=status.HTTP_404_NOT_FOUND
             )

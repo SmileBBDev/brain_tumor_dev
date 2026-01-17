@@ -4,7 +4,7 @@
 목적: 의사 대시보드의 '금일 예약 환자' 리스트를 충분히 채우기 위한 데이터 생성
 
 사용법:
-    # 기본 사용 (2026-01-15 ~ 2026-02-28)
+    # 기본 사용 (오늘 기준 -7일 ~ +30일)
     python manage.py shell -c "from setup_dummy_data.setup_dummy_data_4_encounter_schedule import create_scheduled_encounters; create_scheduled_encounters()"
 
     # 기간 지정
@@ -15,13 +15,13 @@
 """
 
 import random
-from datetime import datetime, timedelta, time as dt_time
+from datetime import datetime, timedelta, time as dt_time, date
 from django.utils import timezone
 
 
 def create_scheduled_encounters(
-    start_date: str = '2026-01-15',
-    end_date: str = '2026-02-28',
+    start_date: str = None,
+    end_date: str = None,
     per_doctor_per_day: int = 10,
     exclude_weekends: bool = True,
     time_interval_minutes: int = 30,
@@ -31,8 +31,8 @@ def create_scheduled_encounters(
     지정 기간 동안 의사별 진료 예약 데이터 생성
 
     Args:
-        start_date: 시작 날짜 (YYYY-MM-DD 형식)
-        end_date: 종료 날짜 (YYYY-MM-DD 형식)
+        start_date: 시작 날짜 (YYYY-MM-DD 형식, None이면 오늘-7일)
+        end_date: 종료 날짜 (YYYY-MM-DD 형식, None이면 오늘+30일)
         per_doctor_per_day: 의사당 하루 예약 수 (기본: 10)
         exclude_weekends: 주말 제외 여부 (기본: True)
         time_interval_minutes: 예약 시간 간격 (분, 기본: 30)
@@ -41,6 +41,12 @@ def create_scheduled_encounters(
     Returns:
         dict: 생성 결과 통계
     """
+    # 기본값: 오늘 기준 -7일 ~ +30일
+    if start_date is None:
+        start_date = (date.today() - timedelta(days=7)).strftime('%Y-%m-%d')
+    if end_date is None:
+        end_date = (date.today() + timedelta(days=30)).strftime('%Y-%m-%d')
+
     print(f"\n{'='*60}")
     print(f"진료 예약 스케줄 데이터 생성")
     print(f"{'='*60}")

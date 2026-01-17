@@ -18,6 +18,7 @@ from .views import (
     MGGeneExpressionView,
     AIModelsListView,
     AIModelDetailView,
+    PatientAIInferenceListView,
 )
 
 app_name = 'ai_inference'
@@ -58,4 +59,7 @@ urlpatterns = [
 
     # Thumbnail (M1)
     path('inferences/<str:job_id>/thumbnail/', AIInferenceM1ThumbnailView.as_view(), name='inference-thumbnail'),
+
+    # Patient AI inference list (진료화면용)
+    path('patients/<int:patient_id>/requests/', PatientAIInferenceListView.as_view(), name='patient-inference-list'),
 ]

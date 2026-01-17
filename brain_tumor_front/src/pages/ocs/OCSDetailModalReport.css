@@ -1,5 +1,400 @@
 /* OCS Detail Modal - Report Tab Styles */
 
+/* ========================================
+   상단 요약 영역 (Summary Header)
+   ======================================== */
+.summary-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-radius: 8px;
+  margin: 16px 20px 0;
+  border: 1px solid #dee2e6;
+}
+
+.summary-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.summary-label {
+  font-size: 11px;
+  color: #6c757d;
+  font-weight: 500;
+}
+
+.summary-value {
+  font-size: 15px;
+  font-weight: 600;
+  color: #212529;
+}
+
+.summary-value.highlight-abnormal {
+  color: #dc3545;
+  font-size: 18px;
+}
+
+.status-indicator {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.status-indicator.status-normal {
+  background: #d4edda;
+  color: #155724;
+}
+
+.status-indicator.status-caution {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.status-indicator.status-critical {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+/* ========================================
+   검사 결과 탭 - 구조화된 테이블
+   ======================================== */
+.structured-result {
+  padding: 16px 0;
+}
+
+.request-summary-box {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 20px;
+  border-left: 4px solid #1976d2;
+}
+
+.request-summary-box h4 {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  color: #333;
+}
+
+.request-details {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.request-row {
+  display: flex;
+  gap: 12px;
+}
+
+.request-row label {
+  min-width: 120px;
+  font-size: 12px;
+  color: #666;
+  font-weight: 500;
+}
+
+.request-row span {
+  font-size: 13px;
+  color: #333;
+}
+
+.result-data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  margin-top: 12px;
+}
+
+.result-data-table th,
+.result-data-table td {
+  padding: 10px 12px;
+  text-align: left;
+  border: 1px solid #e0e0e0;
+}
+
+.result-data-table th {
+  background: #f5f5f5;
+  font-weight: 600;
+  color: #333;
+  font-size: 12px;
+}
+
+.result-data-table tbody tr:hover {
+  background: #fafafa;
+}
+
+.result-data-table .row-abnormal {
+  background: #fff8e1;
+}
+
+.result-data-table .row-critical {
+  background: #ffebee;
+}
+
+.result-data-table .value-highlight {
+  font-weight: 700;
+  color: #c62828;
+}
+
+.text-result-section {
+  margin-top: 12px;
+}
+
+/* ========================================
+   AI 해석 탭
+   ======================================== */
+.ai-interpretation-section {
+  padding: 16px 0;
+}
+
+.ai-interpretation-section h4 {
+  margin: 0 0 16px 0;
+  font-size: 15px;
+  color: #333;
+  font-weight: 600;
+}
+
+.ai-summary-box {
+  background: #e3f2fd;
+  border-radius: 8px;
+  padding: 16px;
+  border-left: 4px solid #1976d2;
+  margin-bottom: 16px;
+}
+
+.ai-summary-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.ai-summary-list li {
+  position: relative;
+  padding-left: 20px;
+  margin-bottom: 10px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #333;
+}
+
+.ai-summary-list li::before {
+  content: '•';
+  position: absolute;
+  left: 0;
+  color: #1976d2;
+  font-weight: bold;
+  font-size: 16px;
+}
+
+.ai-summary-list li:last-child {
+  margin-bottom: 0;
+}
+
+.ai-recommendations-box {
+  background: #fff3e0;
+  border-radius: 8px;
+  padding: 16px;
+  border-left: 4px solid #f57c00;
+}
+
+.ai-recommendations-box h5 {
+  margin: 0 0 12px 0;
+  font-size: 13px;
+  color: #e65100;
+  font-weight: 600;
+}
+
+.ai-recommendations-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.ai-recommendations-list li {
+  position: relative;
+  padding-left: 20px;
+  margin-bottom: 8px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #333;
+}
+
+.ai-recommendations-list li::before {
+  content: '→';
+  position: absolute;
+  left: 0;
+  color: #f57c00;
+}
+
+/* ========================================
+   첨부 파일 탭
+   ======================================== */
+.attachments-section {
+  padding: 16px 0;
+}
+
+.attachments-section h4 {
+  margin: 0 0 16px 0;
+  font-size: 15px;
+  color: #333;
+  font-weight: 600;
+}
+
+.attachments-detail-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.attachments-detail-table th,
+.attachments-detail-table td {
+  padding: 10px 12px;
+  text-align: left;
+  border: 1px solid #e0e0e0;
+}
+
+.attachments-detail-table th {
+  background: #f5f5f5;
+  font-weight: 600;
+  color: #333;
+  font-size: 12px;
+}
+
+.attachments-detail-table .file-name-cell {
+  color: #1976d2;
+  font-weight: 500;
+}
+
+.attachments-detail-table .action-cell {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-small {
+  padding: 4px 10px;
+  font-size: 11px;
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-download {
+  background: #1976d2;
+  color: white;
+}
+
+.btn-download:hover {
+  background: #1565c0;
+}
+
+.btn-preview {
+  background: #6c757d;
+  color: white;
+}
+
+.btn-preview:hover {
+  background: #5a6268;
+}
+
+.attachments-total {
+  margin-top: 12px;
+  padding: 10px;
+  background: #f8f9fa;
+  border-radius: 4px;
+  font-size: 12px;
+  color: #666;
+  text-align: right;
+}
+
+/* ========================================
+   원본 데이터(JSON) 탭
+   ======================================== */
+.raw-data-section {
+  padding: 16px 0;
+}
+
+.raw-data-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.raw-data-header h4 {
+  margin: 0;
+  font-size: 15px;
+  color: #333;
+  font-weight: 600;
+}
+
+.raw-data-notice {
+  font-size: 11px;
+  color: #999;
+  background: #f5f5f5;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.collapsible-section {
+  margin-bottom: 12px;
+}
+
+.collapsible-toggle {
+  width: 100%;
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: #f5f5f5;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #333;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.collapsible-toggle:hover {
+  background: #e8e8e8;
+}
+
+.collapsible-toggle.expanded {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  background: #e0e0e0;
+}
+
+.collapsible-toggle::before {
+  content: '▶';
+  font-size: 10px;
+  transition: transform 0.2s;
+}
+
+.collapsible-toggle.expanded::before {
+  transform: rotate(90deg);
+}
+
+.collapsible-section .json-viewer {
+  margin-top: 0;
+  border-top: none;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+
+/* ========================================
+   보고서 탭 섹션 (기존)
+   ======================================== */
 /* 보고서 탭 섹션 */
 .report-tab-section {
   background: white;

@@ -24,7 +24,10 @@ export type SystemMonitorStats = {
   };
   errors: {
     count: number;
+    login_fail: number;
+    login_locked: number;
   };
+  acknowledged_alerts: string[];
   timestamp: string;
 };
 
@@ -33,21 +36,20 @@ export const getSystemMonitorStats = async (): Promise<SystemMonitorStats> => {
   return response.data;
 };
 
-// 모니터링 알림 설정 타입
+// 모니터링 알림 항목 타입 (배열 형태)
 export type MonitorAlertItem = {
+  id: string;
   title: string;
   description: string;
-  threshold?: number;
+  metric?: string;
+  threshold?: number | null;
+  isBuiltIn: boolean;
   actions: string[];
 };
 
+// 모니터링 알림 설정 타입 (배열 형태)
 export type MonitorAlertConfig = {
-  server_warning: MonitorAlertItem;
-  server_error: MonitorAlertItem;
-  cpu_warning: MonitorAlertItem;
-  memory_warning: MonitorAlertItem;
-  disk_warning: MonitorAlertItem;
-  error_warning: MonitorAlertItem;
+  alerts: MonitorAlertItem[];
 };
 
 /**
@@ -63,4 +65,29 @@ export const getMonitorAlertConfig = async (): Promise<MonitorAlertConfig> => {
  */
 export const updateMonitorAlertConfig = async (config: MonitorAlertConfig): Promise<void> => {
   await api.put('/system/config/monitor-alerts/', config);
+};
+
+/**
+ * 경고 확인 처리
+ */
+export const acknowledgeAlert = async (alertType: string, note?: string): Promise<{
+  detail: string;
+  alert_type: string;
+  acknowledged_at: string;
+  acknowledged_by: string;
+}> => {
+  const response = await api.post('/system/monitor/acknowledge/', {
+    alert_type: alertType,
+    note: note || '',
+  });
+  return response.data;
+};
+
+/**
+ * 경고 확인 취소
+ */
+export const unacknowledgeAlert = async (alertType: string): Promise<void> => {
+  await api.delete('/system/monitor/acknowledge/', {
+    params: { alert_type: alertType },
+  });
 };

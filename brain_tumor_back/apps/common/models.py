@@ -56,3 +56,30 @@ class SystemConfig(models.Model):
             }
         )
         return config
+
+
+class MonitorAlertAcknowledge(models.Model):
+    """
+    모니터링 경고 확인 기록
+    - 관리자가 경고를 확인했음을 기록
+    - 해당 날짜의 해당 경고 유형에 대한 확인 상태 저장
+    """
+    alert_type = models.CharField(max_length=50, verbose_name='경고 유형')
+    target_date = models.DateField(verbose_name='대상 날짜')
+    acknowledged_at = models.DateTimeField(auto_now_add=True, verbose_name='확인 일시')
+    acknowledged_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='alert_acknowledges',
+        verbose_name='확인자'
+    )
+    note = models.TextField(blank=True, verbose_name='메모')
+
+    class Meta:
+        db_table = 'monitor_alert_acknowledge'
+        verbose_name = '경고 확인 기록'
+        verbose_name_plural = '경고 확인 기록'
+        unique_together = ['alert_type', 'target_date']
+
+    def __str__(self):
+        return f"{self.alert_type} - {self.target_date}"

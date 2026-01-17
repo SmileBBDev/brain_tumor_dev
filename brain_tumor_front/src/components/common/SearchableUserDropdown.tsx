@@ -199,7 +199,7 @@ export default function SearchableUserDropdown({
                   {user.login_id}
                 </div>
                 <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '2px' }}>
-                  {user.name} · {user.role_name || '-'}
+                  {user.name} · {user.role?.name || '-'}
                 </div>
               </div>
             ))

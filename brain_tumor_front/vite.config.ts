@@ -18,10 +18,10 @@ export default defineConfig({
         changeOrigin: true,
         timeout: 60000,
         configure: (proxy) => {
-          proxy.on('error', (err, req, res) => {
+          proxy.on('error', (err, req, _res) => {
             console.error('[Vite Proxy Error]', err.message, req.url);
           });
-          proxy.on('proxyReq', (proxyReq, req) => {
+          proxy.on('proxyReq', (_proxyReq, req) => {
             console.log('[Proxy Request]', req.method, req.url);
           });
         },

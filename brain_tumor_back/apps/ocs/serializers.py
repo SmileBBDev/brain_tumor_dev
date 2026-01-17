@@ -3,6 +3,7 @@ from django.utils import timezone
 from .models import OCS, OCSHistory
 from apps.patients.models import Patient
 from apps.accounts.models import User
+from apps.ai_inference.models import AIInference
 
 
 # =============================================================================
@@ -61,6 +62,7 @@ class OCSListSerializer(serializers.ModelSerializer):
     worker = UserMinimalSerializer(read_only=True)
     ocs_status_display = serializers.CharField(source='get_ocs_status_display', read_only=True)
     priority_display = serializers.CharField(source='get_priority_display', read_only=True)
+    ai_inference_info = serializers.SerializerMethodField()
 
     class Meta:
         model = OCS
@@ -79,8 +81,52 @@ class OCSListSerializer(serializers.ModelSerializer):
             'ocs_result',
             'created_at',
             'updated_at',
+            'worker_result',  # AI 추론 페이지에서 DICOM study_uid 접근에 필요
+            'ai_inference_info',  # AI 추론 완료 상태 (MM 모델용)
         ]
         read_only_fields = fields
+
+    def get_ai_inference_info(self, obj):
+        """OCS 타입별 AI 추론 완료 정보 반환"""
+        # MRI OCS → M1 추론 상태
+        if obj.job_type == 'MRI':
+            inference = AIInference.objects.filter(
+                mri_ocs=obj,
+                model_type=AIInference.ModelType.M1,
+                status=AIInference.Status.COMPLETED
+            ).order_by('-completed_at').first()
+
+            if inference:
+                return {
+                    'model_type': 'M1',
+                    'status': 'completed',
+                    'job_id': inference.job_id,
+                    'completed_at': inference.completed_at.isoformat() if inference.completed_at else None
+                }
+            return {'model_type': 'M1', 'status': 'not_run'}
+
+        # RNA_SEQ OCS → MG 추론 상태
+        if obj.job_type == 'RNA_SEQ':
+            inference = AIInference.objects.filter(
+                rna_ocs=obj,
+                model_type=AIInference.ModelType.MG,
+                status=AIInference.Status.COMPLETED
+            ).order_by('-completed_at').first()
+
+            if inference:
+                return {
+                    'model_type': 'MG',
+                    'status': 'completed',
+                    'job_id': inference.job_id,
+                    'completed_at': inference.completed_at.isoformat() if inference.completed_at else None
+                }
+            return {'model_type': 'MG', 'status': 'not_run'}
+
+        # BIOMARKER OCS → 추론 불필요 (LIS에서 직접 제공)
+        if obj.job_type == 'BIOMARKER':
+            return {'model_type': None, 'status': 'not_required'}
+
+        return None
 
 
 class OCSDetailSerializer(serializers.ModelSerializer):

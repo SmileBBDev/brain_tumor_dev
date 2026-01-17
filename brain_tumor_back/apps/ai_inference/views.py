@@ -2179,3 +2179,24 @@ class AIInferenceM1ThumbnailView(APIView):
         buffer = io.BytesIO()
         img.save(buffer, format='PNG')
         return buffer.getvalue()
+
+
+class PatientAIInferenceListView(APIView):
+    """
+    환자별 AI 추론 목록 조회
+
+    GET /api/ai/patients/{patient_id}/requests/
+    - 특정 환자의 모든 AI 추론 결과 반환
+    - 최신순 정렬
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, patient_id):
+        inferences = AIInference.objects.filter(
+            patient_id=patient_id
+        ).select_related(
+            'patient', 'mri_ocs', 'rna_ocs', 'protein_ocs', 'requested_by'
+        ).order_by('-created_at')
+
+        serializer = AIInferenceSerializer(inferences, many=True)
+        return Response(serializer.data)

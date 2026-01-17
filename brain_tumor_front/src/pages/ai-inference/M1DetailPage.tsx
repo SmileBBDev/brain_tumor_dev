@@ -14,7 +14,6 @@ const CHANNEL_COLORS: Record<string, string> = {
   T1C: '#ef4444',   // 빨강
   T2: '#10b981',    // 초록
   FLAIR: '#f59e0b', // 주황
-  SEG: '#8b5cf6',   // 보라
 }
 
 interface M1Result {
@@ -289,32 +288,12 @@ export default function M1DetailPage() {
         </div>
       </div>
 
-      {/* MRI Thumbnails & Segmentation Overlay */}
+      {/* MRI Thumbnails */}
       {inferenceDetail.status === 'COMPLETED' && (
         <div className="section">
           <h3 className="section-title">MRI 이미지 미리보기</h3>
           <div className="mri-thumbnails-container">
-            {/* Segmentation Overlay Thumbnail */}
-            <div className="mri-thumbnail-card">
-              <div className="thumbnail-wrapper">
-                <img
-                  src={`${API_BASE_URL}/ai/inferences/${jobId}/thumbnail/`}
-                  alt="Segmentation Overlay"
-                  className="thumbnail-image"
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement
-                    target.style.display = 'none'
-                    target.parentElement?.classList.add('thumbnail-error')
-                  }}
-                />
-              </div>
-              <div className="thumbnail-label" style={{ backgroundColor: CHANNEL_COLORS.SEG }}>
-                SEG
-              </div>
-              <span className="thumbnail-description">세그멘테이션 오버레이</span>
-            </div>
-
-            {/* Original MRI Channel Thumbnails */}
+            {/* MRI Channel Thumbnails */}
             {inferenceDetail.mri_thumbnails?.map((thumb) => (
               <div key={thumb.channel} className="mri-thumbnail-card">
                 <div className="thumbnail-wrapper">

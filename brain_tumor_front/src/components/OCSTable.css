@@ -193,6 +193,23 @@
   border: 1px solid #86efac;
 }
 
+/* AI 추론 상태 배지 */
+.ocs-badge-ai-completed {
+  background: #dbeafe;
+  color: #1d4ed8;
+  border: 1px solid #93c5fd;
+}
+
+.ocs-badge-ai-pending {
+  background: #fef3c7;
+  color: #b45309;
+  border: 1px solid #fcd34d;
+}
+
+.ocs-td-ai {
+  min-width: 70px;
+}
+
 /* Scrollbar */
 .ocs-table-container::-webkit-scrollbar {
   width: 6px;

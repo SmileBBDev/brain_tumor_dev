@@ -76,8 +76,9 @@ class OCSViewSet(viewsets.ModelViewSet):
 
         # 목록 조회 시 최적화: 큰 JSON 필드 제외, history prefetch 안함
         if self.action == 'list':
-            # worker_result, attachments는 목록에서 필요 없음 - defer로 지연 로딩
-            queryset = queryset.defer('worker_result', 'attachments', 'doctor_request')
+            # worker_result는 AI 추론 페이지에서 DICOM study_uid 접근에 필요하므로 유지
+            # attachments, doctor_request만 defer로 지연 로딩
+            queryset = queryset.defer('attachments', 'doctor_request')
         elif self.action == 'retrieve':
             # 상세 조회 시에만 history prefetch
             queryset = queryset.prefetch_related('history')
@@ -1103,6 +1104,114 @@ from datetime import timedelta
 import logging
 
 logger = logging.getLogger(__name__)
+
+
+class UserLoginStatusView(APIView):
+    """
+    권한별 사용자 로그인 현황 API
+
+    RIS, LIS 권한별 사용자의 로그인 상태를 반환합니다.
+    - last_seen이 5분 이내면 "로그인 중"으로 간주
+    """
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        tags=["OCS"],
+        summary="권한별 사용자 로그인 현황 조회",
+        description="RIS, LIS 권한별 사용자의 로그인 상태를 조회합니다.",
+        responses={
+            200: {
+                "type": "object",
+                "properties": {
+                    "ris": {"type": "object"},
+                    "lis": {"type": "object"}
+                }
+            }
+        }
+    )
+    def get(self, request):
+        from apps.accounts.models import User
+
+        try:
+            now = timezone.now()
+            # 5분 이내면 로그인 중으로 간주
+            active_threshold = now - timedelta(minutes=5)
+
+            # RIS 사용자
+            ris_users = User.objects.filter(
+                role__code='RIS',
+                is_active=True
+            ).select_related('role').order_by('name')
+
+            ris_data = self._get_role_status(ris_users, active_threshold, now)
+
+            # LIS 사용자
+            lis_users = User.objects.filter(
+                role__code='LIS',
+                is_active=True
+            ).select_related('role').order_by('name')
+
+            lis_data = self._get_role_status(lis_users, active_threshold, now)
+
+            return Response({
+                'ris': ris_data,
+                'lis': lis_data
+            })
+
+        except Exception as e:
+            logger.error(f"User login status error: {str(e)}")
+            return Response(
+                {'detail': '사용자 로그인 현황을 불러오는 중 오류가 발생했습니다.'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+    def _get_role_status(self, users, active_threshold, now):
+        """권한별 사용자 상태 계산"""
+        user_list = []
+        online_count = 0
+
+        for user in users:
+            is_online = user.last_seen and user.last_seen >= active_threshold
+            if is_online:
+                online_count += 1
+
+            # 최근 활동 시간 포맷팅
+            last_activity = None
+            last_activity_text = '접속 기록 없음'
+
+            if user.last_seen:
+                last_activity = user.last_seen.isoformat()
+                diff = now - user.last_seen
+
+                if diff.total_seconds() < 60:
+                    last_activity_text = '방금'
+                elif diff.total_seconds() < 3600:
+                    minutes = int(diff.total_seconds() / 60)
+                    last_activity_text = f'{minutes}분 전'
+                elif diff.total_seconds() < 86400:
+                    hours = int(diff.total_seconds() / 3600)
+                    last_activity_text = f'{hours}시간 전'
+                else:
+                    days = int(diff.total_seconds() / 86400)
+                    last_activity_text = f'{days}일 전'
+
+            user_list.append({
+                'id': user.id,
+                'login_id': user.login_id,
+                'name': user.name,
+                'email': user.email,
+                'is_online': is_online,
+                'last_activity': last_activity,
+                'last_activity_text': last_activity_text,
+                'last_login_ip': user.last_login_ip,
+                'created_at': user.created_at.isoformat() if user.created_at else None,
+            })
+
+        return {
+            'online_count': online_count,
+            'total_count': len(user_list),
+            'users': user_list
+        }
 
 
 class OCSProcessStatusView(APIView):

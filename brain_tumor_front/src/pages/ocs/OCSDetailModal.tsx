@@ -8,7 +8,7 @@ import {
   confirmOCS,
   cancelOCS,
 } from '@/services/ocs.api';
-import type { OCSDetail, OCSHistory } from '@/types/ocs';
+import type { OCSDetail, OCSHistory, LISWorkerResult, RISWorkerResult, ProteinMarker } from '@/types/ocs';
 import '@/pages/patient/PatientCreateModal.css';
 import './OCSDetailModalReport.css';
 
@@ -18,6 +18,30 @@ type Props = {
   onClose: () => void;
   onSuccess: () => void;
 };
+
+// 검사 결과 요약 정보 타입
+interface ResultSummary {
+  testName: string;
+  totalMarkers: number;
+  abnormalCount: number;
+  status: 'normal' | 'caution' | 'critical';
+  completedAt: string | null;
+}
+
+// 검사 결과 아이템 타입 (테이블 표시용)
+interface ResultItem {
+  markerName: string;
+  value: string;
+  unit: string;
+  refRange: string;
+  flag: 'normal' | 'abnormal' | 'critical';
+}
+
+// AI 해석 요약 타입
+interface AIInterpretation {
+  summary: string[];
+  recommendations: string[];
+}
 
 // 날짜 포맷
 const formatDate = (dateStr: string | null): string => {
@@ -52,13 +76,150 @@ const formatFileSize = (bytes: number): string => {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
 };
 
+// 검사 결과 요약 계산 함수
+const calculateResultSummary = (ocs: OCSDetail): ResultSummary => {
+  const workerResult = ocs.worker_result as LISWorkerResult | RISWorkerResult;
+  let totalMarkers = 0;
+  let abnormalCount = 0;
+
+  // LIS 검사 결과
+  if (ocs.job_role === 'LIS') {
+    const lisResult = workerResult as LISWorkerResult;
+
+    // protein_markers (RPPA 등)
+    if (lisResult?.protein_markers?.length) {
+      totalMarkers = lisResult.protein_markers.length;
+      abnormalCount = lisResult.protein_markers.filter(m => m.is_abnormal).length;
+    }
+    // test_results (일반 검사)
+    else if (lisResult?.test_results?.length) {
+      totalMarkers = lisResult.test_results.length;
+      abnormalCount = lisResult.test_results.filter(r => r.is_abnormal).length;
+    }
+    // gene_mutations (유전자 검사)
+    else if (lisResult?.gene_mutations?.length) {
+      totalMarkers = lisResult.gene_mutations.length;
+      abnormalCount = lisResult.gene_mutations.filter(m =>
+        m.clinical_significance === 'pathogenic' || m.clinical_significance === 'likely_pathogenic'
+      ).length;
+    }
+  }
+  // RIS 영상 결과
+  else if (ocs.job_role === 'RIS') {
+    const risResult = workerResult as RISWorkerResult;
+    if (risResult?.imageResults?.length) {
+      totalMarkers = risResult.imageResults.length;
+      abnormalCount = risResult.imageResults.filter(r => r.flag !== 'normal').length;
+    }
+  }
+
+  let status: 'normal' | 'caution' | 'critical' = 'normal';
+  if (abnormalCount > 0) {
+    status = abnormalCount >= 3 ? 'critical' : 'caution';
+  }
+
+  return {
+    testName: ocs.job_type,
+    totalMarkers,
+    abnormalCount,
+    status,
+    completedAt: ocs.confirmed_at || ocs.result_ready_at,
+  };
+};
+
+// 구조화된 검사 결과 추출
+const extractResultItems = (ocs: OCSDetail): ResultItem[] => {
+  const workerResult = ocs.worker_result as LISWorkerResult | RISWorkerResult;
+  const items: ResultItem[] = [];
+
+  if (ocs.job_role === 'LIS') {
+    const lisResult = workerResult as LISWorkerResult;
+
+    // protein_markers
+    if (lisResult?.protein_markers?.length) {
+      lisResult.protein_markers.forEach(m => {
+        items.push({
+          markerName: m.marker_name,
+          value: m.value,
+          unit: m.unit || '',
+          refRange: m.reference_range || '-',
+          flag: m.is_abnormal ? 'abnormal' : 'normal',
+        });
+      });
+    }
+    // test_results
+    else if (lisResult?.test_results?.length) {
+      lisResult.test_results.forEach(r => {
+        items.push({
+          markerName: r.name,
+          value: r.value,
+          unit: r.unit,
+          refRange: r.reference,
+          flag: r.is_abnormal ? 'abnormal' : 'normal',
+        });
+      });
+    }
+  } else if (ocs.job_role === 'RIS') {
+    const risResult = workerResult as RISWorkerResult;
+    if (risResult?.imageResults?.length) {
+      risResult.imageResults.forEach(r => {
+        items.push({
+          markerName: r.itemName,
+          value: r.value,
+          unit: r.unit,
+          refRange: r.refRange,
+          flag: r.flag,
+        });
+      });
+    }
+  }
+
+  return items;
+};
+
+// AI 해석 추출
+const extractAIInterpretation = (ocs: OCSDetail): AIInterpretation | null => {
+  const workerResult = ocs.worker_result as LISWorkerResult | RISWorkerResult;
+  const summary: string[] = [];
+  const recommendations: string[] = [];
+
+  if (ocs.job_role === 'LIS') {
+    const lisResult = workerResult as LISWorkerResult;
+    if (lisResult?.interpretation) {
+      summary.push(lisResult.interpretation);
+    }
+    if (lisResult?.summary) {
+      summary.push(lisResult.summary);
+    }
+  } else if (ocs.job_role === 'RIS') {
+    const risResult = workerResult as RISWorkerResult;
+    if (risResult?.impression) {
+      summary.push(risResult.impression);
+    }
+    if (risResult?.findings) {
+      summary.push(risResult.findings);
+    }
+    if (risResult?.recommendation) {
+      recommendations.push(risResult.recommendation);
+    }
+  }
+
+  if (summary.length === 0 && recommendations.length === 0) {
+    return null;
+  }
+
+  return { summary, recommendations };
+};
+
 export default function OCSDetailModal({ isOpen, ocsId, onClose, onSuccess }: Props) {
   const { role, user } = useAuth();
   const [ocs, setOcs] = useState<OCSDetail | null>(null);
   const [loading, setLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<'info' | 'result' | 'history' | 'report'>('info');
+  const [activeTab, setActiveTab] = useState<'info' | 'result' | 'ai' | 'attachments' | 'raw' | 'history' | 'report'>('info');
   const [cancelReason, setCancelReason] = useState('');
+  const [isRequestExpanded, setIsRequestExpanded] = useState(false);
+  const [isResultExpanded, setIsResultExpanded] = useState(false);
   const reportRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -193,6 +354,43 @@ export default function OCSDetailModal({ isOpen, ocsId, onClose, onSuccess }: Pr
           <div className="modal-body">로딩 중...</div>
         ) : ocs ? (
           <>
+            {/* 상단 요약 영역 */}
+            {ocs.worker_result && Object.keys(ocs.worker_result).length > 0 && (
+              <div className="summary-header">
+                {(() => {
+                  const summary = calculateResultSummary(ocs);
+                  return (
+                    <>
+                      <div className="summary-item">
+                        <span className="summary-label">검사명</span>
+                        <span className="summary-value">{summary.testName}</span>
+                      </div>
+                      <div className="summary-item">
+                        <span className="summary-label">총 마커 수</span>
+                        <span className="summary-value">{summary.totalMarkers}</span>
+                      </div>
+                      <div className="summary-item">
+                        <span className="summary-label">이상 소견</span>
+                        <span className={`summary-value ${summary.abnormalCount > 0 ? 'highlight-abnormal' : ''}`}>
+                          {summary.abnormalCount}
+                        </span>
+                      </div>
+                      <div className="summary-item">
+                        <span className="summary-label">판정 상태</span>
+                        <span className={`status-indicator status-${summary.status}`}>
+                          {summary.status === 'normal' ? '정상' : summary.status === 'caution' ? '주의 필요' : '위험'}
+                        </span>
+                      </div>
+                      <div className="summary-item">
+                        <span className="summary-label">검사 완료</span>
+                        <span className="summary-value">{formatDate(summary.completedAt)}</span>
+                      </div>
+                    </>
+                  );
+                })()}
+              </div>
+            )}
+
             {/* 탭 메뉴 */}
             <div className="tab-menu">
               <button
@@ -205,7 +403,25 @@ export default function OCSDetailModal({ isOpen, ocsId, onClose, onSuccess }: Pr
                 className={activeTab === 'result' ? 'active' : ''}
                 onClick={() => setActiveTab('result')}
               >
-                요청/결과
+                검사 결과
+              </button>
+              <button
+                className={activeTab === 'ai' ? 'active' : ''}
+                onClick={() => setActiveTab('ai')}
+              >
+                AI 해석
+              </button>
+              <button
+                className={activeTab === 'attachments' ? 'active' : ''}
+                onClick={() => setActiveTab('attachments')}
+              >
+                첨부 파일
+              </button>
+              <button
+                className={activeTab === 'raw' ? 'active' : ''}
+                onClick={() => setActiveTab('raw')}
+              >
+                원본 데이터
               </button>
               <button
                 className={activeTab === 'history' ? 'active' : ''}
@@ -296,39 +512,223 @@ export default function OCSDetailModal({ isOpen, ocsId, onClose, onSuccess }: Pr
                 </div>
               )}
 
-              {/* 요청/결과 탭 */}
+              {/* 검사 결과 탭 - 구조화된 테이블 */}
               {activeTab === 'result' && (
-                <div className="result-section">
-                  <h4>의사 요청</h4>
-                  {ocs.doctor_request && Object.keys(ocs.doctor_request).length > 0 ? (
-                    <pre className="json-viewer">
-                      {JSON.stringify(ocs.doctor_request, null, 2)}
-                    </pre>
-                  ) : (
-                    <p className="no-data">아직 요청 내용이 없습니다.</p>
+                <div className="result-section structured-result">
+                  {/* 의사 요청 사항 */}
+                  {ocs.doctor_request && Object.keys(ocs.doctor_request).length > 0 && (
+                    <div className="request-summary-box">
+                      <h4>의사 요청 사항</h4>
+                      <div className="request-details">
+                        {(ocs.doctor_request as any).chief_complaint && (
+                          <div className="request-row">
+                            <label>주소(Chief Complaint)</label>
+                            <span>{(ocs.doctor_request as any).chief_complaint}</span>
+                          </div>
+                        )}
+                        {(ocs.doctor_request as any).clinical_info && (
+                          <div className="request-row">
+                            <label>임상 정보</label>
+                            <span>{(ocs.doctor_request as any).clinical_info}</span>
+                          </div>
+                        )}
+                        {(ocs.doctor_request as any).request_detail && (
+                          <div className="request-row">
+                            <label>요청 내용</label>
+                            <span>{(ocs.doctor_request as any).request_detail}</span>
+                          </div>
+                        )}
+                        {(ocs.doctor_request as any).special_instruction && (
+                          <div className="request-row">
+                            <label>특별 지시</label>
+                            <span>{(ocs.doctor_request as any).special_instruction}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   )}
 
-                  <h4>작업 결과</h4>
-                  {ocs.worker_result && Object.keys(ocs.worker_result).length > 0 ? (
-                    <pre className="json-viewer">
-                      {JSON.stringify(ocs.worker_result, null, 2)}
-                    </pre>
-                  ) : (
-                    <p className="no-data">아직 결과가 없습니다.</p>
-                  )}
+                  {/* 구조화된 검사 결과 테이블 */}
+                  <h4>검사 결과</h4>
+                  {(() => {
+                    const resultItems = extractResultItems(ocs);
+                    if (resultItems.length > 0) {
+                      return (
+                        <table className="result-data-table">
+                          <thead>
+                            <tr>
+                              <th>마커명</th>
+                              <th>측정값</th>
+                              <th>단위</th>
+                              <th>기준 범위</th>
+                              <th>판정</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {resultItems.map((item, idx) => (
+                              <tr key={idx} className={item.flag !== 'normal' ? `row-${item.flag}` : ''}>
+                                <td>{item.markerName}</td>
+                                <td className={item.flag !== 'normal' ? 'value-highlight' : ''}>
+                                  {item.value}
+                                </td>
+                                <td>{item.unit}</td>
+                                <td>{item.refRange}</td>
+                                <td>
+                                  <span className={`flag-badge flag-${item.flag}`}>
+                                    {item.flag === 'normal' ? '정상' :
+                                     item.flag === 'abnormal' ? '이상' : '위험'}
+                                  </span>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      );
+                    } else {
+                      // 구조화되지 않은 결과 - RIS 소견 등
+                      const workerResult = ocs.worker_result as RISWorkerResult;
+                      if (ocs.job_role === 'RIS' && (workerResult?.findings || workerResult?.impression)) {
+                        return (
+                          <div className="text-result-section">
+                            {workerResult.findings && (
+                              <div className="result-block">
+                                <h5>소견 (Findings)</h5>
+                                <p className="result-text">{workerResult.findings}</p>
+                              </div>
+                            )}
+                            {workerResult.impression && (
+                              <div className="result-block">
+                                <h5>인상 (Impression)</h5>
+                                <p className="result-text">{workerResult.impression}</p>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      }
+                      return <p className="no-data">아직 검사 결과가 없습니다.</p>;
+                    }
+                  })()}
+                </div>
+              )}
 
-                  {ocs.attachments?.files && ocs.attachments.files.length > 0 && (
+              {/* AI 해석 탭 */}
+              {activeTab === 'ai' && (
+                <div className="ai-interpretation-section">
+                  <h4>AI 해석 요약</h4>
+                  {(() => {
+                    const aiInterpretation = extractAIInterpretation(ocs);
+                    if (aiInterpretation) {
+                      return (
+                        <>
+                          {aiInterpretation.summary.length > 0 && (
+                            <div className="ai-summary-box">
+                              <ul className="ai-summary-list">
+                                {aiInterpretation.summary.map((item, idx) => (
+                                  <li key={idx}>{item}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                          {aiInterpretation.recommendations.length > 0 && (
+                            <div className="ai-recommendations-box">
+                              <h5>권고 사항</h5>
+                              <ul className="ai-recommendations-list">
+                                {aiInterpretation.recommendations.map((item, idx) => (
+                                  <li key={idx}>{item}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                        </>
+                      );
+                    } else {
+                      return <p className="no-data">AI 해석 결과가 없습니다.</p>;
+                    }
+                  })()}
+                </div>
+              )}
+
+              {/* 첨부 파일 탭 */}
+              {activeTab === 'attachments' && (
+                <div className="attachments-section">
+                  <h4>첨부 파일 정보</h4>
+                  {ocs.attachments?.files && ocs.attachments.files.length > 0 ? (
                     <>
-                      <h4>첨부파일</h4>
-                      <ul className="attachment-list">
-                        {ocs.attachments.files.map((file, idx) => (
-                          <li key={idx}>
-                            {file.name} ({(file.size / 1024).toFixed(1)} KB)
-                          </li>
-                        ))}
-                      </ul>
+                      <table className="attachments-detail-table">
+                        <thead>
+                          <tr>
+                            <th>파일명</th>
+                            <th>유형</th>
+                            <th>크기</th>
+                            <th>업로드 시간</th>
+                            <th>기능</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {ocs.attachments.files.map((file, idx) => (
+                            <tr key={idx}>
+                              <td className="file-name-cell">{file.name}</td>
+                              <td>{file.type}</td>
+                              <td>{formatFileSize(file.size)}</td>
+                              <td>{formatDate(ocs.attachments.last_modified)}</td>
+                              <td className="action-cell">
+                                <button className="btn-small btn-download">다운로드</button>
+                                {file.preview !== 'none' && file.preview !== 'download' && (
+                                  <button className="btn-small btn-preview">미리보기</button>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                      {ocs.attachments.total_size > 0 && (
+                        <div className="attachments-total">
+                          총 {ocs.attachments.files.length}개 파일 |
+                          전체 크기: {formatFileSize(ocs.attachments.total_size)}
+                        </div>
+                      )}
                     </>
+                  ) : (
+                    <p className="no-data">첨부된 파일이 없습니다.</p>
                   )}
+                </div>
+              )}
+
+              {/* 원본 데이터(JSON) 탭 */}
+              {activeTab === 'raw' && (
+                <div className="raw-data-section">
+                  <div className="raw-data-header">
+                    <h4>원본 데이터 (JSON)</h4>
+                    <span className="raw-data-notice">개발자 / 관리자 / AI 검증용</span>
+                  </div>
+
+                  <div className="collapsible-section">
+                    <button
+                      className={`collapsible-toggle ${isRequestExpanded ? 'expanded' : ''}`}
+                      onClick={() => setIsRequestExpanded(!isRequestExpanded)}
+                    >
+                      {isRequestExpanded ? '접기' : '펼치기'} - 의사 요청 (doctor_request)
+                    </button>
+                    {isRequestExpanded && (
+                      <pre className="json-viewer">
+                        {JSON.stringify(ocs.doctor_request, null, 2)}
+                      </pre>
+                    )}
+                  </div>
+
+                  <div className="collapsible-section">
+                    <button
+                      className={`collapsible-toggle ${isResultExpanded ? 'expanded' : ''}`}
+                      onClick={() => setIsResultExpanded(!isResultExpanded)}
+                    >
+                      {isResultExpanded ? '접기' : '펼치기'} - 작업 결과 (worker_result)
+                    </button>
+                    {isResultExpanded && (
+                      <pre className="json-viewer">
+                        {JSON.stringify(ocs.worker_result, null, 2)}
+                      </pre>
+                    )}
+                  </div>
                 </div>
               )}
 

@@ -1097,6 +1097,78 @@ DIAGNOSES = [
     "상의세포종 (Ependymoma)",
 ]
 
+# 의약품 카테고리 매핑 (코드 접두어 기반)
+MEDICATION_CATEGORIES = {
+    'TEM': 'CHEMOTHERAPY',  # Temozolomide
+    'BEV': 'CHEMOTHERAPY',  # Bevacizumab
+    'LOM': 'CHEMOTHERAPY',  # Lomustine
+    'DEX': 'STEROID',       # Dexamethasone
+    'MAN': 'DIURETIC',      # Mannitol
+    'LEV': 'ANTIEPILEPTIC', # Levetiracetam
+    'VPA': 'ANTIEPILEPTIC', # Valproic acid
+    'PHE': 'ANTIEPILEPTIC', # Phenytoin
+    'ACE': 'ANALGESIC',     # Acetaminophen
+    'TRA': 'ANALGESIC',     # Tramadol
+    'OXY': 'ANALGESIC',     # Oxycodone
+    'OND': 'ANTIEMETIC',    # Ondansetron
+    'MET': 'ANTIEMETIC',    # Metoclopramide
+    'ESO': 'OTHER',         # Esomeprazole (위장보호)
+    'FAM': 'OTHER',         # Famotidine (위장보호)
+    'MEG': 'OTHER',         # Megestrol (보조)
+    'MPH': 'OTHER',         # Methylphenidate (보조)
+}
+
+
+def create_dummy_medications(force=False):
+    """의약품 마스터 데이터 생성 (클릭 처방용)"""
+    print(f"\n[10-1단계] 의약품 마스터 데이터 생성 (목표: {len(MEDICATIONS)}개)...")
+
+    from apps.prescriptions.models import Medication
+
+    # 기존 데이터 확인
+    existing_count = Medication.objects.filter(is_active=True).count()
+    if existing_count >= len(MEDICATIONS) and not force:
+        print(f"[SKIP] 이미 {existing_count}개의 의약품이 존재합니다.")
+        return True
+
+    created_count = 0
+    updated_count = 0
+
+    for med in MEDICATIONS:
+        # 코드 접두어로 카테고리 결정
+        code_prefix = med['code'][:3]
+        category = MEDICATION_CATEGORIES.get(code_prefix, 'OTHER')
+
+        # Route 매핑
+        route_map = {'PO': 'PO', 'IV': 'IV', 'IM': 'IM', 'SC': 'SC'}
+        route = route_map.get(med['route'], 'OTHER')
+
+        try:
+            medication, created = Medication.objects.update_or_create(
+                code=med['code'],
+                defaults={
+                    'name': med['name'],
+                    'category': category,
+                    'default_dosage': med['dosage'],
+                    'default_route': route,
+                    'default_frequency': med['frequency'],
+                    'default_duration_days': 7,
+                    'unit': '정' if route == 'PO' else 'ml' if route == 'IV' else '정',
+                    'warnings': med['instructions'],
+                    'is_active': True,
+                }
+            )
+            if created:
+                created_count += 1
+            else:
+                updated_count += 1
+        except Exception as e:
+            print(f"  오류 ({med['code']}): {e}")
+
+    print(f"[OK] 의약품 생성: {created_count}개, 업데이트: {updated_count}개")
+    print(f"  현재 전체 의약품: {Medication.objects.filter(is_active=True).count()}개")
+    return True
+
 
 def create_dummy_prescriptions(num_prescriptions=20, num_items_per_rx=3, force=False):
     """더미 처방 데이터 생성"""
@@ -1304,7 +1376,7 @@ def print_summary():
     from apps.ocs.models import OCS
     from apps.treatment.models import TreatmentPlan, TreatmentSession
     from apps.followup.models import FollowUp
-    from apps.prescriptions.models import Prescription, PrescriptionItem
+    from apps.prescriptions.models import Prescription, PrescriptionItem, Medication
 
     print(f"\n[통계 - 임상 데이터]")
     print(f"  - 환자: {Patient.objects.filter(is_deleted=False).count()}명")
@@ -1317,6 +1389,7 @@ def print_summary():
     print(f"  - 치료 계획: {TreatmentPlan.objects.count()}건")
     print(f"  - 치료 세션: {TreatmentSession.objects.count()}건")
     print(f"  - 경과 기록: {FollowUp.objects.count()}건")
+    print(f"  - 의약품 마스터: {Medication.objects.filter(is_active=True).count()}개")
     print(f"  - 처방전: {Prescription.objects.count()}건")
     print(f"  - 처방 항목: {PrescriptionItem.objects.count()}건")
 
@@ -1407,6 +1480,9 @@ def main():
     # AI 추론 요청은 더미 데이터로 생성하지 않음 (실제 사용자 요청 시 생성)
 
     # ===== 처방 =====
+    # 의약품 마스터 데이터 (클릭 처방용)
+    create_dummy_medications(force=force)
+
     # 처방 데이터
     create_dummy_prescriptions(20, 3, force=force)
 

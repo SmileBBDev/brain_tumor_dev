@@ -343,8 +343,13 @@ def main():
     parser.add_argument('--start', type=str, default='2026-01-15', help='예약 시작 날짜 (YYYY-MM-DD)')
     parser.add_argument('--end', type=str, default='2026-02-28', help='예약 종료 날짜 (YYYY-MM-DD)')
     parser.add_argument('--per-doctor', type=int, default=10, help='의사당 하루 예약 수 (기본: 10)')
-    parser.add_argument('-y', '--yes', action='store_true', help='확인 없이 자동 실행 (비대화형 모드)')
+    parser.add_argument('-y', '--yes', action='store_true', default=True, help='확인 없이 자동 실행 (기본값: True)')
+    parser.add_argument('--interactive', action='store_true', help='대화형 모드 (확인 필요)')
     args = parser.parse_args()
+
+    # --interactive 옵션이 있으면 -y 비활성화
+    if args.interactive:
+        args.yes = False
 
     print("="*60)
     print("Brain Tumor CDSS - 더미 데이터 생성 (통합)")
