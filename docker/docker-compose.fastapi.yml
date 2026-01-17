@@ -39,6 +39,8 @@ services:
       - MAIN_VM_IP=${MAIN_VM_IP:-192.168.x.x}
       - DJANGO_URL=http://${MAIN_VM_IP}:8000
       - ORTHANC_URL=http://${MAIN_VM_IP}:8042
+      - ORTHANC_USER=${ORTHANC_USER:-orthanc}
+      - ORTHANC_PASSWORD=${ORTHANC_PASSWORD:-orthanc}
       - HAPI_FHIR_URL=http://${MAIN_VM_IP}:8081
       # GPU Settings
       - CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-0}
@@ -84,6 +86,8 @@ services:
       - MAIN_VM_IP=${MAIN_VM_IP:-192.168.x.x}
       - DJANGO_URL=http://${MAIN_VM_IP}:8000
       - ORTHANC_URL=http://${MAIN_VM_IP}:8042
+      - ORTHANC_USER=${ORTHANC_USER:-orthanc}
+      - ORTHANC_PASSWORD=${ORTHANC_PASSWORD:-orthanc}
       # GPU Settings
       - CUDA_VISIBLE_DEVICES=${CUDA_VISIBLE_DEVICES:-0}
     volumes:

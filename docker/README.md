@@ -100,16 +100,13 @@ docker compose -f docker-compose.fastapi.yml up -d --build
 
 ```
 
-
-
-
-cd C:\0000\brain_tumor_dev\docker
+# 컨테이너 중지 및 삭제
 docker compose -f docker-compose.fastapi.yml down
-docker compose -f docker-compose.django.yml down
-docker compose -f docker-compose.django.yml up -d --build
 
-docker compose -f docker-compose.fastapi.yml down
-docker compose -f docker-compose.fastapi.yml up -d --build
+# 컨테이너 재생성 (이미지 재빌드 불필요)
+docker compose -f docker-compose.fastapi.yml up -d
+
+
 
 
 
