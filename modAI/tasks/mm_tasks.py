@@ -188,8 +188,9 @@ def run_mm_inference(
         }
 
         try:
+            resolved_callback_url = resolve_callback_url(callback_url)
             response = httpx.post(
-                callback_url,
+                resolved_callback_url,
                 json=callback_data,
                 timeout=60.0
             )
@@ -211,8 +212,9 @@ def run_mm_inference(
 
         # Django에 실패 callback
         try:
+            resolved_callback_url = resolve_callback_url(callback_url)
             httpx.post(
-                callback_url,
+                resolved_callback_url,
                 json={
                     'job_id': job_id,
                     'status': 'failed',
