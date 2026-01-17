@@ -11,7 +11,7 @@ skinparam noteFontSize 10
 actor User as user
 participant "React\nFrontend" as react
 participant "Django\nDaphne:8000" as django
-participant "FastAPI\n:8001" as fastapi
+participant "FastAPI\n:9000" as fastapi
 participant "Celery\nWorker" as celery
 database "Redis\n:6379" as redis
 database "MySQL" as mysql

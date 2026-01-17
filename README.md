@@ -148,7 +148,7 @@ requuire
 celery -A celery_app worker --loglevel=info
 
 # 2. FastAPI 서버 (별도 터미널)
-uvicorn main:app --reload --host 0.0.0.0 --port 8001 
+uvicorn main:app --reload --host 0.0.0.0 --port 9000 
 -->
 
 

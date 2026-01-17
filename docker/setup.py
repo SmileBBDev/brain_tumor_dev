@@ -27,7 +27,7 @@ from pathlib import Path
 
 REQUIRED_PORTS = {
     8000: "Django",
-    8001: "FastAPI",
+    9000: "FastAPI",
     8042: "Orthanc HTTP",
     8080: "OpenEMR",
     8081: "HAPI FHIR",

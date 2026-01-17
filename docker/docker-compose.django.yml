@@ -79,7 +79,7 @@ services:
       - EMAIL_HOST_USER=${EMAIL_HOST_USER}
       - EMAIL_HOST_PASSWORD=${EMAIL_HOST_PASSWORD}
       # External Services (FASTAPI_URL은 반드시 docker/.env에서 설정 필요)
-      - FASTAPI_URL=${FASTAPI_URL:-http://localhost:8001}
+      - FASTAPI_URL=${FASTAPI_URL:-http://localhost:9000}
       - ORTHANC_URL=http://orthanc:8042
       - HAPI_FHIR_URL=http://hapi-fhir:8080
     volumes:

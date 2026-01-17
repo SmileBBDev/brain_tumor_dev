@@ -3,7 +3,7 @@ import redis
 
 # Direct test to FastAPI
 response = httpx.post(
-    "http://localhost:8001/api/v1/mg/inference",
+    "http://localhost:9000/api/v1/mg/inference",
     json={
         "job_id": "test_mg_002",
         "ocs_id": 16,

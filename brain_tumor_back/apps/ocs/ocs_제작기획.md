@@ -145,7 +145,7 @@
         "instance_count": 24
       }
     ],
-    "accession_number": "ACC20260108001"
+    "accession_number": "ACC20260109000"
   },
 
   "impression": "뇌종양 의심 소견",
