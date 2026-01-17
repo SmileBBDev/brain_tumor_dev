@@ -110,7 +110,7 @@ function M1Panel() {
   const [segError, setSegError] = useState('')
 
   const { lastMessage } = useAIInferenceWebSocket()
-  const { isFastAPIAvailable, requestInference } = useAIInference()
+  const { requestInference } = useAIInference()
 
   useEffect(() => {
     loadOcsList()
@@ -509,7 +509,7 @@ function MGPanel() {
   const [geneError, setGeneError] = useState('')
 
   const { lastMessage } = useAIInferenceWebSocket()
-  const { isFastAPIAvailable, requestInference } = useAIInference()
+  const { requestInference } = useAIInference()
 
   useEffect(() => {
     loadOcsList()
@@ -775,7 +775,7 @@ function MMPanel() {
   const abortRef = useRef(false)
 
   const { lastMessage } = useAIInferenceWebSocket()
-  const { isFastAPIAvailable, requestInference } = useAIInference()
+  const { requestInference } = useAIInference()
 
   useEffect(() => {
     loadData()
@@ -788,7 +788,7 @@ function MMPanel() {
     if (lastMessage.job_id !== lastJobId) return
 
     if (lastMessage.status === 'COMPLETED' && lastMessage.result) {
-      setResult(lastMessage.result)
+      setResult(lastMessage.result as MMResult)
       setInferring(false)
       abortRef.current = true
     } else if (lastMessage.status === 'FAILED') {

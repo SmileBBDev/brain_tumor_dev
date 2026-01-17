@@ -394,13 +394,15 @@ export const aiApi = {
     mriOcsId: number | null,
     geneOcsId: number | null,
     proteinOcsId: number | null,
-    mode: 'manual' | 'auto' = 'manual'
+    mode: 'manual' | 'auto' = 'manual',
+    isResearch: boolean = false
   ) => {
     const response = await api.post('/ai/mm/inference/', {
       mri_ocs_id: mriOcsId,
       gene_ocs_id: geneOcsId,
       protein_ocs_id: proteinOcsId,
       mode,
+      is_research: isResearch,
     });
     return response.data;
   },
@@ -517,4 +519,104 @@ export const aiApi = {
     const response = await api.get(`/ai/mg/gene-expression/${ocsId}/`);
     return response.data;
   },
+
+  // SEG 비교 데이터 조회 (M1_seg vs Orthanc SEG)
+  getSegmentationCompareData: async (jobId: string): Promise<SegmentationCompareData> => {
+    const response = await api.get(`/ai/inferences/${jobId}/segmentation/compare/`);
+    const data = response.data;
+
+    // base64 인코딩된 경우 디코딩
+    if (data.encoding === 'base64') {
+      const predShape = data.shape as [number, number, number];
+      const gtShape = data.ground_truth_shape as [number, number, number] | undefined;
+
+      // base64 → Float32Array → 3D 배열 변환
+      const decodeBase64To3D = (base64: string, shape: [number, number, number]): number[][][] | null => {
+        if (!base64 || typeof base64 !== 'string') {
+          return null;
+        }
+        try {
+          const binary = atob(base64);
+          const bytes = new Uint8Array(binary.length);
+          for (let i = 0; i < binary.length; i++) {
+            bytes[i] = binary.charCodeAt(i);
+          }
+          const float32 = new Float32Array(bytes.buffer);
+
+          // 1D → 3D 변환
+          const result: number[][][] = [];
+          let idx = 0;
+          for (let x = 0; x < shape[0]; x++) {
+            result[x] = [];
+            for (let y = 0; y < shape[1]; y++) {
+              result[x][y] = [];
+              for (let z = 0; z < shape[2]; z++) {
+                result[x][y][z] = float32[idx++] ?? 0;
+              }
+            }
+          }
+          return result;
+        } catch (error) {
+          console.error('Base64 디코딩 실패:', error);
+          return null;
+        }
+      };
+
+      // Prediction 디코딩
+      if (typeof data.prediction === 'string') {
+        data.prediction = decodeBase64To3D(data.prediction, predShape);
+      }
+
+      // Ground Truth 디코딩 (있는 경우)
+      if (data.has_ground_truth && typeof data.ground_truth === 'string' && gtShape) {
+        data.ground_truth = decodeBase64To3D(data.ground_truth, gtShape);
+      }
+    }
+
+    return data as SegmentationCompareData;
+  },
 };
+
+// =============================================================================
+// SEG 비교 데이터 타입
+// =============================================================================
+
+export interface SegmentationCompareData {
+  job_id: string;
+  model_type: string;
+  shape: [number, number, number];
+  encoding: string;
+  dtype: string;
+
+  // 예측 데이터
+  prediction: number[][][] | null;
+  prediction_volumes: {
+    wt_volume?: number;
+    tc_volume?: number;
+    et_volume?: number;
+    ncr_volume?: number;
+    ed_volume?: number;
+  };
+
+  // Ground Truth 데이터
+  has_ground_truth: boolean;
+  orthanc_seg_status: 'loaded' | 'not_found' | 'no_ocs';
+  ground_truth: number[][][] | null;
+  ground_truth_shape?: [number, number, number];
+  gt_volumes: {
+    wt_volume?: number;
+    tc_volume?: number;
+    et_volume?: number;
+    ncr_volume?: number;
+    ed_volume?: number;
+  } | null;
+
+  // 비교 메트릭
+  comparison_metrics: {
+    dice_wt?: number;
+    dice_tc?: number;
+    dice_et?: number;
+    dice_mean?: number;
+    error?: string;
+  } | null;
+}

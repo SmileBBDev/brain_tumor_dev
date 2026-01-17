@@ -8,7 +8,7 @@
  */
 import { useState, useEffect } from 'react'
 import { api } from '@/services/api'
-import { useAIInference, useAIJob, type AIJob } from '@/context/AIInferenceContext'
+import { useAIInference, useAIJob } from '@/context/AIInferenceContext'
 import './AIAnalysisPopup.css'
 
 // ============================================================================
@@ -23,14 +23,6 @@ interface OCSItem {
   job_type: string
   ocs_status: string
   confirmed_at: string
-}
-
-interface InferenceResult {
-  grade?: { predicted_class: string; probability: number }
-  idh?: { predicted_class: string }
-  mgmt?: { predicted_class: string }
-  survival?: { risk_score: number; risk_category: string }
-  processing_time_ms?: number
 }
 
 type TabType = 'm1' | 'mg' | 'mm'

@@ -1,7 +1,9 @@
 import { useState, useEffect, useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
 import MMResultViewer from '@/components/MMResultViewer'
 import { useAIInferenceWebSocket } from '@/hooks/useAIInferenceWebSocket'
 import { ocsApi, aiApi } from '@/services/ai.api'
+import './MMInferencePage.css'
 
 interface MMResult {
   patient_id?: string
@@ -71,6 +73,8 @@ interface InferenceRecord {
 }
 
 export default function MMInferencePage() {
+  const navigate = useNavigate()
+
   // State
   const [_loading, setLoading] = useState(false)
   const [patients, setPatients] = useState<PatientOption[]>([])
@@ -84,7 +88,7 @@ export default function MMInferencePage() {
   const [selectedMriOcs, setSelectedMriOcs] = useState<number | null>(null)
   const [selectedGeneOcs, setSelectedGeneOcs] = useState<number | null>(null)
   const [selectedProteinOcs, setSelectedProteinOcs] = useState<number | null>(null)
-  const [isResearch, setIsResearch] = useState<boolean>(false)  // 연구용 모드
+  const [isResearch, setIsResearch] = useState<boolean>(false)
 
   // 추론 상태
   const [inferenceStatus, setInferenceStatus] = useState<string>('')
@@ -100,13 +104,11 @@ export default function MMInferencePage() {
   // WebSocket
   const { lastMessage, isConnected } = useAIInferenceWebSocket()
 
-  // 초기 데이터 로드
   useEffect(() => {
     loadAllOcsData()
     loadInferenceHistory()
   }, [])
 
-  // WebSocket 메시지 처리
   useEffect(() => {
     if (lastMessage?.type === 'AI_INFERENCE_RESULT') {
       console.log('Received MM inference result:', lastMessage)
@@ -133,7 +135,10 @@ export default function MMInferencePage() {
       const response = await ocsApi.getAllOcsList()
       const rawData = response.results || response || []
 
-      // 환자 목록 추출
+      // 디버깅: 전체 API 응답 확인
+      console.log('MM Page - API Response sample (first item):', rawData[0])
+      console.log('MM Page - Total items:', rawData.length)
+
       const patientMap = new Map<string, PatientOption>()
       rawData.forEach((item: any) => {
         if (item.patient?.patient_number) {
@@ -145,18 +150,61 @@ export default function MMInferencePage() {
       })
       setPatients(Array.from(patientMap.values()))
 
-      // 모달리티별 OCS 분류 (CONFIRMED만)
       const confirmed = rawData.filter((item: any) => item.ocs_status === 'CONFIRMED')
+      console.log('MM Page - Confirmed items:', confirmed.length)
 
+      // 디버깅: job_type 값 확인
+      const lisItems = confirmed.filter((item: any) => item.job_role === 'LIS')
+      console.log('MM Page - LIS items count:', lisItems.length)
+
+      // 모든 job_type 값 출력 (첫 5개만)
+      console.log('MM Page - LIS items sample (first 5):', lisItems.slice(0, 5).map((i: any) => ({
+        id: i.id,
+        ocs_id: i.ocs_id,
+        job_role: i.job_role,
+        job_type: i.job_type,
+        job_type_typeof: typeof i.job_type
+      })))
+
+      const jobTypes = [...new Set(lisItems.map((item: any) => item.job_type))]
+      console.log('MM Page - LIS unique job_types:', jobTypes)
+      console.log('MM Page - LIS items count by type:', {
+        RNA_SEQ: lisItems.filter((i: any) => i.job_type === 'RNA_SEQ').length,
+        BIOMARKER: lisItems.filter((i: any) => i.job_type === 'BIOMARKER').length,
+        GENE_PANEL: lisItems.filter((i: any) => i.job_type === 'GENE_PANEL').length,
+        DNA_SEQ: lisItems.filter((i: any) => i.job_type === 'DNA_SEQ').length,
+        CBC: lisItems.filter((i: any) => i.job_type === 'CBC').length,
+        OTHER: lisItems.filter((i: any) => !['RNA_SEQ', 'BIOMARKER', 'GENE_PANEL', 'DNA_SEQ', 'CBC', 'CMP', 'Coagulation', 'Tumor Markers'].includes(i.job_type)).length
+      })
+
+      // MRI: RIS + MRI (대소문자 무시)
       const mriList = confirmed
-        .filter((item: any) => item.job_role === 'RIS' && item.job_type === 'MRI')
+        .filter((item: any) => {
+          const jobRole = (item.job_role || '').toUpperCase()
+          const jobType = (item.job_type || '').toUpperCase()
+          return jobRole === 'RIS' && jobType === 'MRI'
+        })
         .map(mapOcsItem)
+
+      // Gene: LIS + RNA_SEQ (대소문자 무시)
       const geneList = confirmed
-        .filter((item: any) => item.job_role === 'LIS' && item.job_type === 'RNA_SEQ')
+        .filter((item: any) => {
+          const jobRole = (item.job_role || '').toUpperCase()
+          const jobType = (item.job_type || '').toUpperCase()
+          return jobRole === 'LIS' && jobType === 'RNA_SEQ'
+        })
         .map(mapOcsItem)
+
+      // Protein: LIS + BIOMARKER (대소문자 무시)
       const proteinList = confirmed
-        .filter((item: any) => item.job_role === 'LIS' && item.job_type === 'BIOMARKER')
+        .filter((item: any) => {
+          const jobRole = (item.job_role || '').toUpperCase()
+          const jobType = (item.job_type || '').toUpperCase()
+          return jobRole === 'LIS' && jobType === 'BIOMARKER'
+        })
         .map(mapOcsItem)
+
+      console.log('MM Page - Final filtered counts:', { mri: mriList.length, gene: geneList.length, protein: proteinList.length })
 
       setMriOcsList(mriList)
       setGeneOcsList(geneList)
@@ -192,7 +240,6 @@ export default function MMInferencePage() {
     }
   }
 
-  // 선택된 환자의 OCS만 필터링 (연구용 모드에서는 모든 환자 데이터 표시)
   const filteredMriOcsList = useMemo(() => {
     if (isResearch || !selectedPatient) return mriOcsList
     return mriOcsList.filter(ocs => ocs.patient_number === selectedPatient)
@@ -208,7 +255,6 @@ export default function MMInferencePage() {
     return proteinOcsList.filter(ocs => ocs.patient_number === selectedPatient)
   }, [proteinOcsList, selectedPatient, isResearch])
 
-  // 선택된 모달리티 개수
   const selectedModalityCount = useMemo(() => {
     let count = 0
     if (selectedMriOcs) count++
@@ -250,14 +296,12 @@ export default function MMInferencePage() {
 
       setJobId(response.job_id)
 
-      // 캐시된 결과인 경우 바로 표시
       if (response.cached && response.result) {
         console.log('Using cached MM inference result:', response)
         setIsCached(true)
         setInferenceStatus('completed')
         setInferenceResult(response.result as MMResult)
       } else {
-        // 새 추론 요청 - WebSocket으로 결과 대기
         setInferenceStatus('processing')
         console.log('MM Inference request sent:', response)
       }
@@ -271,6 +315,10 @@ export default function MMInferencePage() {
     }
   }
 
+  const handleViewDetail = (record: InferenceRecord) => {
+    navigate(`/ai/mm/${record.job_id}`)
+  }
+
   const handleSelectHistory = (record: InferenceRecord) => {
     setJobId(record.job_id)
     setInferenceStatus(record.status.toLowerCase())
@@ -279,7 +327,6 @@ export default function MMInferencePage() {
     setIsCached(false)
   }
 
-  // 추론 이력 삭제
   const handleDeleteInference = async (record: InferenceRecord) => {
     if (!window.confirm(`${record.job_id} 추론 결과를 삭제하시겠습니까?`)) {
       return
@@ -301,61 +348,52 @@ export default function MMInferencePage() {
   }
 
   const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'COMPLETED':
-        return <span className="px-2 py-1 text-xs rounded bg-green-100 text-green-800">완료</span>
-      case 'PROCESSING':
-        return <span className="px-2 py-1 text-xs rounded bg-blue-100 text-blue-800">처리중</span>
-      case 'PENDING':
-        return <span className="px-2 py-1 text-xs rounded bg-gray-100 text-gray-800">대기</span>
-      case 'FAILED':
-        return <span className="px-2 py-1 text-xs rounded bg-red-100 text-red-800">실패</span>
-      default:
-        return <span className="px-2 py-1 text-xs rounded bg-gray-100 text-gray-800">{status}</span>
+    const statusMap: Record<string, { className: string; label: string }> = {
+      COMPLETED: { className: 'status-badge status-completed', label: '완료' },
+      PROCESSING: { className: 'status-badge status-processing', label: '처리중' },
+      PENDING: { className: 'status-badge status-pending', label: '대기' },
+      FAILED: { className: 'status-badge status-failed', label: '실패' },
     }
+    const { className, label } = statusMap[status] || { className: 'status-badge status-pending', label: status }
+    return <span className={className}>{label}</span>
   }
 
   return (
-    <div className="space-y-6">
+    <div className="mm-inference-page">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="page-header">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">MM 멀티모달 분석</h2>
-          <p className="text-sm text-gray-500 mt-1">
+          <h2 className="page-title">MM 멀티모달 분석</h2>
+          <p className="page-subtitle">
             MRI, Gene, Protein 데이터를 융합하여 종합적인 예후 예측을 수행합니다.
           </p>
         </div>
-        <div className="flex items-center space-x-2">
-          <span
-            className={`h-2 w-2 rounded-full ${
-              isConnected ? 'bg-green-500' : 'bg-red-500'
-            }`}
-          />
-          <span className="text-sm text-gray-500">
+        <div className="connection-status">
+          <span className={`status-dot ${isConnected ? 'connected' : 'disconnected'}`} />
+          <span className="status-text">
             {isConnected ? 'WebSocket 연결됨' : 'WebSocket 연결 안됨'}
           </span>
         </div>
       </div>
 
       {/* Patient Selection & Research Mode */}
-      <div className="bg-white rounded-lg shadow p-4">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-lg font-semibold text-gray-900">환자 선택</h3>
-          <label className="flex items-center space-x-2 cursor-pointer">
+      <div className="patient-selection-card">
+        <div className="card-header">
+          <h3 className="card-title">환자 선택</h3>
+          <label className="research-toggle">
             <input
               type="checkbox"
               checked={isResearch}
               onChange={(e) => setIsResearch(e.target.checked)}
-              className="w-4 h-4 text-amber-600 border-gray-300 rounded focus:ring-amber-500"
             />
-            <span className="text-sm font-medium text-gray-700">연구용</span>
-            <span className="text-xs text-gray-500">(다른 환자 OCS 조합 가능)</span>
+            <span className="toggle-label">연구용</span>
+            <span className="toggle-hint">(다른 환자 OCS 조합 가능)</span>
           </label>
         </div>
         <select
           value={selectedPatient}
           onChange={(e) => handlePatientChange(e.target.value)}
-          className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+          className="patient-select"
           disabled={isResearch}
         >
           <option value="">{isResearch ? '연구용 모드: 모든 환자 데이터 표시' : '환자를 선택하세요'}</option>
@@ -366,7 +404,7 @@ export default function MMInferencePage() {
           ))}
         </select>
         {isResearch && (
-          <p className="mt-2 text-xs text-amber-600 bg-amber-50 p-2 rounded">
+          <p className="research-notice">
             연구용 모드: 서로 다른 환자의 MRI, Gene, Protein 데이터를 조합하여 추론할 수 있습니다.
           </p>
         )}
@@ -374,75 +412,84 @@ export default function MMInferencePage() {
 
       {/* Modality Selection */}
       {(selectedPatient || isResearch) && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="modality-grid">
           {/* MRI */}
-          <div className="bg-white rounded-lg shadow p-4">
-            <h4 className="font-medium text-gray-900 mb-2 flex items-center">
-              <span className="text-xl mr-2">🧠</span>
+          <div className="modality-card mri">
+            <h4 className="modality-title">
+              <span className="modality-icon">🧠</span>
               MRI 영상
-              {selectedMriOcs && <span className="ml-2 text-green-600 text-sm">선택됨</span>}
+              {selectedMriOcs && <span className="selected-indicator">선택됨</span>}
             </h4>
             <select
               value={selectedMriOcs || ''}
               onChange={(e) => setSelectedMriOcs(e.target.value ? Number(e.target.value) : null)}
-              className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+              className="modality-select"
             >
               <option value="">선택 안함</option>
               {filteredMriOcsList.map((ocs) => (
                 <option key={ocs.id} value={ocs.id}>
-                  {ocs.ocs_id}
+                  {isResearch
+                    ? `${ocs.ocs_id} (${ocs.patient_number} - ${ocs.patient_name})`
+                    : ocs.ocs_id
+                  }
                 </option>
               ))}
             </select>
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="modality-count">
               {filteredMriOcsList.length}건 이용 가능
             </p>
           </div>
 
           {/* Gene */}
-          <div className="bg-white rounded-lg shadow p-4">
-            <h4 className="font-medium text-gray-900 mb-2 flex items-center">
-              <span className="text-xl mr-2">🧬</span>
-              Gene Expression
-              {selectedGeneOcs && <span className="ml-2 text-green-600 text-sm">선택됨</span>}
+          <div className="modality-card gene">
+            <h4 className="modality-title">
+              <span className="modality-icon">🧬</span>
+              Gene Expression (RNA-seq)
+              {selectedGeneOcs && <span className="selected-indicator">선택됨</span>}
             </h4>
             <select
               value={selectedGeneOcs || ''}
               onChange={(e) => setSelectedGeneOcs(e.target.value ? Number(e.target.value) : null)}
-              className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-purple-500"
+              className="modality-select"
             >
               <option value="">선택 안함</option>
               {filteredGeneOcsList.map((ocs) => (
                 <option key={ocs.id} value={ocs.id}>
-                  {ocs.ocs_id}
+                  {isResearch
+                    ? `${ocs.ocs_id} (${ocs.patient_number} - ${ocs.patient_name})`
+                    : ocs.ocs_id
+                  }
                 </option>
               ))}
             </select>
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="modality-count">
               {filteredGeneOcsList.length}건 이용 가능
             </p>
           </div>
 
           {/* Protein */}
-          <div className="bg-white rounded-lg shadow p-4">
-            <h4 className="font-medium text-gray-900 mb-2 flex items-center">
-              <span className="text-xl mr-2">🔬</span>
-              Protein Marker
-              {selectedProteinOcs && <span className="ml-2 text-green-600 text-sm">선택됨</span>}
+          <div className="modality-card protein">
+            <h4 className="modality-title">
+              <span className="modality-icon">🔬</span>
+              Protein Biomarker
+              {selectedProteinOcs && <span className="selected-indicator">선택됨</span>}
             </h4>
             <select
               value={selectedProteinOcs || ''}
               onChange={(e) => setSelectedProteinOcs(e.target.value ? Number(e.target.value) : null)}
-              className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-amber-500"
+              className="modality-select"
             >
               <option value="">선택 안함</option>
               {filteredProteinOcsList.map((ocs) => (
                 <option key={ocs.id} value={ocs.id}>
-                  {ocs.ocs_id}
+                  {isResearch
+                    ? `${ocs.ocs_id} (${ocs.patient_number} - ${ocs.patient_name})`
+                    : ocs.ocs_id
+                  }
                 </option>
               ))}
             </select>
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="modality-count">
               {filteredProteinOcsList.length}건 이용 가능
             </p>
           </div>
@@ -451,11 +498,11 @@ export default function MMInferencePage() {
 
       {/* Inference Button */}
       {(selectedPatient || isResearch) && (
-        <div className="flex items-center justify-center gap-4">
-          <div className="text-sm text-gray-600">
-            선택된 모달리티: <span className="font-bold">{selectedModalityCount}</span>개
+        <div className="inference-action">
+          <div className="modality-summary">
+            선택된 모달리티: <span className="count">{selectedModalityCount}</span>개
             {selectedModalityCount < 2 && (
-              <span className="text-amber-600 ml-2">(2개 이상 권장)</span>
+              <span className="recommendation">(2개 이상 권장)</span>
             )}
           </div>
           <button
@@ -465,12 +512,12 @@ export default function MMInferencePage() {
               inferenceStatus === 'requesting' ||
               inferenceStatus === 'processing'
             }
-            className={`py-3 px-8 rounded-lg font-medium text-white transition ${
+            className={`btn-inference mm ${
               selectedModalityCount < 1 ||
               inferenceStatus === 'requesting' ||
               inferenceStatus === 'processing'
-                ? 'bg-gray-400 cursor-not-allowed'
-                : 'bg-amber-600 hover:bg-amber-700'
+                ? 'disabled'
+                : ''
             }`}
           >
             {(inferenceStatus === 'requesting' || inferenceStatus === 'processing') && jobId
@@ -480,19 +527,19 @@ export default function MMInferencePage() {
         </div>
       )}
 
-      {/* MM Inference Result */}
+      {/* MM Inference Status */}
       {inferenceStatus === 'processing' && (
-        <div className="bg-amber-50 border border-amber-200 rounded-lg p-6 text-center">
-          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-amber-600 mx-auto" />
-          <p className="text-amber-600 mt-3">MM 멀티모달 추론 중...</p>
-          <p className="text-sm text-amber-400 mt-1">Job ID: {jobId}</p>
+        <div className="processing-container mm">
+          <div className="spinner mm" />
+          <p className="processing-text">MM 멀티모달 추론 중...</p>
+          <p className="processing-subtext">Job ID: {jobId}</p>
         </div>
       )}
 
       {inferenceStatus === 'failed' && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <h3 className="text-red-800 font-medium">추론 실패</h3>
-          <p className="text-red-600 text-sm mt-1">{error}</p>
+        <div className="error-container">
+          <h3 className="error-title">추론 실패</h3>
+          <p className="error-message">{error}</p>
         </div>
       )}
 
@@ -502,121 +549,104 @@ export default function MMInferencePage() {
 
       {/* Request ID */}
       {jobId && (
-        <div className="text-center text-xs text-gray-500">
+        <div className="job-id-display">
           Job ID: {jobId}
           {isCached && (
-            <span className="ml-2 px-2 py-0.5 bg-yellow-100 text-yellow-700 rounded">
-              캐시됨
-            </span>
+            <span className="cached-badge">캐시됨</span>
           )}
         </div>
       )}
 
       {/* Inference History */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-gray-900">
+      <div className="section">
+        <div className="section-header">
+          <h3 className="section-title">
             추론 이력 ({inferenceHistory.length}건)
           </h3>
-          <button
-            onClick={loadInferenceHistory}
-            className="text-sm text-blue-600 hover:text-blue-800"
-          >
+          <button onClick={loadInferenceHistory} className="btn-link">
             새로고침
           </button>
         </div>
 
-        <div className="bg-white rounded-lg shadow overflow-hidden">
+        <div className="history-table-container">
           {loadingHistory ? (
-            <div className="text-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-600 mx-auto" />
+            <div className="loading-container">
+              <div className="spinner mm" />
             </div>
           ) : inferenceHistory.length > 0 ? (
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+            <table className="history-table">
+              <thead>
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Job ID
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    환자
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    모달리티
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    상태
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    결과
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    생성일시
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    작업
-                  </th>
+                  <th>Job ID</th>
+                  <th>환자</th>
+                  <th>모달리티</th>
+                  <th>상태</th>
+                  <th>결과</th>
+                  <th>생성일시</th>
+                  <th>작업</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200">
+              <tbody>
                 {inferenceHistory.map((record) => (
                   <tr
                     key={record.id}
-                    className={`hover:bg-gray-50 ${
-                      record.job_id === jobId ? 'bg-amber-50' : ''
-                    }`}
+                    className={record.job_id === jobId ? 'selected mm' : ''}
                   >
-                    <td className="px-4 py-3 text-sm text-gray-900">
-                      {record.job_id}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-600">
+                    <td>{record.job_id}</td>
+                    <td>
                       {record.patient_name} ({record.patient_number})
                     </td>
-                    <td className="px-4 py-3 text-sm">
-                      <div className="flex gap-1">
+                    <td>
+                      <div className="modality-badges">
                         {record.mri_ocs && (
-                          <span className="px-1.5 py-0.5 text-xs rounded bg-blue-100 text-blue-700">MRI</span>
+                          <span className="modality-badge mri">MRI</span>
                         )}
                         {record.gene_ocs && (
-                          <span className="px-1.5 py-0.5 text-xs rounded bg-purple-100 text-purple-700">Gene</span>
+                          <span className="modality-badge gene">Gene</span>
                         )}
                         {record.protein_ocs && (
-                          <span className="px-1.5 py-0.5 text-xs rounded bg-amber-100 text-amber-700">Protein</span>
+                          <span className="modality-badge protein">Protein</span>
                         )}
                       </div>
                     </td>
-                    <td className="px-4 py-3">
-                      {getStatusBadge(record.status)}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-600">
+                    <td>{getStatusBadge(record.status)}</td>
+                    <td>
                       {record.status === 'COMPLETED' && record.result_data?.risk_group ? (
                         <span>
                           Risk: {record.result_data.risk_group.predicted_class}
                         </span>
                       ) : record.status === 'FAILED' ? (
-                        <span className="text-red-600 truncate max-w-[150px] block">
+                        <span className="text-error truncate">
                           {record.error_message || 'Error'}
                         </span>
                       ) : (
                         '-'
                       )}
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-500">
+                    <td>
                       {new Date(record.created_at).toLocaleString('ko-KR')}
                     </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center space-x-2">
+                    <td>
+                      <div className="action-buttons">
                         {record.status === 'COMPLETED' && (
-                          <button
-                            onClick={() => handleSelectHistory(record)}
-                            className="text-sm text-amber-600 hover:text-amber-800"
-                          >
-                            결과 보기
-                          </button>
+                          <>
+                            <button
+                              onClick={() => handleSelectHistory(record)}
+                              className="btn-action btn-view mm"
+                            >
+                              결과 보기
+                            </button>
+                            <button
+                              onClick={() => handleViewDetail(record)}
+                              className="btn-action btn-detail"
+                            >
+                              상세
+                            </button>
+                          </>
                         )}
                         <button
                           onClick={() => handleDeleteInference(record)}
-                          className="text-sm text-red-600 hover:text-red-800"
+                          className="btn-action btn-delete"
                         >
                           삭제
                         </button>
@@ -627,7 +657,7 @@ export default function MMInferencePage() {
               </tbody>
             </table>
           ) : (
-            <div className="text-center py-8 text-gray-500">
+            <div className="empty-state">
               추론 이력이 없습니다.
             </div>
           )}

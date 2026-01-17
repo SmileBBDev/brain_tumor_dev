@@ -643,6 +643,13 @@ def load_menu_permission_seed():
         ('AI_REQUEST_DETAIL', 'AI 요청 상세', 'AI 추론 요청 상세'),
         ('AI_PROCESS_STATUS', 'AI 처리 현황', 'AI 처리 현황 대시보드'),
         ('AI_MODELS', 'AI 모델 정보', 'AI 모델 목록 및 정보'),
+        # AI 신규 분석 페이지 (M1, MG, MM)
+        ('AI_M1_INFERENCE', 'M1 MRI 분석', 'M1 MRI 영상 기반 AI 분석'),
+        ('AI_M1_DETAIL', 'M1 결과 상세', 'M1 분석 결과 상세 페이지'),
+        ('AI_MG_INFERENCE', 'MG Gene 분석', 'MG 유전자 발현 기반 AI 분석'),
+        ('AI_MG_DETAIL', 'MG 결과 상세', 'MG 분석 결과 상세 페이지'),
+        ('AI_MM_INFERENCE', 'MM 멀티모달', 'MM 멀티모달 통합 AI 분석'),
+        ('AI_MM_DETAIL', 'MM 결과 상세', 'MM 분석 결과 상세 페이지'),
         ('ADMIN', '관리자', '관리자 메뉴'),
         ('ADMIN_USER', '사용자 관리', '사용자 관리 화면'),
         ('ADMIN_USER_DETAIL', '사용자 관리 상세', '사용자 상세 화면'),
@@ -785,6 +792,13 @@ def load_menu_permission_seed():
     create_menu(44, code='AI_REQUEST_DETAIL', path='/ai/requests/:id', breadcrumb_only=True, order=2, is_active=True, parent=menu_ai_request)
     create_menu(42, code='AI_PROCESS_STATUS', path='/ai/process-status', icon='chart-bar', order=3, is_active=True, parent=menu_ai)
     create_menu(43, code='AI_MODELS', path='/ai/models', icon='cpu', order=4, is_active=True, parent=menu_ai)
+    # AI 신규 분석 페이지 (M1, MG, MM)
+    menu_ai_m1, _ = create_menu(53, code='AI_M1_INFERENCE', path='/ai/m1', icon='brain', order=5, is_active=True, parent=menu_ai)
+    create_menu(54, code='AI_M1_DETAIL', path='/ai/m1/:jobId', breadcrumb_only=True, order=1, is_active=True, parent=menu_ai_m1)
+    menu_ai_mg, _ = create_menu(55, code='AI_MG_INFERENCE', path='/ai/mg', icon='dna', order=6, is_active=True, parent=menu_ai)
+    create_menu(56, code='AI_MG_DETAIL', path='/ai/mg/:jobId', breadcrumb_only=True, order=1, is_active=True, parent=menu_ai_mg)
+    menu_ai_mm, _ = create_menu(57, code='AI_MM_INFERENCE', path='/ai/mm', icon='layers', order=7, is_active=True, parent=menu_ai)
+    create_menu(58, code='AI_MM_DETAIL', path='/ai/mm/:jobId', breadcrumb_only=True, order=1, is_active=True, parent=menu_ai_mm)
 
     # 진료 보고서 메뉴
     menu_report, _ = create_menu(38, code='REPORT', path=None, icon='file-text', group_label='보고서', order=8, is_active=True)
@@ -884,6 +898,16 @@ def load_menu_permission_seed():
         (44, 'DEFAULT', 'AI 요청 상세'),
         (42, 'DEFAULT', 'AI 처리 현황'),
         (43, 'DEFAULT', 'AI 모델 정보'),
+        # AI 신규 분석 페이지 라벨 (M1, MG, MM)
+        (53, 'DEFAULT', 'M1 MRI 분석'),
+        (53, 'DOCTOR', 'MRI 분석'),
+        (54, 'DEFAULT', 'M1 결과 상세'),
+        (55, 'DEFAULT', 'MG Gene 분석'),
+        (55, 'DOCTOR', '유전자 분석'),
+        (56, 'DEFAULT', 'MG 결과 상세'),
+        (57, 'DEFAULT', 'MM 멀티모달'),
+        (57, 'DOCTOR', '통합 분석'),
+        (58, 'DEFAULT', 'MM 결과 상세'),
         # LAB
         (5, 'DEFAULT', '병리'),
         (17, 'DEFAULT', '병리 조회'),  # 병리 결과 조회 → 병리 조회
@@ -949,10 +973,11 @@ def load_menu_permission_seed():
             'IMAGING', 'IMAGE_VIEWER', 'RIS_WORKLIST', 'RIS_DASHBOARD', 'RIS_RESULT_UPLOAD',
             'LAB', 'LAB_RESULT_VIEW', 'LAB_RESULT_UPLOAD', 'LIS_PROCESS_STATUS',
             'AI', 'AI_REQUEST_LIST', 'AI_REQUEST_CREATE', 'AI_REQUEST_DETAIL', 'AI_PROCESS_STATUS', 'AI_MODELS',
+            'AI_M1_INFERENCE', 'AI_M1_DETAIL', 'AI_MG_INFERENCE', 'AI_MG_DETAIL', 'AI_MM_INFERENCE', 'AI_MM_DETAIL',
             'REPORT', 'REPORT_DASHBOARD', 'REPORT_LIST', 'REPORT_CREATE', 'REPORT_DETAIL',
             'ADMIN', 'ADMIN_USER', 'ADMIN_USER_DETAIL', 'ADMIN_ROLE', 'ADMIN_MENU_PERMISSION', 'ADMIN_AUDIT_LOG', 'ADMIN_SYSTEM_MONITOR'
         ],
-        'DOCTOR': ['DASHBOARD', 'PATIENT_LIST', 'PATIENT_DETAIL', 'PATIENT_CARE', 'ENCOUNTER_LIST', 'OCS_STATUS', 'OCS_CREATE', 'OCS_PROCESS_STATUS', 'IMAGE_VIEWER', 'RIS_WORKLIST', 'LAB_RESULT_VIEW', 'AI', 'AI_REQUEST_LIST', 'AI_REQUEST_CREATE', 'AI_REQUEST_DETAIL', 'REPORT', 'REPORT_DASHBOARD', 'REPORT_LIST', 'REPORT_CREATE', 'REPORT_DETAIL'],
+        'DOCTOR': ['DASHBOARD', 'PATIENT_LIST', 'PATIENT_DETAIL', 'PATIENT_CARE', 'ENCOUNTER_LIST', 'OCS_STATUS', 'OCS_CREATE', 'OCS_PROCESS_STATUS', 'IMAGE_VIEWER', 'RIS_WORKLIST', 'LAB_RESULT_VIEW', 'AI', 'AI_REQUEST_LIST', 'AI_REQUEST_CREATE', 'AI_REQUEST_DETAIL', 'AI_M1_INFERENCE', 'AI_M1_DETAIL', 'AI_MG_INFERENCE', 'AI_MG_DETAIL', 'AI_MM_INFERENCE', 'AI_MM_DETAIL', 'REPORT', 'REPORT_DASHBOARD', 'REPORT_LIST', 'REPORT_CREATE', 'REPORT_DETAIL'],
         'NURSE': ['DASHBOARD', 'PATIENT_LIST', 'PATIENT_DETAIL', 'ENCOUNTER_LIST', 'OCS_STATUS', 'OCS_PROCESS_STATUS', 'IMAGE_VIEWER', 'LAB_RESULT_VIEW', 'REPORT', 'REPORT_DASHBOARD'],  # 보고서 대시보드 추가
         'RIS': ['DASHBOARD', 'IMAGE_VIEWER', 'RIS_WORKLIST', 'OCS_RIS', 'OCS_RIS_DETAIL', 'RIS_DASHBOARD', 'RIS_RESULT_UPLOAD', 'AI', 'AI_REQUEST_LIST', 'REPORT', 'REPORT_DASHBOARD'],
         'LIS': ['DASHBOARD', 'LAB_RESULT_VIEW', 'LAB_RESULT_UPLOAD', 'OCS_LIS', 'OCS_LIS_DETAIL', 'LIS_PROCESS_STATUS', 'AI', 'AI_REQUEST_LIST', 'REPORT', 'REPORT_DASHBOARD'],

@@ -6,7 +6,6 @@
  */
 import { useState } from 'react';
 import { useAuth } from '../auth/AuthProvider';
-import AiResultPanel from './AiResultPanel';
 import './AISummaryPage.css';
 
 type AIViewType = 'requests' | 'process-status' | 'models';

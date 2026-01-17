@@ -1,0 +1,536 @@
+/* MM Inference Page Styles */
+
+.mm-inference-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* Page Header */
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.page-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-main, #1f2937);
+  margin: 0;
+}
+
+.page-subtitle {
+  font-size: 0.875rem;
+  color: var(--text-sub, #6b7280);
+  margin-top: 0.25rem;
+}
+
+.connection-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.status-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+}
+
+.status-dot.connected {
+  background-color: #22c55e;
+}
+
+.status-dot.disconnected {
+  background-color: #ef4444;
+}
+
+.status-text {
+  font-size: 0.875rem;
+  color: var(--text-sub, #6b7280);
+}
+
+/* Patient Selection Card */
+.patient-selection-card {
+  background: var(--bg-card, white);
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  padding: 1rem;
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.card-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--text-main, #1f2937);
+  margin: 0;
+}
+
+.research-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+}
+
+.research-toggle input {
+  width: 1rem;
+  height: 1rem;
+  accent-color: #d97706;
+}
+
+.toggle-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-main, #1f2937);
+}
+
+.toggle-hint {
+  font-size: 0.75rem;
+  color: var(--text-sub, #6b7280);
+}
+
+.patient-select {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid var(--border-color, #d1d5db);
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.patient-select:focus {
+  outline: none;
+  border-color: #d97706;
+  box-shadow: 0 0 0 2px rgba(217, 119, 6, 0.2);
+}
+
+.patient-select:disabled {
+  background: var(--bg-secondary, #f3f4f6);
+  cursor: not-allowed;
+}
+
+.research-notice {
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  background: #fffbeb;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  color: #d97706;
+}
+
+/* Modality Grid */
+.modality-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+}
+
+@media (max-width: 768px) {
+  .modality-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.modality-card {
+  background: var(--bg-card, white);
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  padding: 1rem;
+}
+
+.modality-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 500;
+  color: var(--text-main, #1f2937);
+  margin: 0 0 0.5rem 0;
+}
+
+.modality-icon {
+  font-size: 1.25rem;
+}
+
+.selected-indicator {
+  font-size: 0.75rem;
+  color: #16a34a;
+  margin-left: auto;
+}
+
+.modality-select {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid var(--border-color, #d1d5db);
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+}
+
+.modality-card.mri .modality-select:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+}
+
+.modality-card.gene .modality-select:focus {
+  border-color: #9333ea;
+  box-shadow: 0 0 0 2px rgba(147, 51, 234, 0.2);
+}
+
+.modality-card.protein .modality-select:focus {
+  border-color: #d97706;
+  box-shadow: 0 0 0 2px rgba(217, 119, 6, 0.2);
+}
+
+.modality-count {
+  font-size: 0.75rem;
+  color: var(--text-sub, #6b7280);
+  margin: 0.25rem 0 0 0;
+}
+
+/* Inference Action */
+.inference-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.modality-summary {
+  font-size: 0.875rem;
+  color: var(--text-sub, #6b7280);
+}
+
+.modality-summary .count {
+  font-weight: 700;
+}
+
+.modality-summary .recommendation {
+  color: #d97706;
+  margin-left: 0.5rem;
+}
+
+.btn-inference {
+  padding: 0.75rem 2rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  color: white;
+  background-color: var(--primary, #2563eb);
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-inference.mm {
+  background-color: #d97706;
+}
+
+.btn-inference.mm:hover:not(.disabled) {
+  background-color: #b45309;
+}
+
+.btn-inference.disabled {
+  background-color: var(--text-disabled, #9ca3af);
+  cursor: not-allowed;
+}
+
+/* Processing Container */
+.processing-container {
+  background-color: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+  text-align: center;
+}
+
+.processing-container.mm {
+  background-color: #fffbeb;
+  border-color: #fcd34d;
+}
+
+.processing-text {
+  color: #d97706;
+  margin-top: 0.75rem;
+}
+
+.processing-subtext {
+  font-size: 0.875rem;
+  color: #fbbf24;
+  margin-top: 0.25rem;
+}
+
+/* Loading */
+.loading-container {
+  text-align: center;
+  padding: 2rem;
+}
+
+.spinner {
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 2px solid var(--border-color, #e5e7eb);
+  border-top-color: var(--primary, #2563eb);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto;
+}
+
+.spinner.mm {
+  border-top-color: #d97706;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Job ID Display */
+.job-id-display {
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--text-sub, #6b7280);
+}
+
+.cached-badge {
+  margin-left: 0.5rem;
+  padding: 0.125rem 0.5rem;
+  background-color: #fef3c7;
+  color: #92400e;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+}
+
+/* Error Container */
+.error-container {
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 0.5rem;
+  padding: 1rem;
+}
+
+.error-title {
+  color: #991b1b;
+  font-weight: 500;
+  margin: 0 0 0.25rem 0;
+}
+
+.error-message {
+  color: #dc2626;
+  font-size: 0.875rem;
+  margin: 0;
+}
+
+/* Section */
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.section-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--text-main, #1f2937);
+  margin: 0;
+}
+
+.btn-link {
+  font-size: 0.875rem;
+  color: var(--primary, #2563eb);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+.btn-link:hover {
+  color: var(--primary-dark, #1d4ed8);
+}
+
+/* Empty State */
+.empty-state {
+  background: var(--bg-secondary, #f9fafb);
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+  text-align: center;
+  color: var(--text-sub, #6b7280);
+}
+
+/* History Table */
+.history-table-container {
+  background: var(--bg-card, white);
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.history-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.history-table thead {
+  background: var(--bg-secondary, #f9fafb);
+}
+
+.history-table th {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-sub, #6b7280);
+  text-transform: uppercase;
+}
+
+.history-table tbody tr {
+  border-top: 1px solid var(--border-color, #e5e7eb);
+}
+
+.history-table tbody tr:hover {
+  background: var(--bg-secondary, #f9fafb);
+}
+
+.history-table tbody tr.selected.mm {
+  background: #fffbeb;
+}
+
+.history-table td {
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  color: var(--text-main, #1f2937);
+}
+
+/* Modality Badges */
+.modality-badges {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.modality-badge {
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.25rem;
+  font-size: 0.625rem;
+  font-weight: 500;
+}
+
+.modality-badge.mri {
+  background-color: #dbeafe;
+  color: #1e40af;
+}
+
+.modality-badge.gene {
+  background-color: #f3e8ff;
+  color: #7e22ce;
+}
+
+.modality-badge.protein {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+/* Status Badge */
+.status-badge {
+  display: inline-block;
+  padding: 0.125rem 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.status-completed {
+  background-color: #dcfce7;
+  color: #166534;
+}
+
+.status-processing {
+  background-color: #dbeafe;
+  color: #1e40af;
+}
+
+.status-pending {
+  background-color: #f3f4f6;
+  color: #374151;
+}
+
+.status-failed {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+/* Text helpers */
+.text-error {
+  color: #dc2626;
+}
+
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 150px;
+  display: block;
+}
+
+/* Action Buttons */
+.action-buttons {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn-action {
+  font-size: 0.875rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+}
+
+.btn-view {
+  color: var(--primary, #2563eb);
+}
+
+.btn-view.mm {
+  color: #d97706;
+}
+
+.btn-view:hover {
+  color: var(--primary-dark, #1d4ed8);
+  background: var(--bg-secondary, #f3f4f6);
+}
+
+.btn-view.mm:hover {
+  color: #b45309;
+  background: #fffbeb;
+}
+
+.btn-detail {
+  color: #059669;
+}
+
+.btn-detail:hover {
+  color: #047857;
+  background: #ecfdf5;
+}
+
+.btn-delete {
+  color: #dc2626;
+}
+
+.btn-delete:hover {
+  color: #b91c1c;
+  background: #fef2f2;
+}

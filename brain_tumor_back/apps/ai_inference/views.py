@@ -218,6 +218,13 @@ class MGInferenceView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
+        # 2-1. RNA_SEQ job_type 검증
+        if ocs.job_type != 'RNA_SEQ':
+            return Response(
+                {'detail': 'MG 추론은 RNA_SEQ 타입 OCS에서만 가능합니다.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
         # 2-1. 권한 검증 (superuser, LIS 담당자 또는 처방 의사만 요청 가능)
         user = request.user
         is_superuser = user.is_superuser
@@ -1248,6 +1255,7 @@ class MMInferenceView(APIView):
         gene_ocs_id = request.data.get('gene_ocs_id')
         protein_ocs_id = request.data.get('protein_ocs_id')
         mode = request.data.get('mode', 'manual')
+        is_research = request.data.get('is_research', False)  # 연구용 모드
 
         # 1. 최소 하나의 모달리티 필수
         if not any([mri_ocs_id, gene_ocs_id, protein_ocs_id]):
@@ -1257,6 +1265,7 @@ class MMInferenceView(APIView):
             )
 
         # 2. 환자 확인 (첫 번째 유효한 OCS에서)
+        # is_research=True인 경우 환자 불일치 허용
         patient = None
         base_ocs = None
 
@@ -1268,10 +1277,13 @@ class MMInferenceView(APIView):
                         patient = ocs.patient
                         base_ocs = ocs
                     elif patient.id != ocs.patient_id:
-                        return Response(
-                            {'detail': '모든 OCS는 동일한 환자여야 합니다.'},
-                            status=status.HTTP_400_BAD_REQUEST
-                        )
+                        if not is_research:
+                            return Response(
+                                {'detail': '모든 OCS는 동일한 환자여야 합니다. (연구용 모드에서는 다른 환자 데이터 조합 가능)'},
+                                status=status.HTTP_400_BAD_REQUEST
+                            )
+                        else:
+                            logger.info(f'[MM] 연구용 모드: 다른 환자 OCS 조합 허용 ({patient.patient_number} != {ocs.patient.patient_number})')
                 except OCS.DoesNotExist:
                     return Response(
                         {'detail': f'OCS {ocs_id}를 찾을 수 없습니다.'},
@@ -1369,6 +1381,14 @@ class MMInferenceView(APIView):
         # 3.3 Protein Data (rppa.csv from CDSS_STORAGE/LIS/<ocs_id>/)
         if protein_ocs_id:
             protein_ocs = OCS.objects.get(id=protein_ocs_id)
+
+            # BIOMARKER job_type 검증
+            if protein_ocs.job_type != 'BIOMARKER':
+                return Response(
+                    {'detail': f'Protein OCS는 BIOMARKER 타입이어야 합니다. (현재: {protein_ocs.job_type})'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
             # rppa.csv 파일 읽기 (ocs_id 필드값 사용: ocs_0045 형식)
             rppa_path = self.STORAGE_LIS / protein_ocs.ocs_id / 'rppa.csv'
             if not rppa_path.exists():
@@ -1672,3 +1692,301 @@ class AIModelDetailView(APIView):
             {'detail': f'모델을 찾을 수 없습니다: {code}'},
             status=status.HTTP_404_NOT_FOUND
         )
+
+
+# ============================================================
+# M1 SEG Comparison View (M1_seg vs Orthanc SEG)
+# ============================================================
+
+class AIInferenceSegmentationCompareView(APIView):
+    """
+    M1 AI 예측 세그멘테이션과 Orthanc SEG(Ground Truth) 비교 분석
+
+    GET /api/ai/inferences/<job_id>/segmentation/compare/
+
+    Returns:
+        - prediction: M1 AI 예측 마스크 (base64)
+        - ground_truth: Orthanc SEG 마스크 (base64) - 없으면 null
+        - has_ground_truth: GT 존재 여부
+        - shape: 볼륨 크기
+        - prediction_volumes: 예측 볼륨 정보
+        - gt_volumes: GT 볼륨 정보 (있는 경우)
+        - comparison_metrics: 비교 메트릭 (Dice Score 등)
+    """
+    permission_classes = [IsAuthenticated]
+
+    STORAGE_BASE = CDSS_STORAGE_AI
+
+    def _encode_array(self, arr):
+        """numpy array를 base64로 인코딩"""
+        import base64
+        import numpy as np
+        arr_f32 = arr.astype(np.float32)
+        return base64.b64encode(arr_f32.tobytes()).decode('ascii')
+
+    def _calculate_dice_score(self, pred, gt, label):
+        """
+        특정 라벨에 대한 Dice Score 계산
+        Dice = 2 * |P ∩ G| / (|P| + |G|)
+        """
+        import numpy as np
+        pred_mask = (pred == label)
+        gt_mask = (gt == label)
+
+        intersection = np.sum(pred_mask & gt_mask)
+        pred_sum = np.sum(pred_mask)
+        gt_sum = np.sum(gt_mask)
+
+        if pred_sum + gt_sum == 0:
+            return 1.0  # 둘 다 없으면 완벽한 일치
+        return 2.0 * intersection / (pred_sum + gt_sum)
+
+    def _calculate_volume(self, mask, label, voxel_volume_mm3=1.0):
+        """특정 라벨의 볼륨 계산 (mm³)"""
+        import numpy as np
+        return float(np.sum(mask == label)) * voxel_volume_mm3
+
+    def _load_orthanc_seg(self, ocs):
+        """
+        OCS의 worker_result에서 Orthanc SEG 시리즈를 찾아 로드
+
+        Returns:
+            - numpy array (3D) 또는 None
+        """
+        import numpy as np
+        import requests
+
+        # settings.py의 ORTHANC_BASE_URL 사용 (Docker Orthanc 연결)
+        ORTHANC_URL = django_settings.ORTHANC_BASE_URL.rstrip("/")
+
+        worker_result = ocs.worker_result or {}
+        orthanc_info = worker_result.get('orthanc', {})
+        orthanc_study_id = orthanc_info.get('orthanc_study_id')
+        series_list = orthanc_info.get('series', [])
+
+        if not orthanc_study_id:
+            logger.info(f"OCS {ocs.id}: Orthanc study ID가 없습니다.")
+            return None
+
+        # SEG 시리즈 찾기
+        seg_series = None
+        for series in series_list:
+            series_type = series.get('series_type', '')
+            if series_type == 'SEG':
+                seg_series = series
+                break
+
+        if not seg_series:
+            logger.info(f"OCS {ocs.id}: SEG 시리즈가 없습니다.")
+            return None
+
+        orthanc_series_id = seg_series.get('orthanc_series_id')
+        if not orthanc_series_id:
+            logger.warning(f"OCS {ocs.id}: SEG 시리즈의 Orthanc ID가 없습니다.")
+            return None
+
+        try:
+            # Orthanc에서 SEG 시리즈의 모든 인스턴스 가져오기
+            series_info = requests.get(
+                f"{ORTHANC_URL}/series/{orthanc_series_id}",
+                timeout=30
+            ).json()
+
+            instances = series_info.get('Instances', [])
+            if not instances:
+                logger.warning(f"SEG 시리즈 {orthanc_series_id}: 인스턴스가 없습니다.")
+                return None
+
+            logger.info(f"SEG 시리즈 로드: {orthanc_series_id}, 인스턴스 수: {len(instances)}")
+
+            # 각 인스턴스에서 픽셀 데이터 추출하여 3D 볼륨 구성
+            # SEG DICOM은 특수한 형식이므로 pydicom으로 처리
+            try:
+                import pydicom
+                from io import BytesIO
+
+                slices = []
+                for inst_id in instances:
+                    # DICOM 파일 다운로드
+                    dicom_resp = requests.get(
+                        f"{ORTHANC_URL}/instances/{inst_id}/file",
+                        timeout=30
+                    )
+                    dicom_resp.raise_for_status()
+
+                    # pydicom으로 파싱
+                    ds = pydicom.dcmread(BytesIO(dicom_resp.content))
+
+                    # 픽셀 데이터 추출
+                    if hasattr(ds, 'pixel_array'):
+                        pixel_data = ds.pixel_array
+                        slices.append(pixel_data)
+
+                if not slices:
+                    logger.warning(f"SEG 시리즈 {orthanc_series_id}: 픽셀 데이터가 없습니다.")
+                    return None
+
+                # 3D 볼륨으로 스택
+                seg_volume = np.stack(slices, axis=-1)
+                logger.info(f"SEG 볼륨 로드 완료: shape={seg_volume.shape}")
+
+                return seg_volume
+
+            except ImportError:
+                logger.error("pydicom이 설치되지 않았습니다.")
+                return None
+
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Orthanc SEG 로드 실패: {e}")
+            return None
+
+    def get(self, request, job_id):
+        import numpy as np
+        import time
+
+        start_time = time.time()
+
+        # 1. AI 추론 결과 조회
+        try:
+            inference = AIInference.objects.select_related('mri_ocs').get(job_id=job_id)
+        except AIInference.DoesNotExist:
+            return Response(
+                {'detail': '추론 결과를 찾을 수 없습니다.'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        # M1 추론만 지원
+        if inference.model_type != AIInference.ModelType.M1:
+            return Response(
+                {'detail': 'M1 추론에서만 SEG 비교가 가능합니다.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # 2. M1 예측 세그멘테이션 로드
+        result_dir = self.STORAGE_BASE / job_id
+        seg_file = result_dir / "m1_segmentation.npz"
+
+        if not seg_file.exists():
+            return Response(
+                {'detail': '세그멘테이션 파일을 찾을 수 없습니다.'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        try:
+            seg_data = np.load(seg_file, allow_pickle=True)
+
+            # 예측 마스크
+            if 'mask' in seg_data:
+                pred_mask = seg_data['mask']
+            elif 'segmentation_mask' in seg_data:
+                pred_mask = seg_data['segmentation_mask']
+            else:
+                raise KeyError("세그멘테이션 데이터를 찾을 수 없습니다.")
+
+            # 예측 볼륨 정보
+            pred_volumes = {}
+            for key in ['wt_volume', 'tc_volume', 'et_volume', 'ncr_volume', 'ed_volume']:
+                if key in seg_data:
+                    vol_val = seg_data[key]
+                    pred_volumes[key] = float(vol_val.item()) if hasattr(vol_val, 'item') else float(vol_val)
+
+            # 3. Orthanc SEG (Ground Truth) 로드 시도
+            gt_mask = None
+            gt_volumes = {}
+            comparison_metrics = {}
+            orthanc_seg_status = 'not_found'
+
+            if inference.mri_ocs:
+                gt_mask = self._load_orthanc_seg(inference.mri_ocs)
+
+                if gt_mask is not None:
+                    orthanc_seg_status = 'loaded'
+
+                    # GT 볼륨 계산
+                    # BraTS 라벨: 0=배경, 1=NCR, 2=ED, 4=ET (3은 사용안함)
+                    # WT = 1 + 2 + 4, TC = 1 + 4, ET = 4
+                    gt_volumes = {
+                        'et_volume': self._calculate_volume(gt_mask, 4),
+                        'ncr_volume': self._calculate_volume(gt_mask, 1),
+                        'ed_volume': self._calculate_volume(gt_mask, 2),
+                    }
+                    gt_volumes['tc_volume'] = gt_volumes['et_volume'] + gt_volumes['ncr_volume']
+                    gt_volumes['wt_volume'] = gt_volumes['tc_volume'] + gt_volumes['ed_volume']
+
+                    # 비교 메트릭 계산
+                    try:
+                        # 예측 마스크를 GT 크기에 맞게 리샘플링 (필요시)
+                        if pred_mask.shape != gt_mask.shape:
+                            from scipy.ndimage import zoom
+                            zoom_factors = [g / p for g, p in zip(gt_mask.shape, pred_mask.shape)]
+                            pred_resampled = zoom(pred_mask, zoom_factors, order=0)  # nearest neighbor
+                            logger.info(f"예측 마스크 리샘플링: {pred_mask.shape} -> {pred_resampled.shape}")
+                        else:
+                            pred_resampled = pred_mask
+
+                        # Dice Score 계산
+                        comparison_metrics = {
+                            'dice_wt': self._calculate_dice_score(
+                                np.isin(pred_resampled, [1, 2, 4]).astype(int),
+                                np.isin(gt_mask, [1, 2, 4]).astype(int),
+                                1
+                            ),
+                            'dice_tc': self._calculate_dice_score(
+                                np.isin(pred_resampled, [1, 4]).astype(int),
+                                np.isin(gt_mask, [1, 4]).astype(int),
+                                1
+                            ),
+                            'dice_et': self._calculate_dice_score(pred_resampled, gt_mask, 4),
+                        }
+                        comparison_metrics['dice_mean'] = np.mean([
+                            comparison_metrics['dice_wt'],
+                            comparison_metrics['dice_tc'],
+                            comparison_metrics['dice_et']
+                        ])
+
+                    except Exception as e:
+                        logger.error(f"비교 메트릭 계산 실패: {e}")
+                        comparison_metrics = {'error': str(e)}
+            else:
+                orthanc_seg_status = 'no_ocs'
+
+            # 4. 응답 구성
+            response_data = {
+                'job_id': job_id,
+                'model_type': inference.model_type,
+                'shape': list(pred_mask.shape),
+                'encoding': 'base64',
+                'dtype': 'float32',
+
+                # 예측 데이터
+                'prediction': self._encode_array(pred_mask),
+                'prediction_volumes': pred_volumes,
+
+                # Ground Truth 데이터
+                'has_ground_truth': gt_mask is not None,
+                'orthanc_seg_status': orthanc_seg_status,
+            }
+
+            if gt_mask is not None:
+                response_data['ground_truth'] = self._encode_array(gt_mask)
+                response_data['ground_truth_shape'] = list(gt_mask.shape)
+                response_data['gt_volumes'] = gt_volumes
+                response_data['comparison_metrics'] = comparison_metrics
+            else:
+                response_data['ground_truth'] = None
+                response_data['gt_volumes'] = None
+                response_data['comparison_metrics'] = None
+
+            elapsed = time.time() - start_time
+            logger.info(f'SEG 비교 데이터 준비 완료: {elapsed:.2f}s, has_gt={response_data["has_ground_truth"]}')
+
+            return Response(response_data)
+
+        except Exception as e:
+            logger.error(f'SEG 비교 데이터 로드 실패: {str(e)}')
+            import traceback
+            traceback.print_exc()
+            return Response(
+                {'detail': f'데이터 로드에 실패했습니다: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )

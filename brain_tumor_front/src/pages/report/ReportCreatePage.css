@@ -1,0 +1,353 @@
+/**
+ * 보고서 작성 페이지 스타일
+ */
+
+.report-create-page {
+  padding: 24px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+/* 헤더 */
+.report-create-page .page-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border, #e5e7eb);
+}
+
+.report-create-page .btn-back {
+  padding: 8px 12px;
+  background: none;
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 6px;
+  color: var(--text-secondary, #6b7280);
+  cursor: pointer;
+}
+
+.report-create-page .btn-back:hover {
+  background: var(--bg-secondary, #f9fafb);
+}
+
+.report-create-page .header-content {
+  flex: 1;
+}
+
+.report-create-page .header-content h2 {
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--text-primary, #1f2937);
+  margin: 0;
+}
+
+.report-create-page .header-content .subtitle {
+  font-size: 14px;
+  color: var(--text-secondary, #6b7280);
+}
+
+.report-create-page .header-actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* 폼 컨테이너 */
+.report-create-page .form-container {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* 폼 섹션 */
+.report-create-page .form-section {
+  background: white;
+  border-radius: 8px;
+  padding: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.report-create-page .form-section h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary, #1f2937);
+  margin: 0 0 20px 0;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border, #e5e7eb);
+}
+
+/* 폼 그룹 */
+.report-create-page .form-group {
+  margin-bottom: 20px;
+}
+
+.report-create-page .form-group:last-child {
+  margin-bottom: 0;
+}
+
+.report-create-page .form-group label {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary, #1f2937);
+  margin-bottom: 8px;
+}
+
+.report-create-page .form-group label.required::after {
+  content: ' *';
+  color: var(--error, #dc2626);
+}
+
+.report-create-page .form-group input[type="text"],
+.report-create-page .form-group input[type="date"],
+.report-create-page .form-group select,
+.report-create-page .form-group textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 6px;
+  font-size: 14px;
+  color: var(--text-primary, #1f2937);
+  transition: border-color 0.2s;
+}
+
+.report-create-page .form-group input:focus,
+.report-create-page .form-group select:focus,
+.report-create-page .form-group textarea:focus {
+  outline: none;
+  border-color: var(--primary, #3b82f6);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.report-create-page .form-group textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+/* 환자 검색 */
+.report-create-page .patient-search {
+  position: relative;
+}
+
+.report-create-page .patient-search .searching {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 12px;
+  color: var(--text-secondary, #6b7280);
+}
+
+.report-create-page .patient-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  max-height: 200px;
+  overflow-y: auto;
+  background: white;
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 100;
+  list-style: none;
+  margin: 4px 0 0 0;
+  padding: 0;
+}
+
+.report-create-page .patient-dropdown li {
+  padding: 10px 12px;
+  cursor: pointer;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  border-bottom: 1px solid var(--border, #e5e7eb);
+}
+
+.report-create-page .patient-dropdown li:last-child {
+  border-bottom: none;
+}
+
+.report-create-page .patient-dropdown li:hover {
+  background: var(--bg-hover, #f3f4f6);
+}
+
+.report-create-page .patient-dropdown .name {
+  font-weight: 500;
+}
+
+.report-create-page .patient-dropdown .number,
+.report-create-page .patient-dropdown .birth {
+  font-size: 12px;
+  color: var(--text-secondary, #6b7280);
+}
+
+/* 선택된 환자 */
+.report-create-page .selected-patient {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: var(--bg-secondary, #f9fafb);
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 6px;
+}
+
+.report-create-page .selected-patient .patient-info {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.report-create-page .selected-patient .patient-name {
+  font-weight: 500;
+}
+
+.report-create-page .selected-patient .patient-number,
+.report-create-page .selected-patient .patient-birth {
+  font-size: 13px;
+  color: var(--text-secondary, #6b7280);
+}
+
+.report-create-page .btn-clear {
+  padding: 6px 12px;
+  font-size: 13px;
+  background: white;
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 4px;
+  cursor: pointer;
+  color: var(--text-secondary, #6b7280);
+}
+
+.report-create-page .btn-clear:hover {
+  background: var(--bg-hover, #f3f4f6);
+}
+
+/* 부 진단명 */
+.report-create-page .secondary-diagnoses .add-secondary {
+  display: flex;
+  gap: 8px;
+}
+
+.report-create-page .secondary-diagnoses .add-secondary input {
+  flex: 1;
+}
+
+.report-create-page .btn-add {
+  padding: 10px 16px;
+  white-space: nowrap;
+}
+
+.report-create-page .secondary-list {
+  list-style: none;
+  padding: 0;
+  margin: 12px 0 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.report-create-page .secondary-list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: var(--bg-secondary, #f9fafb);
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 9999px;
+  font-size: 13px;
+}
+
+.report-create-page .btn-remove {
+  background: none;
+  border: none;
+  font-size: 16px;
+  color: var(--text-secondary, #6b7280);
+  cursor: pointer;
+  padding: 0 2px;
+  line-height: 1;
+}
+
+.report-create-page .btn-remove:hover {
+  color: var(--error, #dc2626);
+}
+
+/* 버튼 */
+.report-create-page .btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.report-create-page .btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.report-create-page .btn-primary {
+  background: var(--primary, #3b82f6);
+  color: white;
+}
+
+.report-create-page .btn-primary:hover:not(:disabled) {
+  background: var(--primary-dark, #2563eb);
+}
+
+.report-create-page .btn-secondary {
+  background: white;
+  color: var(--text-secondary, #6b7280);
+  border: 1px solid var(--border, #e5e7eb);
+}
+
+.report-create-page .btn-secondary:hover:not(:disabled) {
+  background: var(--bg-secondary, #f9fafb);
+}
+
+/* 하단 액션 */
+.report-create-page .form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border, #e5e7eb);
+}
+
+/* 반응형 */
+@media (max-width: 768px) {
+  .report-create-page {
+    padding: 16px;
+  }
+
+  .report-create-page .page-header {
+    flex-wrap: wrap;
+  }
+
+  .report-create-page .header-content {
+    order: 3;
+    width: 100%;
+    margin-top: 8px;
+  }
+
+  .report-create-page .header-actions {
+    order: 2;
+    margin-left: auto;
+  }
+
+  .report-create-page .form-section {
+    padding: 16px;
+  }
+
+  .report-create-page .selected-patient {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .report-create-page .selected-patient .patient-info {
+    flex-wrap: wrap;
+  }
+}

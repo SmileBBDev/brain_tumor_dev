@@ -43,6 +43,13 @@ const AIRequestCreatePage = lazy(() => import('@/pages/ai-inference/AIRequestCre
 const AIRequestDetailPage = lazy(() => import('@/pages/ai-inference/AIRequestDetailPage'));
 const AIProcessStatusPage = lazy(() => import('@/pages/ai-inference/AIProcessStatusPage'));
 const AIModelsPage = lazy(() => import('@/pages/ai-inference/AIModelsPage'));
+// AI 신규 분석 페이지 (M1, MG, MM)
+const M1InferencePage = lazy(() => import('@/pages/ai-inference/M1InferencePage'));
+const M1DetailPage = lazy(() => import('@/pages/ai-inference/M1DetailPage'));
+const MGInferencePage = lazy(() => import('@/pages/ai-inference/MGInferencePage'));
+const MGDetailPage = lazy(() => import('@/pages/ai-inference/MGDetailPage'));
+const MMInferencePage = lazy(() => import('@/pages/ai-inference/MMInferencePage'));
+const MMDetailPage = lazy(() => import('@/pages/ai-inference/MMDetailPage'));
 // Patient Portal (환자 전용 - MY_CARE)
 const MySummaryPage = lazy(() => import('@/pages/patient-portal/MySummaryPage'));
 const MyVisitsPage = lazy(() => import('@/pages/patient-portal/MyVisitsPage'));
@@ -50,8 +57,11 @@ const MyImagingPage = lazy(() => import('@/pages/patient-portal/MyImagingPage'))
 const MyLabPage = lazy(() => import('@/pages/patient-portal/MyLabPage'));
 const AboutHospitalPage = lazy(() => import('@/pages/patient-portal/AboutHospitalPage'));
 
-// Report (보고서 대시보드)
+// Report (보고서)
 const ReportDashboardPage = lazy(() => import('@/pages/report/ReportDashboardPage'));
+const ReportListPage = lazy(() => import('@/pages/report/ReportListPage'));
+const ReportCreatePage = lazy(() => import('@/pages/report/ReportCreatePage'));
+const ReportDetailPage = lazy(() => import('@/pages/report/ReportDetailPage'));
 
 
 /**
@@ -63,7 +73,8 @@ const ReportDashboardPage = lazy(() => import('@/pages/report/ReportDashboardPag
  * ├── OCS: OCS_STATUS, OCS_CREATE, OCS_MANAGE
  * ├── IMAGING: IMAGE_VIEWER, OCS_RIS, OCS_RIS_DETAIL, RIS_DASHBOARD, RIS_RESULT_UPLOAD
  * ├── LAB: LAB_RESULT_VIEW, LAB_RESULT_UPLOAD, OCS_LIS, OCS_LIS_DETAIL, LIS_PROCESS_STATUS
- * ├── AI: AI_REQUEST_LIST, AI_REQUEST_CREATE, AI_REQUEST_DETAIL, AI_PROCESS_STATUS, AI_MODELS
+ * ├── AI: AI_REQUEST_LIST, AI_REQUEST_CREATE, AI_REQUEST_DETAIL, AI_PROCESS_STATUS, AI_MODELS,
+ * │       AI_M1_INFERENCE, AI_M1_DETAIL, AI_MG_INFERENCE, AI_MG_DETAIL, AI_MM_INFERENCE, AI_MM_DETAIL
  * ├── REPORT: REPORT_DASHBOARD, REPORT_LIST, REPORT_CREATE, REPORT_DETAIL
  * ├── ADMIN: ADMIN_USER, ADMIN_USER_DETAIL, ADMIN_ROLE, ADMIN_MENU_PERMISSION, ADMIN_AUDIT_LOG, ADMIN_SYSTEM_MONITOR
  * └── MY_CARE (환자 전용): MY_SUMMARY, MY_VISITS, MY_IMAGING, MY_LAB
@@ -108,6 +119,13 @@ export const routeMap: Record<string, ComponentType> = {
   AI_REQUEST_DETAIL: AIRequestDetailPage,
   AI_PROCESS_STATUS: AIProcessStatusPage,
   AI_MODELS: AIModelsPage,
+  // AI 신규 분석 페이지 (M1, MG, MM)
+  AI_M1_INFERENCE: M1InferencePage,
+  AI_M1_DETAIL: M1DetailPage,
+  AI_MG_INFERENCE: MGInferencePage,
+  AI_MG_DETAIL: MGDetailPage,
+  AI_MM_INFERENCE: MMInferencePage,
+  AI_MM_DETAIL: MMDetailPage,
 
   // === ADMIN 그룹 ===
   ADMIN_USER: UserList,
@@ -126,4 +144,7 @@ export const routeMap: Record<string, ComponentType> = {
 
   // === REPORT 그룹 ===
   REPORT_DASHBOARD: ReportDashboardPage,
+  REPORT_LIST: ReportListPage,
+  REPORT_CREATE: ReportCreatePage,
+  REPORT_DETAIL: ReportDetailPage,
 };

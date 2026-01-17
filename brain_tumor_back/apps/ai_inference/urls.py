@@ -12,6 +12,7 @@ from .views import (
     AIInferenceFileDownloadView,
     AIInferenceFilesListView,
     AIInferenceSegmentationView,
+    AIInferenceSegmentationCompareView,
     MGGeneExpressionView,
     AIModelsListView,
     AIModelDetailView,
@@ -50,4 +51,5 @@ urlpatterns = [
 
     # Segmentation data
     path('inferences/<str:job_id>/segmentation/', AIInferenceSegmentationView.as_view(), name='inference-segmentation'),
+    path('inferences/<str:job_id>/segmentation/compare/', AIInferenceSegmentationCompareView.as_view(), name='inference-segmentation-compare'),
 ]
