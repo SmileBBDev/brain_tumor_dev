@@ -50,6 +50,7 @@ type TabType = 'm1' | 'mg' | 'mm'
 // ============================================================================
 export default function AIAnalysisBlock() {
   const [activeTab, setActiveTab] = useState<TabType>('m1')
+  const [isResearch, setIsResearch] = useState<boolean>(false)
 
   return (
     <div className="ai-block">
@@ -59,33 +60,51 @@ export default function AIAnalysisBlock() {
           <h3 className="ai-block-title">AI 뇌종양 분석</h3>
           <span className="ai-block-subtitle">Brain Tumor CDSS</span>
         </div>
-        <div className="ai-block-tabs">
-          <button
-            className={`ai-block-tab ${activeTab === 'm1' ? 'active' : ''}`}
-            onClick={() => setActiveTab('m1')}
-          >
-            🧠 M1 MRI
-          </button>
-          <button
-            className={`ai-block-tab ${activeTab === 'mg' ? 'active' : ''}`}
-            onClick={() => setActiveTab('mg')}
-          >
-            🧬 MG Gene
-          </button>
-          <button
-            className={`ai-block-tab ${activeTab === 'mm' ? 'active' : ''}`}
-            onClick={() => setActiveTab('mm')}
-          >
-            🔬 MM 멀티모달
-          </button>
+        <div className="ai-block-header-right">
+          {/* 연구용 모드 토글 */}
+          <label className="ai-research-toggle">
+            <input
+              type="checkbox"
+              checked={isResearch}
+              onChange={(e) => setIsResearch(e.target.checked)}
+            />
+            <span className="toggle-label">연구용</span>
+          </label>
+          <div className="ai-block-tabs">
+            <button
+              className={`ai-block-tab ${activeTab === 'm1' ? 'active' : ''}`}
+              onClick={() => setActiveTab('m1')}
+            >
+              🧠 M1 MRI
+            </button>
+            <button
+              className={`ai-block-tab ${activeTab === 'mg' ? 'active' : ''}`}
+              onClick={() => setActiveTab('mg')}
+            >
+              🧬 MG Gene
+            </button>
+            <button
+              className={`ai-block-tab ${activeTab === 'mm' ? 'active' : ''}`}
+              onClick={() => setActiveTab('mm')}
+            >
+              🔬 MM 멀티모달
+            </button>
+          </div>
         </div>
       </div>
 
+      {/* 연구용 모드 안내 */}
+      {isResearch && (
+        <div className="ai-research-notice">
+          연구용 모드: 전체 OCS 목록을 조회합니다. 서로 다른 환자의 데이터를 조합할 수 있습니다.
+        </div>
+      )}
+
       {/* Content */}
       <div className="ai-block-content">
-        {activeTab === 'm1' && <M1Panel />}
-        {activeTab === 'mg' && <MGPanel />}
-        {activeTab === 'mm' && <MMPanel />}
+        {activeTab === 'm1' && <M1Panel isResearch={isResearch} />}
+        {activeTab === 'mg' && <MGPanel isResearch={isResearch} />}
+        {activeTab === 'mm' && <MMPanel isResearch={isResearch} />}
       </div>
     </div>
   )
@@ -804,7 +823,7 @@ function MMPanel() {
       const [mriRes, geneRes, proteinRes] = await Promise.all([
         api.get('/ocs/', { params: { job_role: 'RIS', job_type: 'MRI', ocs_status: 'CONFIRMED', page_size: 50 } }),
         api.get('/ocs/', { params: { job_role: 'LIS', job_type: 'RNA_SEQ', ocs_status: 'CONFIRMED', page_size: 50 } }),
-        api.get('/ocs/', { params: { job_role: 'LIS', job_type: 'PROTEIN', ocs_status: 'CONFIRMED', page_size: 50 } })
+        api.get('/ocs/', { params: { job_role: 'LIS', job_type: 'BIOMARKER', ocs_status: 'CONFIRMED', page_size: 50 } })
       ])
       const mapOcs = (data: any) => (data.results || data || []).map((item: any) => ({
         id: item.id,

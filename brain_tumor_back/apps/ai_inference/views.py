@@ -1582,11 +1582,12 @@ class MMAvailableOCSView(APIView):
                         'inference_job_id': inf.job_id,
                     })
 
-        # 3. BIOMARKER OCS (OCS CONFIRMED만)
+        # 3. BIOMARKER OCS (LIS + BIOMARKER, CONFIRMED 또는 RESULT_READY)
         protein_ocs_queryset = OCS.objects.filter(
             patient=patient,
+            job_role='LIS',
             job_type='BIOMARKER',
-            ocs_status=OCS.OcsStatus.CONFIRMED
+            ocs_status__in=[OCS.OcsStatus.CONFIRMED, OCS.OcsStatus.RESULT_READY]
         ).order_by('-created_at')
 
         protein_ocs_list = []

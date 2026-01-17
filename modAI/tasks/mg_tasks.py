@@ -6,11 +6,39 @@ Gene Expression 기반 추론 태스크
 - CSV 내용을 Django로부터 받아 처리
 - 결과 파일은 callback으로 Django에 전송
 """
+import os
 import json
 import base64
 import httpx
 import numpy as np
 from celery import shared_task
+
+
+def resolve_callback_url(callback_url: str) -> str:
+    """
+    Docker 환경에서 callback URL의 localhost를 실제 Django URL로 대체
+
+    Docker 컨테이너 내부에서는 localhost로 호스트 머신에 접근할 수 없으므로,
+    DJANGO_URL 환경변수를 사용하여 올바른 URL로 변환합니다.
+    """
+    django_url = os.getenv('DJANGO_URL', '')
+
+    if not django_url:
+        return callback_url
+
+    # localhost 또는 127.0.0.1을 DJANGO_URL로 대체
+    if 'localhost' in callback_url or '127.0.0.1' in callback_url:
+        from urllib.parse import urlparse
+        parsed = urlparse(callback_url)
+        path = parsed.path
+        if parsed.query:
+            path += f'?{parsed.query}'
+
+        resolved_url = django_url.rstrip('/') + path
+        print(f"[MG] Callback URL resolved: {callback_url} -> {resolved_url}")
+        return resolved_url
+
+    return callback_url
 
 
 @shared_task(bind=True, name='tasks.mg_tasks.run_mg_inference')
@@ -121,6 +149,10 @@ def run_mg_inference(
 
         # 6. Django 콜백 (파일 내용 포함)
         update_progress(90, "Sending callback...")
+
+        # Docker 환경에서 localhost를 host.docker.internal로 변환
+        resolved_callback_url = resolve_callback_url(callback_url)
+
         callback_data = {
             'job_id': job_id,
             'status': 'completed',
@@ -129,7 +161,7 @@ def run_mg_inference(
         }
 
         try:
-            response = httpx.post(callback_url, json=callback_data, timeout=60.0)
+            response = httpx.post(resolved_callback_url, json=callback_data, timeout=60.0)
             response.raise_for_status()
             print(f"  Callback sent successfully with {len(files_data)} files")
         except Exception as e:
@@ -159,12 +191,13 @@ def run_mg_inference(
 
         # 에러 콜백
         try:
+            resolved_callback_url = resolve_callback_url(callback_url)
             callback_data = {
                 'job_id': job_id,
                 'status': 'failed',
                 'error_message': error_msg,
             }
-            httpx.post(callback_url, json=callback_data, timeout=10.0)
+            httpx.post(resolved_callback_url, json=callback_data, timeout=10.0)
         except Exception:
             pass
 
