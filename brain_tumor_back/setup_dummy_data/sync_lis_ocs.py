@@ -449,12 +449,12 @@ def main():
             rna_confirmed_count += 1
             print(f"    -> CONFIRMED")
         else:
-            # 파일 없으면 ACCEPTED
+            # 파일 없으면 ORDERED (싱크 안됨)
             if not args.dry_run:
-                ocs.ocs_status = OCS.OcsStatus.ACCEPTED
-                ocs.accepted_at = timezone.now()
+                ocs.ocs_status = OCS.OcsStatus.ORDERED
+                ocs.accepted_at = None
                 ocs.save()
-            print(f"    -> ACCEPTED (파일 없음)")
+            print(f"    -> ORDERED (파일 없음)")
 
     print(f"\n  [RNA_SEQ 결과] 신규: {rna_confirmed_count}건, 스킵: {rna_skipped_count}건")
 
@@ -498,17 +498,17 @@ def main():
             biomarker_confirmed_count += 1
             print(f"    -> CONFIRMED")
         else:
-            # 파일 없으면 ACCEPTED
+            # 파일 없으면 ORDERED (싱크 안됨)
             if not args.dry_run:
-                ocs.ocs_status = OCS.OcsStatus.ACCEPTED
-                ocs.accepted_at = timezone.now()
+                ocs.ocs_status = OCS.OcsStatus.ORDERED
+                ocs.accepted_at = None
                 ocs.save()
-            print(f"    -> ACCEPTED (파일 없음)")
+            print(f"    -> ORDERED (파일 없음)")
 
     print(f"\n  [BIOMARKER 결과] 신규: {biomarker_confirmed_count}건, 스킵: {biomarker_skipped_count}건")
 
-    # 7. 나머지 OCS를 ACCEPTED로 변경
-    print("\n[7단계] 나머지 OCS LIS 상태 변경...")
+    # 7. 나머지 OCS를 ORDERED로 변경 (싱크 안됨)
+    print("\n[7단계] 나머지 OCS LIS 상태 변경 (ORDERED)...")
 
     # 처리된 OCS ID 목록 (위에서 이미 생성됨)
     remaining_ocs = OCS.objects.filter(
@@ -526,8 +526,8 @@ def main():
 
     if not args.dry_run and remaining_count > 0:
         updated = remaining_ocs.update(
-            ocs_status=OCS.OcsStatus.ACCEPTED,
-            accepted_at=timezone.now()
+            ocs_status=OCS.OcsStatus.ORDERED,
+            accepted_at=None
         )
         print(f"  업데이트 완료: {updated}건")
     elif args.dry_run:
@@ -542,15 +542,15 @@ def main():
     print(f"  - 환자 폴더: {len(PATIENT_FOLDERS)}개")
     print(f"  - RNA_SEQ CONFIRMED: {rna_confirmed_count}건")
     print(f"  - BIOMARKER CONFIRMED: {biomarker_confirmed_count}건")
-    print(f"  - 나머지 ACCEPTED: {remaining_count}건")
+    print(f"  - 나머지 ORDERED: {remaining_count}건")
 
     # 최종 OCS LIS 상태
     print(f"\n[OCS LIS 최종 상태]")
     for job_type in ['RNA_SEQ', 'BIOMARKER']:
         total = OCS.objects.filter(job_role='LIS', job_type=job_type, is_deleted=False).count()
         confirmed = OCS.objects.filter(job_role='LIS', job_type=job_type, ocs_status='CONFIRMED', is_deleted=False).count()
-        accepted = OCS.objects.filter(job_role='LIS', job_type=job_type, ocs_status='ACCEPTED', is_deleted=False).count()
-        print(f"  - {job_type}: {total}건 (CONFIRMED: {confirmed}, ACCEPTED: {accepted})")
+        ordered = OCS.objects.filter(job_role='LIS', job_type=job_type, ocs_status='ORDERED', is_deleted=False).count()
+        print(f"  - {job_type}: {total}건 (CONFIRMED: {confirmed}, ORDERED: {ordered})")
 
     # CDSS_STORAGE 상태
     if CDSS_STORAGE_PATH.exists():
