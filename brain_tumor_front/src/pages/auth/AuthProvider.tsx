@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, useRef } from 'react';
 import SessionExtendModal from './SessionExtendModal';
 import { connectPermissionSocket } from '@/socket/permissionSocket'
+import { closeGlobalSocket as closeOCSSocket } from '@/socket/ocsSocket';
 import type { MenuNode } from '@/types/menu';
 import { fetchMe, fetchMenu } from '../../services/auth.api';
 import type { User } from '@/types/user';
@@ -158,6 +159,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (wsRef.current) {
       wsRef.current.close();
     }
+
+    // OCS WebSocket 닫기 (사용자 변경 시 재연결을 위해)
+    closeOCSSocket();
 
   };
 

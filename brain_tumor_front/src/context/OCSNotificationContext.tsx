@@ -90,19 +90,25 @@ export function OCSNotificationProvider({ children }: Props) {
     eventCallbacksRef.current.delete(id);
   }, []);
 
-  // 전역 WebSocket 구독 (한 번만)
+  // 전역 WebSocket 구독 (사용자 변경 시 재연결)
   useEffect(() => {
     console.log('🔌 [OCSNotificationProvider] useEffect 실행:', { isAuthenticated, user: user?.login_id });
 
     if (!isAuthenticated || !user) {
       console.log('🔌 [OCSNotificationProvider] 인증 안됨, WebSocket 연결 안함');
+      // 로그아웃 시 기존 구독 해제
+      if (listenerIdRef.current) {
+        unsubscribeOCSSocket(listenerIdRef.current);
+        listenerIdRef.current = null;
+      }
       return;
     }
 
-    // 이미 구독 중이면 스킵
+    // 이미 구독 중이면 먼저 해제 (사용자 변경 대응 - ocsSocket에서 토큰 비교로 재연결 처리)
     if (listenerIdRef.current) {
-      console.log('🔌 [OCSNotificationProvider] 이미 구독 중:', listenerIdRef.current);
-      return;
+      console.log('🔌 [OCSNotificationProvider] 기존 구독 해제 후 재연결:', listenerIdRef.current);
+      unsubscribeOCSSocket(listenerIdRef.current);
+      listenerIdRef.current = null;
     }
 
     console.log('🔌 [OCSNotificationProvider] WebSocket 구독 시작...');
