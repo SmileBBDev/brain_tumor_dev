@@ -331,3 +331,24 @@
   opacity: 0.3;
   cursor: not-allowed;
 }
+
+/* 세그멘테이션 뷰어 스타일 */
+.ai-viewer-segmentation {
+  padding: 16px;
+}
+
+.ai-viewer-segmentation .ai-viewer-header {
+  margin-bottom: 12px;
+}
+
+.ai-viewer-seg-content {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.ai-viewer-info .job-id {
+  font-size: 0.75rem;
+  color: #888;
+  font-family: monospace;
+}

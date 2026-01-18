@@ -21,6 +21,7 @@ import {
   removeFileFromStorage,
   migrateFilesToStorage,
 } from '@/utils/fileStorage';
+import AIAnalysisPanel from './components/AIAnalysisPanel';
 import './LISStudyDetailPage.css';
 
 // 탭 타입 - genetic, protein 탭 추가
@@ -907,6 +908,17 @@ export default function LISStudyDetailPage() {
         {/* 검사 결과 탭 */}
         {activeTab === 'result' && (
           <div className="result-tab">
+            {/* AI 분석 결과 패널 (MG 모델) */}
+            {testCategory === 'GENETIC' && (
+              <div className="ai-section">
+                <AIAnalysisPanel
+                  ocsId={ocs.id}
+                  patientId={ocs.patient.id}
+                  jobType={ocs.job_type}
+                />
+              </div>
+            )}
+
             {/* 파일 업로드 섹션 */}
             <div className="file-upload-section">
               <div className="section-header">

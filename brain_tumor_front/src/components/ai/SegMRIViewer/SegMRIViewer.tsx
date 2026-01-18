@@ -96,8 +96,11 @@ const SegMRIViewer: React.FC<SegMRIViewerProps> = ({
   initialDisplayMode = 'pred_only',
   maxCanvasSize = 450,
 }) => {
-  // Canvas ref
-  const canvasRef = useRef<HTMLCanvasElement>(null)
+  // Canvas refs (최대 4개 뷰어)
+  const canvasRefs = useRef<(HTMLCanvasElement | null)[]>([null, null, null, null])
+
+  // 최대 뷰어 수
+  const MAX_VIEWERS = 4
 
   // State
   const [currentSlice, setCurrentSlice] = useState(0)
@@ -106,6 +109,12 @@ const SegMRIViewer: React.FC<SegMRIViewerProps> = ({
   // Note: setDisplayMode is available as _setDisplayMode for future UI controls
   const [initialized, setInitialized] = useState(false)
   const [sliceDims, setSliceDims] = useState({ width: 128, height: 128 })
+
+  // Play 상태
+  const [isPlaying, setIsPlaying] = useState(false)
+
+  // 멀티 뷰어 상태: 각 뷰어별 MRI 채널
+  const [viewers, setViewers] = useState<MRIChannel[]>(['t1ce'])
 
   // Display options
   const [showMRI, setShowMRI] = useState(true)
@@ -118,8 +127,6 @@ const SegMRIViewer: React.FC<SegMRIViewerProps> = ({
   const [showED, setShowED] = useState(true)
   const [showET, setShowET] = useState(true)
 
-  // MRI Channel selection
-  const [mriChannel, setMriChannel] = useState<MRIChannel>('t1ce')
 
   // ============== Helper Functions ==============
 
@@ -129,17 +136,6 @@ const SegMRIViewer: React.FC<SegMRIViewerProps> = ({
     if (label === 3) return showET
     return false
   }
-
-  /** 선택된 MRI 채널 데이터 가져오기 */
-  const getCurrentMriVolume = useCallback((): number[][][] | null => {
-    // mri_channels가 있으면 선택된 채널 사용
-    if (data.mri_channels) {
-      const channelData = data.mri_channels[mriChannel]
-      if (channelData) return channelData
-    }
-    // 없으면 기본 mri 사용
-    return data.mri
-  }, [data.mri, data.mri_channels, mriChannel])
 
   /** 사용 가능한 MRI 채널 목록 */
   const getAvailableChannels = useCallback((): MRIChannel[] => {
@@ -247,27 +243,57 @@ const SegMRIViewer: React.FC<SegMRIViewerProps> = ({
     }
   }, [data.shape, initialized])
 
-  /** 캔버스 렌더링 */
+  /** Play 기능: 200ms 간격으로 슬라이스 자동 이동 */
   useEffect(() => {
-    const canvas = canvasRef.current
-    const currentMri = getCurrentMriVolume()
-    if (!canvas || !currentMri) return
+    if (!isPlaying) return
+
+    const maxSlices = getMaxSlices()
+    const intervalId = setInterval(() => {
+      setCurrentSlice((prev) => {
+        const next = prev + 1
+        if (next >= maxSlices) {
+          return 0 // 끝에 도달하면 처음으로 돌아감
+        }
+        return next
+      })
+    }, 200)
+
+    return () => clearInterval(intervalId)
+  }, [isPlaying, getMaxSlices])
+
+  /** 특정 채널의 MRI 볼륨 가져오기 */
+  const getMriVolumeByChannel = useCallback((channel: MRIChannel): number[][][] | null => {
+    if (data.mri_channels) {
+      const channelData = data.mri_channels[channel]
+      if (channelData) return channelData
+    }
+    return data.mri
+  }, [data.mri, data.mri_channels])
+
+  /** 캔버스 렌더링 함수 (특정 캔버스, 특정 채널) */
+  const renderCanvas = useCallback((canvas: HTMLCanvasElement | null, channel: MRIChannel) => {
+    if (!canvas) return
+
+    const mriVolume = getMriVolumeByChannel(channel)
+    if (!mriVolume) return
 
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
-    const mriSlice = getSlice(currentMri, currentSlice, viewMode)
+    const mriSlice = getSlice(mriVolume, currentSlice, viewMode)
     if (!mriSlice) return
 
     const height = mriSlice.length
     const width = mriSlice[0]?.length || 0
 
-    // 슬라이스 크기 업데이트
-    setSliceDims(prev =>
-      prev.width !== width || prev.height !== height
-        ? { width, height }
-        : prev
-    )
+    // 슬라이스 크기 업데이트 (첫 번째 뷰어 기준)
+    if (canvas === canvasRefs.current[0]) {
+      setSliceDims(prev =>
+        prev.width !== width || prev.height !== height
+          ? { width, height }
+          : prev
+      )
+    }
 
     canvas.width = width
     canvas.height = height
@@ -299,7 +325,6 @@ const SegMRIViewer: React.FC<SegMRIViewerProps> = ({
         }
       }
     } else {
-      // 검은 배경
       for (let i = 0; i < imageData.data.length; i += 4) {
         imageData.data[i] = 0
         imageData.data[i + 1] = 0
@@ -317,7 +342,6 @@ const SegMRIViewer: React.FC<SegMRIViewerProps> = ({
     ctx.globalAlpha = segOpacity
 
     if (displayMode === 'difference' && gtSlice && predSlice) {
-      // Diff 모드: TP/FN/FP 표시
       for (let y = 0; y < height; y++) {
         for (let x = 0; x < width; x++) {
           const gtLabel = gtSlice[y]?.[x] || 0
@@ -343,7 +367,6 @@ const SegMRIViewer: React.FC<SegMRIViewerProps> = ({
         }
       }
     } else if (displayMode === 'gt_only' && gtSlice) {
-      // GT만 표시
       for (let y = 0; y < height; y++) {
         for (let x = 0; x < width; x++) {
           const label = gtSlice[y]?.[x] || 0
@@ -357,7 +380,6 @@ const SegMRIViewer: React.FC<SegMRIViewerProps> = ({
         }
       }
     } else if (displayMode === 'pred_only' && predSlice) {
-      // Prediction만 표시
       for (let y = 0; y < height; y++) {
         for (let x = 0; x < width; x++) {
           const label = predSlice[y]?.[x] || 0
@@ -371,7 +393,6 @@ const SegMRIViewer: React.FC<SegMRIViewerProps> = ({
         }
       }
     } else if (displayMode === 'overlay') {
-      // GT + Prediction 오버레이
       if (showGroundTruth && gtSlice) {
         for (let y = 0; y < height; y++) {
           for (let x = 0; x < width; x++) {
@@ -403,7 +424,14 @@ const SegMRIViewer: React.FC<SegMRIViewerProps> = ({
     }
 
     ctx.globalAlpha = 1
-  }, [data, currentSlice, viewMode, displayMode, showGroundTruth, showPrediction, showMRI, segOpacity, getSlice, showNCR, showED, showET, getCurrentMriVolume, mriChannel])
+  }, [data, currentSlice, viewMode, displayMode, showGroundTruth, showPrediction, showMRI, segOpacity, getSlice, showNCR, showED, showET, getMriVolumeByChannel])
+
+  /** 모든 뷰어 캔버스 렌더링 */
+  useEffect(() => {
+    viewers.forEach((channel, index) => {
+      renderCanvas(canvasRefs.current[index], channel)
+    })
+  }, [viewers, renderCanvas])
 
   // ============== Handlers ==============
 
@@ -418,6 +446,29 @@ const SegMRIViewer: React.FC<SegMRIViewerProps> = ({
       }
     }
     setCurrentSlice(Math.floor(maxSlices / 2))
+  }
+
+  // 뷰어 추가
+  const handleAddViewer = () => {
+    if (viewers.length >= MAX_VIEWERS) return
+    const availableChannels = getAvailableChannels()
+    // 아직 사용하지 않는 채널 찾기
+    const unusedChannel = availableChannels.find(ch => !viewers.includes(ch))
+    const newChannel = unusedChannel || availableChannels[0] || 't1ce'
+    setViewers([...viewers, newChannel])
+  }
+
+  // 뷰어 제거
+  const handleRemoveViewer = (index: number) => {
+    if (viewers.length <= 1) return
+    setViewers(viewers.filter((_, i) => i !== index))
+  }
+
+  // 특정 뷰어의 채널 변경
+  const handleViewerChannelChange = (index: number, channel: MRIChannel) => {
+    const newViewers = [...viewers]
+    newViewers[index] = channel
+    setViewers(newViewers)
   }
 
   const displaySize = getDisplaySize()
@@ -457,33 +508,89 @@ const SegMRIViewer: React.FC<SegMRIViewerProps> = ({
       <div className="seg-mri-viewer__body">
         {/* Canvas Section */}
         <div className="seg-mri-viewer__canvas-section">
-          <div className="seg-mri-viewer__canvas-container">
-            <canvas
-              ref={canvasRef}
-              className="seg-mri-viewer__canvas"
-              style={{
-                width: `${displaySize.width}px`,
-                height: `${displaySize.height}px`,
-              }}
-            />
+          {/* Multi Viewer Grid */}
+          <div className={`seg-mri-viewer__multi-grid seg-mri-viewer__multi-grid--${viewers.length}`}>
+            {viewers.map((channel, index) => (
+              <div key={index} className="seg-mri-viewer__viewer-item">
+                <div className="seg-mri-viewer__viewer-header">
+                  <select
+                    className="seg-mri-viewer__channel-select"
+                    value={channel}
+                    onChange={(e) => handleViewerChannelChange(index, e.target.value as MRIChannel)}
+                  >
+                    {(['t1', 't1ce', 't2', 'flair'] as MRIChannel[]).map((ch) => {
+                      const isAvailable = getAvailableChannels().includes(ch) || !data.mri_channels
+                      return (
+                        <option key={ch} value={ch} disabled={!isAvailable}>
+                          {ch.toUpperCase()}
+                        </option>
+                      )
+                    })}
+                  </select>
+                  {viewers.length > 1 && (
+                    <button
+                      className="seg-mri-viewer__remove-btn"
+                      onClick={() => handleRemoveViewer(index)}
+                      title="뷰어 제거"
+                    >
+                      −
+                    </button>
+                  )}
+                </div>
+                <div className="seg-mri-viewer__canvas-container">
+                  <canvas
+                    ref={(el) => { canvasRefs.current[index] = el }}
+                    className="seg-mri-viewer__canvas"
+                    style={{
+                      width: `${viewers.length > 2 ? displaySize.width * 0.7 : displaySize.width}px`,
+                      height: `${viewers.length > 2 ? displaySize.height * 0.7 : displaySize.height}px`,
+                    }}
+                  />
+                </div>
+              </div>
+            ))}
           </div>
+
+          {/* 뷰어 추가 버튼 */}
+          {getAvailableChannels().length > 0 && viewers.length < MAX_VIEWERS && (
+            <button
+              className="seg-mri-viewer__add-viewer-btn"
+              onClick={handleAddViewer}
+              title="뷰어 추가 (최대 4개)"
+            >
+              + 채널 뷰어 추가
+            </button>
+          )}
+
           <div className="seg-mri-viewer__canvas-info">
             * Preprocessed model input region (Foreground Crop applied)
           </div>
 
           {/* Slice Control */}
           <div className="seg-mri-viewer__slice-control">
-            <div className="seg-mri-viewer__slice-label">
-              Slice: {currentSlice + 1} / {getMaxSlices()}
-              {data.sliceMapping && (
-                <span>(Original: {getOriginalSliceNum()})</span>
-              )}
+            <div className="seg-mri-viewer__slice-header">
+              <div className="seg-mri-viewer__slice-label">
+                Slice: {currentSlice + 1} / {getMaxSlices()}
+                {data.sliceMapping && (
+                  <span>(Original: {getOriginalSliceNum()})</span>
+                )}
+              </div>
+              <button
+                className={`seg-mri-viewer__play-btn ${isPlaying ? 'seg-mri-viewer__play-btn--playing' : ''}`}
+                onClick={() => setIsPlaying(!isPlaying)}
+                title={isPlaying ? '정지' : '자동 재생 (200ms)'}
+              >
+                {isPlaying ? '⏸' : '▶'}
+              </button>
             </div>
             <input
               type="range"
               className="seg-mri-viewer__slider"
               value={currentSlice}
-              onChange={(e) => setCurrentSlice(Number(e.target.value))}
+              onChange={(e) => {
+                setIsPlaying(false) // 수동 조작 시 자동 재생 중지
+                setCurrentSlice(Number(e.target.value))
+              }}
               min={0}
               max={getMaxSlices() - 1}
             />
@@ -535,28 +642,6 @@ const SegMRIViewer: React.FC<SegMRIViewerProps> = ({
             />
             MRI Background
           </label>
-
-          {/* MRI Channel Selector */}
-          {getAvailableChannels().length > 0 && (
-            <div className="seg-mri-viewer__channel-selector">
-              <h4 className="seg-mri-viewer__section-title">MRI Channel</h4>
-              <div className="seg-mri-viewer__channel-buttons">
-                {(['t1', 't1ce', 't2', 'flair'] as MRIChannel[]).map((channel) => {
-                  const isAvailable = getAvailableChannels().includes(channel)
-                  return (
-                    <button
-                      key={channel}
-                      className={`seg-mri-viewer__channel-btn ${mriChannel === channel ? 'seg-mri-viewer__channel-btn--active' : ''} ${!isAvailable ? 'seg-mri-viewer__channel-btn--disabled' : ''}`}
-                      onClick={() => isAvailable && setMriChannel(channel)}
-                      disabled={!isAvailable}
-                    >
-                      {channel.toUpperCase()}
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-          )}
 
           {/* Opacity */}
           <div className="seg-mri-viewer__opacity-control">

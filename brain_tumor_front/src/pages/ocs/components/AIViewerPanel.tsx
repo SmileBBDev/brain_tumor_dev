@@ -1,11 +1,13 @@
 /**
  * AI Viewer Panel
- * - AI 분석 결과 시각화 이미지를 보여주는 뷰어
- * - 전체화면 모드 지원
+ * - AI 분석 결과 시각화
+ * - M1 모델: SegMRIViewer로 세그멘테이션 표시
+ * - 기타 모델: 이미지 뷰어
  */
 import { useState, useEffect } from 'react';
-import { getPatientAIRequests } from '@/services/ai.api';
+import { getPatientAIRequests, aiApi } from '@/services/ai.api';
 import type { AIInferenceRequest } from '@/services/ai.api';
+import SegMRIViewer, { type SegmentationData, type DiceScores } from '@/components/ai/SegMRIViewer/SegMRIViewer';
 import './AIViewerPanel.css';
 
 interface AIViewerPanelProps {
@@ -18,6 +20,12 @@ export default function AIViewerPanel({ ocsId, patientId }: AIViewerPanelProps) 
   const [loading, setLoading] = useState(true);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [fullscreen, setFullscreen] = useState(false);
+
+  // M1 세그멘테이션 데이터
+  const [segData, setSegData] = useState<SegmentationData | null>(null);
+  const [diceScores, setDiceScores] = useState<DiceScores | null>(null);
+  const [segLoading, setSegLoading] = useState(false);
+  const [segError, setSegError] = useState<string | null>(null);
 
   const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
 
@@ -32,10 +40,41 @@ export default function AIViewerPanel({ ocsId, patientId }: AIViewerPanelProps) 
       try {
         const requests = await getPatientAIRequests(patientId);
         const matchingRequest = requests
-          .filter(req => req.ocs_references.includes(ocsId) && req.has_result)
+          .filter(req => req.ocs_references?.includes(ocsId) && req.has_result)
           .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
 
         setAiRequest(matchingRequest || null);
+
+        // M1 모델인 경우 세그멘테이션 데이터 로드
+        if (matchingRequest?.model_code === 'M1' && matchingRequest.request_id) {
+          setSegLoading(true);
+          setSegError(null);
+          try {
+            const segResponse = await aiApi.getSegmentationData(matchingRequest.request_id);
+            if (segResponse && segResponse.mri && segResponse.prediction) {
+              setSegData({
+                mri: segResponse.mri,
+                groundTruth: segResponse.groundTruth || segResponse.prediction, // GT 없으면 prediction 사용
+                prediction: segResponse.prediction,
+                shape: segResponse.shape,
+                mri_channels: segResponse.mri_channels,
+              });
+              // Dice scores (비교 API에서 가져올 수도 있음)
+              if (segResponse.comparison_metrics) {
+                setDiceScores({
+                  wt: segResponse.comparison_metrics.dice_wt,
+                  tc: segResponse.comparison_metrics.dice_tc,
+                  et: segResponse.comparison_metrics.dice_et,
+                });
+              }
+            }
+          } catch (err) {
+            console.error('Failed to load segmentation data:', err);
+            setSegError('세그멘테이션 데이터를 불러오는데 실패했습니다.');
+          } finally {
+            setSegLoading(false);
+          }
+        }
       } catch (error) {
         console.error('Failed to fetch AI result:', error);
       } finally {
@@ -47,6 +86,7 @@ export default function AIViewerPanel({ ocsId, patientId }: AIViewerPanelProps) 
   }, [ocsId, patientId]);
 
   const visualizationPaths = aiRequest?.result?.visualization_paths || [];
+  const isM1Model = aiRequest?.model_code === 'M1';
 
   if (loading) {
     return (
@@ -62,11 +102,84 @@ export default function AIViewerPanel({ ocsId, patientId }: AIViewerPanelProps) 
     );
   }
 
-  if (!aiRequest || visualizationPaths.length === 0) {
+  // AI 요청이 없는 경우
+  if (!aiRequest) {
     return (
       <div className="ai-viewer-panel">
         <div className="ai-viewer-header">
           <h3>AI 분석 뷰어</h3>
+        </div>
+        <div className="ai-viewer-empty">
+          <div className="empty-icon">🔬</div>
+          <span>AI 분석 결과 없음</span>
+          <p>이 검사에 대한 AI 분석이 요청되지 않았습니다.</p>
+        </div>
+      </div>
+    );
+  }
+
+  // M1 모델 - 세그멘테이션 뷰어
+  if (isM1Model) {
+    if (segLoading) {
+      return (
+        <div className="ai-viewer-panel">
+          <div className="ai-viewer-header">
+            <h3>AI 분석 뷰어</h3>
+            <span className="model-badge">{aiRequest.model_name}</span>
+          </div>
+          <div className="ai-viewer-loading">
+            <div className="spinner"></div>
+            <span>세그멘테이션 데이터 로딩 중...</span>
+          </div>
+        </div>
+      );
+    }
+
+    if (segError || !segData) {
+      return (
+        <div className="ai-viewer-panel">
+          <div className="ai-viewer-header">
+            <h3>AI 분석 뷰어</h3>
+            <span className="model-badge">{aiRequest.model_name}</span>
+          </div>
+          <div className="ai-viewer-empty">
+            <div className="empty-icon">🧠</div>
+            <span>세그멘테이션 데이터 없음</span>
+            <p>{segError || '세그멘테이션 데이터를 불러올 수 없습니다.'}</p>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="ai-viewer-panel ai-viewer-segmentation">
+        <div className="ai-viewer-header">
+          <h3>AI 분석 뷰어 - MRI 세그멘테이션</h3>
+          <div className="ai-viewer-info">
+            <span className="model-badge">{aiRequest.model_name}</span>
+            <span className="job-id">{aiRequest.request_id}</span>
+          </div>
+        </div>
+        <div className="ai-viewer-seg-content">
+          <SegMRIViewer
+            data={segData}
+            title="종양 세그멘테이션"
+            diceScores={diceScores || undefined}
+            initialDisplayMode="pred_only"
+            maxCanvasSize={400}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  // 기타 모델 - 이미지 없으면 빈 상태
+  if (visualizationPaths.length === 0) {
+    return (
+      <div className="ai-viewer-panel">
+        <div className="ai-viewer-header">
+          <h3>AI 분석 뷰어</h3>
+          <span className="model-badge">{aiRequest.model_name}</span>
         </div>
         <div className="ai-viewer-empty">
           <div className="empty-icon">🔬</div>
@@ -77,6 +190,7 @@ export default function AIViewerPanel({ ocsId, patientId }: AIViewerPanelProps) 
     );
   }
 
+  // 기타 모델 - 이미지 뷰어
   const currentImage = visualizationPaths[selectedImageIndex];
 
   return (

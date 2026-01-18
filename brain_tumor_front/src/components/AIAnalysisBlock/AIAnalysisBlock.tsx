@@ -117,7 +117,7 @@ interface PanelProps {
   isResearch: boolean
 }
 
-function M1Panel({ isResearch }: PanelProps) {
+function M1Panel({ isResearch: _isResearch }: PanelProps) {
   const [ocsList, setOcsList] = useState<OCSItem[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedId, setSelectedId] = useState<number | null>(null)
@@ -140,16 +140,6 @@ function M1Panel({ isResearch }: PanelProps) {
     return () => { abortRef.current = true }
   }, [])
 
-  // 선택된 MRI OCS의 환자 정보 (향후 환자 필터링에 사용 예정)
-  const _selectedPatientNumber = ocsList.find(o => o.id === selectedId)?.patient_number || null
-
-  // 진료용 모드: 선택된 환자의 OCS만 필터링
-  // 연구용 모드: 전체 OCS 표시 (향후 필터링 로직 추가 예정)
-  const _filteredOcsList = useMemo(() => {
-    if (isResearch) return ocsList
-    // 진료용 모드에서도 처음에는 전체 목록 표시 (선택 전)
-    return ocsList
-  }, [ocsList, isResearch])
 
   // WebSocket 메시지 수신 시 결과 반영
   useEffect(() => {

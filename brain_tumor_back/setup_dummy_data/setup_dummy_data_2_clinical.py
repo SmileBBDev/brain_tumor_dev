@@ -362,6 +362,146 @@ def create_dummy_encounters(target_count=20, force=False):
     return True
 
 
+def ensure_all_patients_have_encounters(min_encounters_per_patient=2, force=False):
+    """
+    모든 환자에게 과거 진료 기록이 있도록 보장
+    - 각 환자당 최소 min_encounters_per_patient건의 완료된 진료 기록 생성
+    - SOAP 노트 포함
+    """
+    print(f"\n[2-2단계] 모든 환자에게 과거 진료 기록 보장 (최소 {min_encounters_per_patient}건/환자)...")
+
+    from apps.encounters.models import Encounter
+    from apps.patients.models import Patient
+    from django.contrib.auth import get_user_model
+    User = get_user_model()
+
+    patients = list(Patient.objects.filter(is_deleted=False, status='active'))
+    doctors = list(User.objects.filter(role__code='DOCTOR'))
+
+    if not patients:
+        print("[ERROR] 활성 환자가 없습니다.")
+        return False
+
+    if not doctors:
+        doctors = list(User.objects.all()[:1])
+
+    encounter_types = ['outpatient', 'inpatient']
+    departments = ['neurology', 'neurosurgery']
+
+    chief_complaints = [
+        '두통이 심해요', '어지러움증이 계속됩니다', '손발 저림 증상',
+        '기억력 감퇴', '수면 장애', '편두통', '목 통증',
+        '시야 흐림', '균형 감각 이상', '근육 경련'
+    ]
+
+    primary_diagnoses = [
+        '뇌종양 의심', '편두통', '뇌졸중', '파킨슨병',
+        '치매', '간질', '다발성 경화증', '신경통'
+    ]
+
+    subjective_samples = [
+        '3일 전부터 지속되는 두통, 아침에 더 심함',
+        '일주일간 어지러움 증상, 구역감 동반',
+        '양손 저림 증상, 특히 야간에 심해짐',
+        '최근 건망증이 심해졌다고 호소',
+        '잠들기 어렵고 자주 깸, 피로감 호소',
+        '우측 관자놀이 쪽 박동성 두통',
+        '경추 부위 통증, 고개 돌릴 때 악화',
+        '두달 전부터 간헐적 두통, 최근 빈도 증가',
+        '양측 하지 저림, 보행 시 불편감',
+        '약 복용 후 증상 호전되었으나 재발',
+    ]
+
+    objective_samples = [
+        'BP 130/85, HR 72, BT 36.5',
+        '신경학적 검사 정상, 경부 강직 없음',
+        '동공 반사 정상, 안구 운동 정상',
+        'Romberg test 양성, 보행 시 불안정',
+        'MMT 정상, DTR 정상, 병적 반사 없음',
+        'GCS 15, 의식 명료, 지남력 정상',
+        '뇌 MRI: T2 고신호 병변 확인',
+        'BP 125/80, HR 68, SpO2 98%',
+        '경추 ROM 제한, 압통 있음',
+        '시야검사 정상, 안저검사 정상',
+    ]
+
+    assessment_samples = [
+        '긴장성 두통 의심, R/O 편두통',
+        '말초성 현훈 vs 중추성 현훈 감별 필요',
+        '수근관 증후군 의심',
+        '경도 인지장애 가능성, 치매 스크리닝 필요',
+        '불면증, 수면 무호흡 가능성',
+        '뇌종양 의심, 추가 검사 필요',
+        '경추 디스크 탈출증 의심',
+        '긴장성 두통, 스트레스 관련',
+        '말초신경병증 가능성',
+        '편두통, 약물 조절 필요',
+    ]
+
+    plan_samples = [
+        '뇌 MRI 촬영, 진통제 처방, 2주 후 재진',
+        '청력검사, 전정기능검사 예정, 어지럼증 약물 처방',
+        '신경전도검사 의뢰, 보존적 치료',
+        '인지기능검사, 혈액검사 (갑상선, B12)',
+        '수면다원검사 의뢰, 수면위생 교육',
+        'MRI 추적검사, 신경외과 협진',
+        '물리치료 의뢰, NSAIDs 처방',
+        '경과 관찰, 1개월 후 재진',
+        '약물 용량 조절, 부작용 모니터링',
+        '추가 검사 후 치료 방침 결정',
+    ]
+
+    created_count = 0
+    patients_updated = 0
+
+    for patient in patients:
+        # 해당 환자의 완료된 진료 기록 수 확인
+        completed_encounters = Encounter.objects.filter(
+            patient=patient,
+            status='completed'
+        ).count()
+
+        needed = min_encounters_per_patient - completed_encounters
+        if needed <= 0 and not force:
+            continue
+
+        patients_updated += 1
+        for i in range(max(needed, 1) if force else needed):
+            days_ago = random.randint(30, 180)  # 30일 ~ 6개월 전
+            admission_date = timezone.now() - timedelta(days=days_ago)
+            encounter_type = random.choice(encounter_types)
+
+            if encounter_type == 'outpatient':
+                discharge_days = random.choice([0, 1])
+            else:
+                discharge_days = random.randint(1, 7)
+            discharge_date = admission_date + timedelta(days=discharge_days)
+
+            try:
+                Encounter.objects.create(
+                    patient=patient,
+                    encounter_type=encounter_type,
+                    status='completed',
+                    attending_doctor=random.choice(doctors),
+                    department=random.choice(departments),
+                    admission_date=admission_date,
+                    discharge_date=discharge_date,
+                    chief_complaint=random.choice(chief_complaints),
+                    primary_diagnosis=random.choice(primary_diagnoses),
+                    secondary_diagnoses=random.sample(['고혈압', '당뇨', '고지혈증'], random.randint(0, 2)),
+                    subjective=random.choice(subjective_samples),
+                    objective=random.choice(objective_samples),
+                    assessment=random.choice(assessment_samples),
+                    plan=random.choice(plan_samples),
+                )
+                created_count += 1
+            except Exception as e:
+                print(f"  오류 ({patient.patient_number}): {e}")
+
+    print(f"[OK] 과거 진료 기록 생성: {created_count}건 ({patients_updated}명 환자)")
+    return True
+
+
 def create_dummy_imaging_with_ocs(num_orders=15, force=False):
     """
     더미 영상 검사 데이터 생성 (OCS 통합 버전)
@@ -1295,6 +1435,118 @@ def create_dummy_prescriptions(num_prescriptions=20, num_items_per_rx=3, force=F
     return True
 
 
+def ensure_all_patients_have_prescriptions(min_prescriptions_per_patient=1, force=False):
+    """
+    모든 환자에게 과거 처방 기록이 있도록 보장
+    - 각 환자당 최소 min_prescriptions_per_patient건의 처방 기록 생성
+    - 완료된 진료에 연결
+    """
+    print(f"\n[11-1단계] 모든 환자에게 과거 처방 기록 보장 (최소 {min_prescriptions_per_patient}건/환자)...")
+
+    from apps.prescriptions.models import Prescription, PrescriptionItem
+    from apps.patients.models import Patient
+    from apps.encounters.models import Encounter
+    from django.contrib.auth import get_user_model
+    User = get_user_model()
+
+    patients = list(Patient.objects.filter(is_deleted=False, status='active'))
+    doctors = list(User.objects.filter(role__code='DOCTOR'))
+
+    if not patients:
+        print("[ERROR] 활성 환자가 없습니다.")
+        return False
+
+    if not doctors:
+        doctors = list(User.objects.all()[:1])
+
+    notes_list = [
+        "다음 진료 시 반응 평가 예정",
+        "부작용 발생 시 즉시 내원",
+        "정기 혈액 검사 필요",
+        "복용법 상세 설명 완료",
+        "외래 2주 후 재방문 예정",
+    ]
+
+    prescription_count = 0
+    item_count = 0
+    patients_updated = 0
+
+    for patient in patients:
+        # 해당 환자의 처방 기록 수 확인
+        existing_prescriptions = Prescription.objects.filter(patient=patient).count()
+
+        needed = min_prescriptions_per_patient - existing_prescriptions
+        if needed <= 0 and not force:
+            continue
+
+        # 환자의 완료된 진료 기록 찾기
+        completed_encounters = list(Encounter.objects.filter(
+            patient=patient,
+            status='completed'
+        ).order_by('-admission_date'))
+
+        patients_updated += 1
+
+        for i in range(max(needed, 1) if force else needed):
+            doctor = random.choice(doctors)
+            encounter = completed_encounters[i] if i < len(completed_encounters) else None
+            status = random.choice(['ISSUED', 'DISPENSED'])
+            diagnosis = random.choice(DIAGNOSES)
+
+            if encounter:
+                days_ago = (timezone.now() - encounter.admission_date).days
+            else:
+                days_ago = random.randint(30, 180)
+
+            issued_at = timezone.now() - timedelta(days=days_ago)
+            dispensed_at = issued_at + timedelta(hours=random.randint(1, 24)) if status == 'DISPENSED' else None
+
+            try:
+                with transaction.atomic():
+                    prescription = Prescription.objects.create(
+                        patient=patient,
+                        doctor=doctor,
+                        encounter=encounter,
+                        status=status,
+                        diagnosis=diagnosis,
+                        notes=random.choice(notes_list),
+                        issued_at=issued_at,
+                        dispensed_at=dispensed_at,
+                    )
+
+                    # 처방 항목 생성 (1~3개)
+                    num_items = random.randint(1, 3)
+                    selected_meds = random.sample(MEDICATIONS, min(num_items, len(MEDICATIONS)))
+
+                    for order, med in enumerate(selected_meds):
+                        duration = random.choice([7, 14, 28, 30])
+                        freq_multiplier = {'QD': 1, 'BID': 2, 'TID': 3, 'QID': 4, 'PRN': 1, 'QOD': 0.5, 'QW': 0.14}
+                        daily_count = freq_multiplier.get(med['frequency'], 1)
+                        quantity = int(duration * daily_count) + random.randint(0, 5)
+
+                        PrescriptionItem.objects.create(
+                            prescription=prescription,
+                            medication_name=med['name'],
+                            medication_code=med['code'],
+                            dosage=med['dosage'],
+                            frequency=med['frequency'],
+                            route=med['route'],
+                            duration_days=duration,
+                            quantity=quantity,
+                            instructions=med['instructions'],
+                            order=order,
+                        )
+                        item_count += 1
+
+                    prescription_count += 1
+
+            except Exception as e:
+                print(f"  오류 ({patient.patient_number}): {e}")
+
+    print(f"[OK] 과거 처방 기록 생성: {prescription_count}건, 항목 {item_count}건 ({patients_updated}명 환자)")
+    return True
+
+
 # ============================================================
 # 데이터 리셋 및 요약
 # ============================================================
@@ -1452,6 +1704,9 @@ def main():
     # 진료 생성
     create_dummy_encounters(20, force=force)
 
+    # 모든 환자에게 과거 진료 기록 보장 (SOAP 포함)
+    ensure_all_patients_have_encounters(min_encounters_per_patient=2, force=force)
+
     # 영상 검사 (OCS + ImagingStudy) - 환자데이터 폴더 15개 기준
     create_dummy_imaging_with_ocs(15, force=force)
 
@@ -1485,6 +1740,9 @@ def main():
 
     # 처방 데이터
     create_dummy_prescriptions(20, 3, force=force)
+
+    # 모든 환자에게 과거 처방 기록 보장
+    ensure_all_patients_have_prescriptions(min_prescriptions_per_patient=1, force=force)
 
     # 요약 출력
     print_summary()

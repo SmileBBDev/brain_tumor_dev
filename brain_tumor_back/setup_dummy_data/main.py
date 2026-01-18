@@ -5,6 +5,7 @@ Brain Tumor CDSS - 더미 데이터 설정 스크립트 (통합 래퍼)
 이 스크립트는 더미 데이터 스크립트를 순차 실행합니다:
 1. setup_dummy_data_1_base.py     - 기본 데이터 (DB생성, 마이그레이션, 역할, 사용자, 메뉴/권한)
 2. setup_dummy_data_2_clinical.py - 임상 데이터 (환자, 진료, OCS 16건, AI, 치료계획, 경과, 처방)
+2.5. setup_medications.py         - 의약품 마스터 데이터 (뇌종양 관련 의약품 20종)
 3. sync_orthanc_ocs.py            - Orthanc 연동 (MRI DICOM 업로드, OCS RIS worker_result 업데이트)
 4. sync_lis_ocs.py                - LIS 연동 (RNA/Protein 파일 복사, OCS LIS worker_result 업데이트)
 5. setup_dummy_data_3_extended.py - 확장 데이터 (대량 진료/OCS LIS, 오늘 진료, 일정)
@@ -431,14 +432,23 @@ def main():
     if not run_script(
         'setup_dummy_data_2_clinical.py',
         script_args,
-        '임상 데이터 생성 (2/8) - 환자, 진료, OCS 16건, AI, 치료, 경과, 처방'
+        '임상 데이터 생성 (2/9) - 환자, 진료, OCS 16건, AI, 치료, 경과, 처방'
     ):
         print("\n[WARNING] 임상 데이터 생성에 문제가 있습니다.")
         success = False
 
+    # 2.5. 의약품 마스터 데이터 생성
+    if not run_script(
+        'setup_medications.py',
+        [],  # 별도 옵션 없음
+        '의약품 마스터 데이터 생성 (2.5/9) - 뇌종양 관련 의약품 20종'
+    ):
+        print("\n[WARNING] 의약품 데이터 생성에 문제가 있습니다.")
+        # 의약품 생성 실패는 치명적이지 않음 - 계속 진행
+
     # 3. Orthanc MRI 동기화 (DICOM 업로드, OCS RIS worker_result 업데이트)
     print(f"\n{'='*60}")
-    print(f"[실행] Orthanc MRI 동기화 (3/8)")
+    print(f"[실행] Orthanc MRI 동기화 (3/9)")
     print(f"{'='*60}")
     if not run_script(
         'sync_orthanc_ocs.py',
@@ -450,7 +460,7 @@ def main():
 
     # 4. LIS RNA/Protein 동기화 (파일 복사, OCS LIS worker_result 업데이트)
     print(f"\n{'='*60}")
-    print(f"[실행] LIS RNA/Protein 동기화 (4/8)")
+    print(f"[실행] LIS RNA/Protein 동기화 (4/9)")
     print(f"{'='*60}")
     if not run_script(
         'sync_lis_ocs.py',
@@ -464,14 +474,14 @@ def main():
     if not run_script(
         'setup_dummy_data_3_extended.py',
         script_args,
-        '확장 데이터 생성 (5/8) - 대량 진료/OCS LIS, 오늘 진료, 일정'
+        '확장 데이터 생성 (5/9) - 대량 진료/OCS LIS, 오늘 진료, 일정'
     ):
         print("\n[WARNING] 확장 데이터 생성에 문제가 있습니다.")
         success = False
 
     # 6. 추가 사용자 생성
     print(f"\n{'='*60}")
-    print(f"[실행] 추가 사용자 생성 (6/8)")
+    print(f"[실행] 추가 사용자 생성 (6/9)")
     print(f"{'='*60}")
     try:
         create_additional_users(reset=args.reset)
@@ -481,7 +491,7 @@ def main():
 
     # 7. 환자 계정-데이터 연결
     print(f"\n{'='*60}")
-    print(f"[실행] 환자 계정-데이터 연결 (7/8)")
+    print(f"[실행] 환자 계정-데이터 연결 (7/9)")
     print(f"{'='*60}")
     try:
         link_patient_accounts(reset=args.reset)
@@ -491,7 +501,7 @@ def main():
 
     # 8. 접근 감사 로그 생성
     print(f"\n{'='*60}")
-    print(f"[실행] 접근 감사 로그 생성 (8/8)")
+    print(f"[실행] 접근 감사 로그 생성 (8/9)")
     print(f"{'='*60}")
     if not run_script(
         'setup_dummy_data_5_access_logs.py',

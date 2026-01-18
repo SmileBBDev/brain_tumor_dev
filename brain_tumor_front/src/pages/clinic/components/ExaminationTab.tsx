@@ -41,6 +41,7 @@ interface ExaminationTabProps {
   ocsList: OCSListItem[];
   encounters: Encounter[];
   onUpdate: () => void;
+  recordRefreshKey?: number;  // 진료 종료 시 과거 기록 새로고침용
 }
 
 // 심각도 색상
@@ -97,6 +98,7 @@ export default function ExaminationTab({
   ocsList,
   encounters,
   onUpdate: _onUpdate,
+  recordRefreshKey = 0,
 }: ExaminationTabProps) {
   const navigate = useNavigate();
 
@@ -196,7 +198,7 @@ export default function ExaminationTab({
       setSOAPSaved(true);
       showToast('success', 'SOAP 노트가 저장되었습니다.');
       setTimeout(() => setSOAPSaved(false), 3000);
-      // onUpdate() 제거 - 전체 페이지 리로드 대신 토스트로 저장 확인
+      // onUpdate() 호출하지 않음 - 전체 리로드 시 SOAP 데이터가 덮어써짐
     } catch (err) {
       console.error('Failed to save SOAP:', err);
       showToast('error', 'SOAP 저장에 실패했습니다.');
@@ -672,7 +674,7 @@ export default function ExaminationTab({
               />
 
               {/* 과거 처방 기록 */}
-              <PastPrescriptionCard patientId={patientId} refreshKey={prescriptionRefreshKey} />
+              <PastPrescriptionCard patientId={patientId} refreshKey={prescriptionRefreshKey + recordRefreshKey} />
             </>
           ) : (
             <div className="empty-column-message">

@@ -1,18 +1,18 @@
 /**
  * 최종 보고서 작성 페이지
- * - 환자 선택
+ * - 환자 선택 (검색 가능한 드롭다운)
  * - 보고서 정보 입력
  * - 저장 및 제출
  */
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   createFinalReport,
   type FinalReportCreateData,
   type FinalReportType,
 } from '@/services/report.api';
-import { searchPatients } from '@/services/patient.api';
-import type { Patient } from '@/types/patient';
+import { searchPatients, getExaminationSummary } from '@/services/patient.api';
+import type { Patient, ExaminationSummary } from '@/types/patient';
 import { useToast } from '@/components/common';
 import './ReportCreatePage.css';
 
@@ -51,6 +51,10 @@ export default function ReportCreatePage() {
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [searchingPatient, setSearchingPatient] = useState(false);
   const [showPatientDropdown, setShowPatientDropdown] = useState(false);
+  const [loadingPatientData, setLoadingPatientData] = useState(false);
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
+  const dropdownRef = useRef<HTMLUListElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   // 부 진단명 입력
   const [secondaryInput, setSecondaryInput] = useState('');
@@ -95,19 +99,180 @@ export default function ReportCreatePage() {
     }
   }, []);
 
-  // 환자 선택
-  const handlePatientSelect = useCallback((patient: Patient) => {
+  // 환자 선택 및 관련 정보 자동 입력
+  const handlePatientSelect = useCallback(async (patient: Patient) => {
     setSelectedPatient(patient);
     setFormData(prev => ({ ...prev, patient: patient.id }));
     setPatientSearch('');
     setShowPatientDropdown(false);
-  }, []);
+    setHighlightedIndex(-1);
+
+    // 환자 진찰 요약 정보 가져와서 자동 입력
+    setLoadingPatientData(true);
+    try {
+      const summary: ExaminationSummary = await getExaminationSummary(patient.id);
+
+      // 자동 입력할 데이터 준비
+      const autoFillData: Partial<FinalReportCreateData> = {};
+
+      // 알러지 정보 → 임상 소견에 추가
+      const allergies = summary.patient.allergies || [];
+      const chronicDiseases = summary.patient.chronic_diseases || [];
+      const clinicalNotes: string[] = [];
+
+      if (allergies.length > 0) {
+        clinicalNotes.push(`알러지: ${allergies.join(', ')}`);
+      }
+      if (chronicDiseases.length > 0) {
+        clinicalNotes.push(`기저질환: ${chronicDiseases.join(', ')}`);
+      }
+      if (summary.patient.chief_complaint) {
+        clinicalNotes.push(`주 호소: ${summary.patient.chief_complaint}`);
+      }
+
+      if (clinicalNotes.length > 0) {
+        autoFillData.clinical_findings = clinicalNotes.join('\n');
+      }
+
+      // 최근 진료 정보에서 진단 정보 가져오기
+      if (summary.current_encounter) {
+        const encounter = summary.current_encounter;
+        if (encounter.primary_diagnosis) {
+          autoFillData.primary_diagnosis = encounter.primary_diagnosis;
+        }
+        if (encounter.secondary_diagnoses && encounter.secondary_diagnoses.length > 0) {
+          autoFillData.secondary_diagnoses = encounter.secondary_diagnoses;
+        }
+        // encounter의 plan 필드를 치료 계획으로 사용
+        if (encounter.plan) {
+          autoFillData.treatment_plan = encounter.plan;
+        }
+        // 객관적 소견이 있으면 임상 소견에 추가
+        if (encounter.objective) {
+          const existingFindings = autoFillData.clinical_findings || '';
+          autoFillData.clinical_findings = existingFindings
+            ? `${existingFindings}\n\n검사 소견:\n${encounter.objective}`
+            : `검사 소견:\n${encounter.objective}`;
+        }
+        // 평가(assessment)가 있으면 의사 소견에 추가
+        if (encounter.assessment) {
+          autoFillData.doctor_opinion = encounter.assessment;
+        }
+      }
+
+      // AI 분석 결과가 있으면 자동 입력
+      if (summary.ai_summary?.result) {
+        const aiResult = summary.ai_summary.result;
+        const aiSummaryParts: string[] = [];
+
+        if (typeof aiResult === 'object') {
+          if (aiResult.diagnosis) {
+            aiSummaryParts.push(`진단: ${aiResult.diagnosis}`);
+          }
+          if (aiResult.findings) {
+            aiSummaryParts.push(`소견: ${aiResult.findings}`);
+          }
+          if (aiResult.recommendation) {
+            aiSummaryParts.push(`권고: ${aiResult.recommendation}`);
+          }
+          if (aiResult.summary) {
+            aiSummaryParts.push(aiResult.summary);
+          }
+        } else if (typeof aiResult === 'string') {
+          aiSummaryParts.push(aiResult);
+        }
+
+        if (aiSummaryParts.length > 0) {
+          autoFillData.ai_analysis_summary = aiSummaryParts.join('\n');
+        }
+      }
+
+      // 폼 데이터 업데이트
+      if (Object.keys(autoFillData).length > 0) {
+        setFormData(prev => ({ ...prev, ...autoFillData }));
+        toast.success('환자 정보를 자동으로 불러왔습니다.');
+      }
+    } catch (error) {
+      console.error('Failed to load patient data:', error);
+      // 에러가 나도 환자 선택은 유지
+    } finally {
+      setLoadingPatientData(false);
+    }
+  }, [toast]);
 
   // 환자 선택 해제
   const handlePatientClear = useCallback(() => {
     setSelectedPatient(null);
     setFormData(prev => ({ ...prev, patient: 0 }));
+    // 자동 입력된 정보도 초기화
+    setFormData(prev => ({
+      ...prev,
+      patient: 0,
+      primary_diagnosis: '',
+      secondary_diagnoses: [],
+      clinical_findings: '',
+      treatment_plan: '',
+      ai_analysis_summary: '',
+    }));
   }, []);
+
+  // 키보드 네비게이션
+  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!showPatientDropdown || patientResults.length === 0) return;
+
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        setHighlightedIndex(prev =>
+          prev < patientResults.length - 1 ? prev + 1 : 0
+        );
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        setHighlightedIndex(prev =>
+          prev > 0 ? prev - 1 : patientResults.length - 1
+        );
+        break;
+      case 'Enter':
+        e.preventDefault();
+        if (highlightedIndex >= 0 && highlightedIndex < patientResults.length) {
+          handlePatientSelect(patientResults[highlightedIndex]);
+        }
+        break;
+      case 'Escape':
+        setShowPatientDropdown(false);
+        setHighlightedIndex(-1);
+        break;
+    }
+  }, [showPatientDropdown, patientResults, highlightedIndex, handlePatientSelect]);
+
+  // 드롭다운 외부 클릭 시 닫기
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(e.target as Node) &&
+        inputRef.current &&
+        !inputRef.current.contains(e.target as Node)
+      ) {
+        setShowPatientDropdown(false);
+        setHighlightedIndex(-1);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // 하이라이트된 아이템 스크롤
+  useEffect(() => {
+    if (highlightedIndex >= 0 && dropdownRef.current) {
+      const items = dropdownRef.current.querySelectorAll('li');
+      if (items[highlightedIndex]) {
+        items[highlightedIndex].scrollIntoView({ block: 'nearest' });
+      }
+    }
+  }, [highlightedIndex]);
 
   // 입력 변경 핸들러
   const handleInputChange = useCallback((
@@ -202,7 +367,7 @@ export default function ReportCreatePage() {
         <section className="form-section">
           <h3>기본 정보</h3>
 
-          {/* 환자 선택 */}
+          {/* 환자 선택 - 검색 가능한 드롭다운 */}
           <div className="form-group">
             <label className="required">환자</label>
             {selectedPatient ? (
@@ -211,33 +376,75 @@ export default function ReportCreatePage() {
                   <span className="patient-name">{selectedPatient.name}</span>
                   <span className="patient-number">{selectedPatient.patient_number}</span>
                   <span className="patient-birth">{selectedPatient.birth_date}</span>
+                  <span className="patient-gender">
+                    {selectedPatient.gender === 'M' ? '남' : selectedPatient.gender === 'F' ? '여' : '기타'}
+                  </span>
                 </div>
-                <button type="button" className="btn-clear" onClick={handlePatientClear}>
+                <button
+                  type="button"
+                  className="btn-clear"
+                  onClick={handlePatientClear}
+                  disabled={loadingPatientData}
+                >
                   변경
                 </button>
+                {loadingPatientData && (
+                  <span className="loading-indicator">정보 불러오는 중...</span>
+                )}
               </div>
             ) : (
-              <div className="patient-search">
-                <input
-                  type="text"
-                  placeholder="환자명 또는 환자번호로 검색"
-                  value={patientSearch}
-                  onChange={(e) => handlePatientSearch(e.target.value)}
-                  onFocus={() => patientResults.length > 0 && setShowPatientDropdown(true)}
-                  onBlur={() => setTimeout(() => setShowPatientDropdown(false), 200)}
-                />
-                {searchingPatient && <span className="searching">검색 중...</span>}
-                {showPatientDropdown && patientResults.length > 0 && (
-                  <ul className="patient-dropdown">
-                    {patientResults.map(patient => (
-                      <li key={patient.id} onClick={() => handlePatientSelect(patient)}>
-                        <span className="name">{patient.name}</span>
-                        <span className="number">{patient.patient_number}</span>
-                        <span className="birth">{patient.birth_date}</span>
-                      </li>
-                    ))}
+              <div className="patient-search-dropdown">
+                <div className="search-input-wrapper">
+                  <span className="search-icon">🔍</span>
+                  <input
+                    ref={inputRef}
+                    type="text"
+                    placeholder="환자명 또는 환자번호를 입력하세요 (2자 이상)"
+                    value={patientSearch}
+                    onChange={(e) => handlePatientSearch(e.target.value)}
+                    onFocus={() => patientResults.length > 0 && setShowPatientDropdown(true)}
+                    onKeyDown={handleKeyDown}
+                    autoComplete="off"
+                  />
+                  {searchingPatient && <span className="searching-spinner" />}
+                </div>
+                {showPatientDropdown && (
+                  <ul className="patient-dropdown" ref={dropdownRef}>
+                    {patientResults.length > 0 ? (
+                      patientResults.map((patient, index) => (
+                        <li
+                          key={patient.id}
+                          className={index === highlightedIndex ? 'highlighted' : ''}
+                          onClick={() => handlePatientSelect(patient)}
+                          onMouseEnter={() => setHighlightedIndex(index)}
+                        >
+                          <div className="patient-main-info">
+                            <span className="name">{patient.name}</span>
+                            <span className="gender-badge">
+                              {patient.gender === 'M' ? '남' : patient.gender === 'F' ? '여' : '기타'}
+                            </span>
+                          </div>
+                          <div className="patient-sub-info">
+                            <span className="number">{patient.patient_number}</span>
+                            <span className="divider">|</span>
+                            <span className="birth">{patient.birth_date}</span>
+                            {patient.age && (
+                              <>
+                                <span className="divider">|</span>
+                                <span className="age">{patient.age}세</span>
+                              </>
+                            )}
+                          </div>
+                        </li>
+                      ))
+                    ) : (
+                      <li className="no-results">검색 결과가 없습니다</li>
+                    )}
                   </ul>
                 )}
+                <p className="search-hint">
+                  ↑↓ 키로 이동, Enter로 선택, Esc로 닫기
+                </p>
               </div>
             )}
           </div>

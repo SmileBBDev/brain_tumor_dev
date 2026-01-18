@@ -67,14 +67,218 @@ const convertToDisplayResult = (
   inferenceResult: AIInferenceResult
 ): AIAnalysisResult => {
   const resultData = inferenceResult.result_data || {};
+  const modelCode = request.model_code;
 
-  // 결과 데이터에서 정보 추출 (백엔드 result_data 구조에 따라 조정)
+  // M1 모델 결과 처리 (MRI 분석)
+  if (modelCode === 'M1') {
+    return convertM1Result(request, resultData);
+  }
+
+  // MG 모델 결과 처리 (유전자 분석)
+  if (modelCode === 'MG') {
+    return convertMGResult(request, resultData);
+  }
+
+  // 기본 처리 (MM 또는 기타)
+  return convertGenericResult(request, inferenceResult, resultData);
+};
+
+// M1 (MRI 분석) 결과 변환
+const convertM1Result = (
+  request: AIInferenceRequest,
+  resultData: Record<string, unknown>
+): AIAnalysisResult => {
+  const grade = resultData.grade as { predicted_class?: string; probabilities?: Record<string, number> } | undefined;
+  const idh = resultData.idh as { predicted_class?: string; probabilities?: Record<string, number> } | undefined;
+  const mgmt = resultData.mgmt as { predicted_class?: string; probabilities?: Record<string, number> } | undefined;
+  const segmentation = resultData.segmentation as {
+    wt_volume?: number;
+    tc_volume?: number;
+    et_volume?: number;
+  } | undefined;
+
+  // Grade에서 위험도 계산
+  const gradeClass = grade?.predicted_class || '';
+  let riskLevel: 'high' | 'medium' | 'low' | 'normal' = 'normal';
+  let riskScore = 0;
+  if (gradeClass === 'G4' || gradeClass === 'Grade IV') {
+    riskLevel = 'high';
+    riskScore = 90;
+  } else if (gradeClass === 'G3' || gradeClass === 'Grade III') {
+    riskLevel = 'medium';
+    riskScore = 60;
+  } else if (gradeClass === 'G2' || gradeClass === 'Grade II') {
+    riskLevel = 'low';
+    riskScore = 30;
+  }
+
+  // 신뢰도 계산 (Grade 확률에서)
+  const gradeProbs = grade?.probabilities || {};
+  const maxProb = Math.max(...Object.values(gradeProbs).filter((v): v is number => typeof v === 'number'), 0);
+  const confidence = Math.round(maxProb * 100);
+
+  // 요약 생성
+  const summaryParts: string[] = [];
+  if (gradeClass) summaryParts.push(`등급: ${gradeClass}`);
+  if (idh?.predicted_class) summaryParts.push(`IDH: ${idh.predicted_class}`);
+  if (mgmt?.predicted_class) summaryParts.push(`MGMT: ${mgmt.predicted_class}`);
+  const summary = summaryParts.length > 0 ? summaryParts.join(' | ') : 'M1 분석 완료';
+
+  // 소견 생성
+  const findings: AIFinding[] = [];
+  if (gradeClass) {
+    findings.push({
+      id: 'grade',
+      type: 'classification',
+      description: `종양 등급: ${gradeClass}`,
+      severity: riskLevel === 'high' ? 'critical' : riskLevel === 'medium' ? 'major' : 'minor',
+      confidence: confidence,
+    });
+  }
+  if (idh?.predicted_class) {
+    findings.push({
+      id: 'idh',
+      type: 'biomarker',
+      description: `IDH 상태: ${idh.predicted_class}`,
+      severity: idh.predicted_class === 'Mutant' ? 'minor' : 'major',
+      confidence: Math.round((Math.max(...Object.values(idh.probabilities || {}).filter((v): v is number => typeof v === 'number'), 0)) * 100),
+    });
+  }
+  if (mgmt?.predicted_class) {
+    findings.push({
+      id: 'mgmt',
+      type: 'biomarker',
+      description: `MGMT 메틸화: ${mgmt.predicted_class}`,
+      severity: mgmt.predicted_class === 'Methylated' ? 'minor' : 'major',
+      confidence: Math.round((Math.max(...Object.values(mgmt.probabilities || {}).filter((v): v is number => typeof v === 'number'), 0)) * 100),
+    });
+  }
+
+  // 상세 정보
+  const details: AIAnalysisDetail[] = [];
+  if (segmentation) {
+    details.push({
+      category: '종양 부피',
+      metrics: [
+        { name: '전체 종양 (WT)', value: segmentation.wt_volume?.toFixed(2) || '0', unit: 'ml' },
+        { name: '종양 핵심 (TC)', value: segmentation.tc_volume?.toFixed(2) || '0', unit: 'ml' },
+        { name: '조영 증강 (ET)', value: segmentation.et_volume?.toFixed(2) || '0', unit: 'ml' },
+      ],
+    });
+  }
+  if (grade?.probabilities) {
+    details.push({
+      category: '등급 확률',
+      metrics: Object.entries(grade.probabilities).map(([name, value]) => ({
+        name,
+        value: typeof value === 'number' ? `${(value * 100).toFixed(1)}%` : String(value),
+      })),
+    });
+  }
+
+  return {
+    analysis_id: request.request_id,
+    analysis_date: request.completed_at || request.created_at,
+    model_version: request.model_name,
+    status: 'completed',
+    risk_level: riskLevel,
+    risk_score: riskScore,
+    confidence: confidence,
+    findings: findings,
+    summary: summary,
+    details: details.length > 0 ? details : undefined,
+    visualization_paths: [],
+  };
+};
+
+// MG (유전자 분석) 결과 변환
+const convertMGResult = (
+  request: AIInferenceRequest,
+  resultData: Record<string, unknown>
+): AIAnalysisResult => {
+  const survivalRisk = resultData.survival_risk as string | undefined;
+  const survivalTime = resultData.survival_time as number | undefined;
+  const gradeResult = resultData.grade as { predicted_class?: string } | undefined;
+  const recurrence = resultData.recurrence as { predicted_class?: string } | undefined;
+  const tmzResponse = resultData.tmz_response as { predicted_class?: string } | undefined;
+
+  // 위험도 계산
+  let riskLevel: 'high' | 'medium' | 'low' | 'normal' = 'normal';
+  let riskScore = 0;
+  if (survivalRisk === 'high') {
+    riskLevel = 'high';
+    riskScore = 80;
+  } else if (survivalRisk === 'medium') {
+    riskLevel = 'medium';
+    riskScore = 50;
+  } else if (survivalRisk === 'low') {
+    riskLevel = 'low';
+    riskScore = 20;
+  }
+
+  // 요약
+  const summaryParts: string[] = [];
+  if (survivalRisk) summaryParts.push(`생존 위험도: ${survivalRisk}`);
+  if (survivalTime) summaryParts.push(`예상 생존: ${survivalTime}개월`);
+  if (gradeResult?.predicted_class) summaryParts.push(`등급: ${gradeResult.predicted_class}`);
+  const summary = summaryParts.length > 0 ? summaryParts.join(' | ') : 'MG 분석 완료';
+
+  // 소견
+  const findings: AIFinding[] = [];
+  if (survivalRisk) {
+    findings.push({
+      id: 'survival_risk',
+      type: 'prognosis',
+      description: `생존 위험도: ${survivalRisk}`,
+      severity: riskLevel === 'high' ? 'critical' : riskLevel === 'medium' ? 'major' : 'minor',
+      confidence: 85,
+    });
+  }
+  if (recurrence?.predicted_class) {
+    findings.push({
+      id: 'recurrence',
+      type: 'prognosis',
+      description: `재발 예측: ${recurrence.predicted_class}`,
+      severity: recurrence.predicted_class === 'High' ? 'major' : 'minor',
+      confidence: 80,
+    });
+  }
+  if (tmzResponse?.predicted_class) {
+    findings.push({
+      id: 'tmz',
+      type: 'treatment',
+      description: `TMZ 반응성: ${tmzResponse.predicted_class}`,
+      severity: 'observation',
+      confidence: 75,
+    });
+  }
+
+  return {
+    analysis_id: request.request_id,
+    analysis_date: request.completed_at || request.created_at,
+    model_version: request.model_name,
+    status: 'completed',
+    risk_level: riskLevel,
+    risk_score: riskScore,
+    confidence: 80,
+    findings: findings,
+    summary: summary,
+    details: undefined,
+    visualization_paths: [],
+  };
+};
+
+// 기본 결과 변환 (MM 또는 기타)
+const convertGenericResult = (
+  request: AIInferenceRequest,
+  inferenceResult: AIInferenceResult,
+  resultData: Record<string, unknown>
+): AIAnalysisResult => {
   const riskLevel = (resultData.risk_level as string) || 'normal';
   const riskScore = typeof resultData.risk_score === 'number' ? resultData.risk_score : 0;
   const confidence = inferenceResult.confidence_score ?? (typeof resultData.confidence === 'number' ? resultData.confidence : 0);
   const summary = (resultData.summary as string) || (resultData.diagnosis as string) || '분석이 완료되었습니다.';
 
-  // findings 추출
   const rawFindings = (resultData.findings as any[]) || [];
   const findings: AIFinding[] = rawFindings.map((f, idx) => ({
     id: `f${idx + 1}`,
@@ -86,7 +290,6 @@ const convertToDisplayResult = (
     bbox: f.bbox,
   }));
 
-  // details 추출
   const rawDetails = (resultData.details as any[]) || [];
   const details: AIAnalysisDetail[] = rawDetails.map((d) => ({
     category: d.category || d.name || '',
@@ -135,7 +338,7 @@ export default function AIAnalysisPanel({ ocsId, patientId, jobType: _jobType, c
 
         // 현재 OCS를 참조하는 AI 요청 찾기 (가장 최신 것)
         const matchingRequest = requests
-          .filter(req => req.ocs_references.includes(ocsId))
+          .filter(req => req.ocs_references?.includes(ocsId))
           .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
 
         if (matchingRequest && matchingRequest.has_result && matchingRequest.result) {

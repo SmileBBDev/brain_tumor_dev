@@ -81,6 +81,28 @@ class PatientService:
         return patient
 
     @staticmethod
+    def search_patients(query, limit=20):
+        """
+        환자 검색 (자동완성용)
+
+        Args:
+            query: 검색어 (이름, 환자번호, 전화번호)
+            limit: 최대 결과 수
+
+        Returns:
+            QuerySet: 검색 결과
+        """
+        queryset = Patient.objects.filter(
+            is_deleted=False
+        ).filter(
+            Q(name__icontains=query) |
+            Q(patient_number__icontains=query) |
+            Q(phone__icontains=query)
+        ).select_related('registered_by').order_by('name')[:limit]
+
+        return queryset
+
+    @staticmethod
     def get_patient_statistics():
         """환자 통계 조회"""
         from django.db.models import Count

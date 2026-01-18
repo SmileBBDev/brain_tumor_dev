@@ -8,7 +8,7 @@ import {
   confirmOCS,
   cancelOCS,
 } from '@/services/ocs.api';
-import type { OCSDetail, OCSHistory, LISWorkerResult, RISWorkerResult, ProteinMarker } from '@/types/ocs';
+import type { OCSDetail, OCSHistory, LISWorkerResult, RISWorkerResult } from '@/types/ocs';
 import '@/pages/patient/PatientCreateModal.css';
 import './OCSDetailModalReport.css';
 

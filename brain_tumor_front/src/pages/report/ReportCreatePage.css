@@ -124,18 +124,59 @@
   min-height: 80px;
 }
 
-/* 환자 검색 */
-.report-create-page .patient-search {
+/* 환자 검색 드롭다운 */
+.report-create-page .patient-search-dropdown {
   position: relative;
 }
 
-.report-create-page .patient-search .searching {
+.report-create-page .search-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.report-create-page .search-input-wrapper .search-icon {
+  position: absolute;
+  left: 12px;
+  font-size: 14px;
+  pointer-events: none;
+}
+
+.report-create-page .search-input-wrapper input {
+  width: 100%;
+  padding: 12px 40px 12px 36px;
+  border: 2px solid var(--border, #e5e7eb);
+  border-radius: 8px;
+  font-size: 14px;
+  color: var(--text-primary, #1f2937);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.report-create-page .search-input-wrapper input:focus {
+  outline: none;
+  border-color: var(--primary, #3b82f6);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+.report-create-page .searching-spinner {
   position: absolute;
   right: 12px;
-  top: 50%;
-  transform: translateY(-50%);
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--border, #e5e7eb);
+  border-top-color: var(--primary, #3b82f6);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.report-create-page .search-hint {
+  margin: 6px 0 0 0;
   font-size: 12px;
-  color: var(--text-secondary, #6b7280);
+  color: var(--text-secondary, #9ca3af);
 }
 
 .report-create-page .patient-dropdown {
@@ -143,43 +184,83 @@
   top: 100%;
   left: 0;
   right: 0;
-  max-height: 200px;
+  max-height: 280px;
   overflow-y: auto;
   background: white;
   border: 1px solid var(--border, #e5e7eb);
-  border-radius: 6px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
   z-index: 100;
   list-style: none;
   margin: 4px 0 0 0;
-  padding: 0;
+  padding: 4px;
 }
 
 .report-create-page .patient-dropdown li {
-  padding: 10px 12px;
+  padding: 12px;
   cursor: pointer;
   display: flex;
-  gap: 12px;
-  align-items: center;
-  border-bottom: 1px solid var(--border, #e5e7eb);
+  flex-direction: column;
+  gap: 4px;
+  border-radius: 6px;
+  margin-bottom: 2px;
+  transition: background-color 0.15s;
 }
 
 .report-create-page .patient-dropdown li:last-child {
-  border-bottom: none;
+  margin-bottom: 0;
 }
 
-.report-create-page .patient-dropdown li:hover {
-  background: var(--bg-hover, #f3f4f6);
+.report-create-page .patient-dropdown li:hover,
+.report-create-page .patient-dropdown li.highlighted {
+  background: var(--primary-light, #eff6ff);
+}
+
+.report-create-page .patient-dropdown li.highlighted {
+  background: var(--primary-light, #dbeafe);
+}
+
+.report-create-page .patient-dropdown li.no-results {
+  cursor: default;
+  color: var(--text-secondary, #6b7280);
+  text-align: center;
+  padding: 20px 12px;
+}
+
+.report-create-page .patient-dropdown li.no-results:hover {
+  background: transparent;
+}
+
+.report-create-page .patient-dropdown .patient-main-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .report-create-page .patient-dropdown .name {
-  font-weight: 500;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text-primary, #1f2937);
 }
 
-.report-create-page .patient-dropdown .number,
-.report-create-page .patient-dropdown .birth {
+.report-create-page .patient-dropdown .gender-badge {
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--bg-secondary, #f3f4f6);
+  color: var(--text-secondary, #6b7280);
+}
+
+.report-create-page .patient-dropdown .patient-sub-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   font-size: 12px;
   color: var(--text-secondary, #6b7280);
+}
+
+.report-create-page .patient-dropdown .divider {
+  color: var(--border, #e5e7eb);
 }
 
 /* 선택된 환자 */
@@ -187,26 +268,56 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 16px;
-  background: var(--bg-secondary, #f9fafb);
-  border: 1px solid var(--border, #e5e7eb);
-  border-radius: 6px;
+  padding: 14px 16px;
+  background: linear-gradient(135deg, var(--primary-light, #eff6ff) 0%, #f0f9ff 100%);
+  border: 2px solid var(--primary, #3b82f6);
+  border-radius: 8px;
+  flex-wrap: wrap;
+  gap: 12px;
 }
 
 .report-create-page .selected-patient .patient-info {
   display: flex;
   gap: 12px;
   align-items: center;
+  flex-wrap: wrap;
 }
 
 .report-create-page .selected-patient .patient-name {
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--text-primary, #1f2937);
+}
+
+.report-create-page .selected-patient .patient-number {
+  font-size: 13px;
+  color: var(--primary, #3b82f6);
   font-weight: 500;
 }
 
-.report-create-page .selected-patient .patient-number,
 .report-create-page .selected-patient .patient-birth {
   font-size: 13px;
   color: var(--text-secondary, #6b7280);
+}
+
+.report-create-page .selected-patient .patient-gender {
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: white;
+  color: var(--text-secondary, #6b7280);
+  border: 1px solid var(--border, #e5e7eb);
+}
+
+.report-create-page .selected-patient .loading-indicator {
+  font-size: 12px;
+  color: var(--primary, #3b82f6);
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
 }
 
 .report-create-page .btn-clear {

@@ -203,7 +203,7 @@
   border-radius: var(--radius-md, 8px);
   padding: 0;
   box-shadow: var(--shadow-card, 0 4px 12px rgba(0,0,0,0.08));
-  overflow: hidden;
+  overflow: visible;
 }
 
 .content table {
@@ -337,12 +337,14 @@
 .patient-table th:last-child,
 .patient-table td:last-child {
   text-align: center;
+  overflow: visible;
 }
 
 /* 행 Hover 효과 강화 */
 .patient-row {
   cursor: pointer;
   transition: background-color 0.2s ease;
+  overflow: visible;
 }
 
 .patient-row:hover {
@@ -499,6 +501,11 @@
   display: inline-block;
 }
 
+/* 메뉴가 열렸을 때 컨테이너 z-index 상승 */
+.more-menu-container:has(.more-menu-dropdown) {
+  z-index: 9999;
+}
+
 /* 더보기 버튼 */
 .more-menu-btn {
   min-width: 36px;
@@ -525,9 +532,9 @@
   border: 1px solid #e0e0e0;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  z-index: 1000;
+  z-index: 9999;
   min-width: 120px;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .more-menu-dropdown .menu-item {

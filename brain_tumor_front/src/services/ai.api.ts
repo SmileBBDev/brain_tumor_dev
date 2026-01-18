@@ -268,8 +268,58 @@ export const reviewAIResult = async (jobId: string, data: {
 
 // 환자별 추론 요청 이력
 export const getPatientAIRequests = async (patientId: number): Promise<AIInferenceRequest[]> => {
-  const response = await api.get<AIInferenceRequest[]>(`/ai/patients/${patientId}/requests/`);
-  return response.data;
+  const response = await api.get(`/ai/patients/${patientId}/requests/`);
+  const data = response.data || [];
+
+  // 백엔드 응답을 AIInferenceRequest 형식으로 매핑
+  return data.map((item: AIInferenceBackendResponse & { mri_ocs?: number; rna_ocs?: number; protein_ocs?: number }) => {
+    // OCS 참조 배열 생성 (mri_ocs, rna_ocs, protein_ocs에서)
+    const ocsRefs: number[] = [];
+    if (item.mri_ocs) ocsRefs.push(item.mri_ocs);
+    if (item.rna_ocs) ocsRefs.push(item.rna_ocs);
+    if (item.protein_ocs) ocsRefs.push(item.protein_ocs);
+
+    return {
+      id: item.id,
+      request_id: item.job_id,
+      patient: patientId,
+      patient_name: item.patient_name || '',
+      patient_number: item.patient_number || '',
+      model: 0,
+      model_code: item.model_type,
+      model_name: item.model_type === 'M1' ? 'M1 MRI 분석' : item.model_type === 'MG' ? 'MG Gene Analysis' : 'MM 멀티모달',
+      requested_by: item.requested_by || 0,
+      requested_by_name: item.requested_by_name || '',
+      ocs_references: ocsRefs,
+      input_data: {},
+      status: item.status as AIInferenceRequest['status'],
+      status_display: item.status,
+      priority: 'normal' as const,
+      priority_display: '보통',
+      requested_at: item.created_at,
+      started_at: null,
+      completed_at: item.completed_at || null,
+      processing_time: item.processing_time ?? null,
+      error_message: item.error_message || null,
+      has_result: item.status === 'COMPLETED',
+      result: item.status === 'COMPLETED' ? {
+        id: item.id,
+        result_data: item.result_data || {},
+        confidence_score: null,
+        visualization_paths: [],
+        reviewed_by: null,
+        reviewed_by_name: item.reviewed_by_name || null,
+        review_status: (item.review_status || 'pending') as 'pending' | 'approved' | 'rejected',
+        review_status_display: item.review_status === 'approved' ? '승인됨' : item.review_status === 'rejected' ? '반려됨' : '검토 대기',
+        review_comment: item.review_comment || null,
+        reviewed_at: item.reviewed_at || null,
+        created_at: item.created_at,
+        updated_at: item.created_at,
+      } : undefined,
+      created_at: item.created_at,
+      updated_at: item.created_at,
+    };
+  });
 };
 
 // 환자별 사용 가능한 모델

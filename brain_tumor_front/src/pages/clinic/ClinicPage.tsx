@@ -58,6 +58,9 @@ export default function ClinicPage() {
   const [loading, setLoading] = useState(true);
   const [activeEncounter, setActiveEncounter] = useState<Encounter | null>(null);
 
+  // 진료 종료 시 과거 기록 새로고침용 키
+  const [recordRefreshKey, setRecordRefreshKey] = useState(0);
+
   // 환자 데이터 로드
   const loadPatientData = useCallback(async (patientId: number) => {
     setLoading(true);
@@ -161,6 +164,8 @@ export default function ClinicPage() {
       // 진료 목록 새로고침
       const encounterData = await getEncounters({ patient: patient.id });
       setEncounters(encounterData.results || []);
+      // 과거 기록(진료, 처방) 새로고침 트리거
+      setRecordRefreshKey((k) => k + 1);
     } catch (err: any) {
       console.error('Failed to end encounter:', err);
       const errorMsg = err.response?.data?.detail || '진료 종료에 실패했습니다.';
@@ -307,6 +312,7 @@ export default function ClinicPage() {
           ocsList={ocsList}
           encounters={encounters}
           onUpdate={() => patient && loadPatientData(patient.id)}
+          recordRefreshKey={recordRefreshKey}
         />
       </div>
     </div>
