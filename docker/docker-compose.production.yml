@@ -107,6 +107,7 @@ services:
       - FASTAPI_URL=${FASTAPI_URL}
       - ORTHANC_URL=http://orthanc:8042
     volumes:
+      - ../CDSS_STORAGE:/CDSS_STORAGE
       - django_static:/app/static
       - django_media:/app/media
     command: >

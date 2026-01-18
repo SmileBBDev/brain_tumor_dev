@@ -1,11 +1,15 @@
+import logging
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.pagination import PageNumberPagination
 from django.db.models import Q
+from django.db import transaction
 from django.utils import timezone
 from .models import Encounter
+
+logger = logging.getLogger(__name__)
 from .serializers import (
     EncounterListSerializer,
     EncounterDetailSerializer,
@@ -143,21 +147,46 @@ class EncounterViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'])
     def complete(self, request, pk=None):
         """진료 완료 처리"""
-        encounter = self.get_object()
+        try:
+            encounter = self.get_object()
 
-        if encounter.status == 'completed':
+            if encounter.status == 'completed':
+                return Response(
+                    {'detail': '이미 완료된 진료입니다.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            with transaction.atomic():
+                # select_for_update로 동시성 문제 방지
+                encounter = Encounter.objects.select_for_update().get(pk=encounter.pk)
+
+                # 다시 한번 상태 확인 (race condition 방지)
+                if encounter.status == 'completed':
+                    return Response(
+                        {'detail': '이미 완료된 진료입니다.'},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+
+                encounter.status = 'completed'
+                if not encounter.discharge_date:
+                    encounter.discharge_date = timezone.now()
+                # update_fields로 필요한 필드만 업데이트 (full_clean 건너뜀)
+                encounter.save(update_fields=['status', 'discharge_date'])
+
+            serializer = self.get_serializer(encounter)
+            return Response(serializer.data)
+
+        except Encounter.DoesNotExist:
             return Response(
-                {'detail': '이미 완료된 진료입니다.'},
-                status=status.HTTP_400_BAD_REQUEST
+                {'detail': '진료를 찾을 수 없습니다.'},
+                status=status.HTTP_404_NOT_FOUND
             )
-
-        encounter.status = 'completed'
-        if not encounter.discharge_date:
-            encounter.discharge_date = timezone.now()
-        encounter.save()
-
-        serializer = self.get_serializer(encounter)
-        return Response(serializer.data)
+        except Exception as e:
+            logger.error(f'진료 완료 처리 중 오류: {e}', exc_info=True)
+            return Response(
+                {'detail': '진료 완료 처리 중 오류가 발생했습니다.'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
     @action(detail=True, methods=['post'])
     def cancel(self, request, pk=None):

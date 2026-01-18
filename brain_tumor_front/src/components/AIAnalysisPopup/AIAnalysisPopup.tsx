@@ -419,9 +419,11 @@ function MMPanel() {
   const { requestInference, isFastAPIAvailable } = useAIInference()
   const [mriList, setMriList] = useState<OCSItem[]>([])
   const [geneList, setGeneList] = useState<OCSItem[]>([])
+  const [proteinList, setProteinList] = useState<OCSItem[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedMri, setSelectedMri] = useState<number | null>(null)
   const [selectedGene, setSelectedGene] = useState<number | null>(null)
+  const [selectedProtein, setSelectedProtein] = useState<number | null>(null)
   const [currentJobId, setCurrentJobId] = useState<string | null>(null)
   const [error, setError] = useState('')
 
@@ -437,9 +439,10 @@ function MMPanel() {
   const loadData = async () => {
     try {
       setLoading(true)
-      const [mriRes, geneRes] = await Promise.all([
+      const [mriRes, geneRes, proteinRes] = await Promise.all([
         api.get('/ocs/', { params: { job_role: 'RIS', job_type: 'MRI', ocs_status: 'CONFIRMED', page_size: 50 } }),
-        api.get('/ocs/', { params: { job_role: 'LIS', job_type: 'RNA_SEQ', ocs_status: 'CONFIRMED', page_size: 50 } })
+        api.get('/ocs/', { params: { job_role: 'LIS', job_type: 'RNA_SEQ', ocs_status: 'CONFIRMED', page_size: 50 } }),
+        api.get('/ocs/', { params: { job_role: 'LIS', job_type: 'BIOMARKER', ocs_status: 'CONFIRMED', page_size: 50 } })
       ])
 
       const mapOcs = (data: any) => (data.results || data || []).map((item: any) => ({
@@ -455,6 +458,7 @@ function MMPanel() {
 
       setMriList(mapOcs(mriRes.data))
       setGeneList(mapOcs(geneRes.data))
+      setProteinList(mapOcs(proteinRes.data))
     } catch (err) {
       setError('데이터 로딩 실패')
     } finally {
@@ -473,7 +477,7 @@ function MMPanel() {
     const job = await requestInference('MM', {
       mri_ocs_id: selectedMri,
       gene_ocs_id: selectedGene,
-      protein_ocs_id: null,
+      protein_ocs_id: selectedProtein,
       mode: 'manual'
     })
     if (job) {
@@ -558,6 +562,42 @@ function MMPanel() {
                           name="gene"
                           checked={selectedGene === ocs.id}
                           onChange={() => setSelectedGene(ocs.id)}
+                        />
+                      </td>
+                      <td>{ocs.ocs_id}</td>
+                      <td>{ocs.patient_name}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Protein/Biomarker 선택 */}
+          <div className="ai-panel-section">
+            <h3>Protein 데이터 ({proteinList.length}건)</h3>
+            <div className="ai-table-wrap small">
+              <table className="ai-table">
+                <thead>
+                  <tr>
+                    <th>선택</th>
+                    <th>OCS ID</th>
+                    <th>환자명</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {proteinList.map(ocs => (
+                    <tr
+                      key={ocs.id}
+                      className={selectedProtein === ocs.id ? 'selected' : ''}
+                      onClick={() => setSelectedProtein(ocs.id)}
+                    >
+                      <td>
+                        <input
+                          type="radio"
+                          name="protein"
+                          checked={selectedProtein === ocs.id}
+                          onChange={() => setSelectedProtein(ocs.id)}
                         />
                       </td>
                       <td>{ocs.ocs_id}</td>

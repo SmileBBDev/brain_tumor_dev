@@ -84,6 +84,7 @@ services:
       - HAPI_FHIR_URL=http://hapi-fhir:8080
     volumes:
       - ../brain_tumor_back:/app
+      - ../CDSS_STORAGE:/CDSS_STORAGE
       - django_static:/app/static
       - django_media:/app/media
     command: >

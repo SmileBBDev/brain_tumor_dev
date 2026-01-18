@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, Link } from 'react-router-dom'
 import { InferenceResult } from '@/components/InferenceResult'
 import SegMRIViewer, { type SegmentationData } from '@/components/ai/SegMRIViewer'
-import { aiApi } from '@/services/ai.api'
+import { aiApi, getPatientAIHistory, type AIInferenceRequest } from '@/services/ai.api'
 import { useThumbnailCache } from '@/context/ThumbnailCacheContext'
 import PdfPreviewModal from '@/components/PdfPreviewModal'
 import type { PdfWatermarkConfig } from '@/services/pdfWatermark.api'
@@ -61,6 +61,7 @@ interface InferenceDetail {
   model_type: string
   status: string
   mode: string
+  patient: number | null  // 환자 ID (비교 기능용)
   patient_name: string
   patient_number: string
   mri_ocs: number | null
@@ -89,6 +90,10 @@ export default function M1DetailPage() {
   // PDF 미리보기 모달
   const [pdfPreviewOpen, setPdfPreviewOpen] = useState(false)
 
+  // 동일 환자의 다른 M1 결과 (비교 기능용)
+  const [otherM1Results, setOtherM1Results] = useState<AIInferenceRequest[]>([])
+  const [loadingOtherResults, setLoadingOtherResults] = useState(false)
+
   // 데이터 로드
   useEffect(() => {
     if (jobId) {
@@ -97,6 +102,29 @@ export default function M1DetailPage() {
       markAsCached(`ai_${jobId}`)
     }
   }, [jobId, markAsCached])
+
+  // 동일 환자의 다른 M1 결과 조회
+  useEffect(() => {
+    const loadOtherResults = async () => {
+      if (!inferenceDetail?.patient) return
+
+      setLoadingOtherResults(true)
+      try {
+        const history = await getPatientAIHistory(inferenceDetail.patient, 'M1')
+        // 현재 결과를 제외한 다른 결과만 필터링
+        const others = history.filter(
+          (item) => item.request_id !== inferenceDetail.job_id
+        )
+        setOtherM1Results(others)
+      } catch (err) {
+        console.error('Failed to load other M1 results:', err)
+      } finally {
+        setLoadingOtherResults(false)
+      }
+    }
+
+    loadOtherResults()
+  }, [inferenceDetail?.patient, inferenceDetail?.job_id])
 
   const loadInferenceDetail = async (id: string) => {
     try {
@@ -500,6 +528,109 @@ export default function M1DetailPage() {
           ) : (
             <div className="empty-state">
               세그멘테이션 데이터가 없습니다.
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 이전 분석 결과 비교 섹션 */}
+      {inferenceDetail.status === 'COMPLETED' && (
+        <div className="section previous-results-section">
+          <h3 className="section-title">
+            이전 분석 결과 비교
+            {otherM1Results.length > 0 && (
+              <span className="results-count">({otherM1Results.length}건)</span>
+            )}
+          </h3>
+
+          {loadingOtherResults ? (
+            <div className="loading-container small">
+              <div className="spinner small" />
+              <p className="loading-text">이전 분석 이력 조회 중...</p>
+            </div>
+          ) : otherM1Results.length === 0 ? (
+            <div className="empty-state">
+              <p>동일 환자의 이전 M1 분석 결과가 없습니다.</p>
+              <p className="empty-hint">
+                같은 환자에 대해 여러 번 M1 분석을 수행하면 이곳에서 시간에 따른 변화를 비교할 수 있습니다.
+              </p>
+            </div>
+          ) : (
+            <div className="previous-results-content">
+              {/* 비교 안내 메시지 */}
+              <div className="compare-notice">
+                <span className="compare-notice-icon">📊</span>
+                <p>
+                  동일 환자의 M1 분석 결과 <strong>{otherM1Results.length + 1}건</strong>이 있습니다.
+                  아래 표에서 이전 결과와 비교하거나, 상세 비교 페이지에서 종양 볼륨 변화를 확인할 수 있습니다.
+                </p>
+              </div>
+
+              {/* 이전 결과 목록 */}
+              <div className="previous-results-list">
+                <h4 className="subsection-title">이전 분석 이력</h4>
+                <table className="results-table">
+                  <thead>
+                    <tr>
+                      <th>분석일</th>
+                      <th>종양 등급</th>
+                      <th>IDH</th>
+                      <th>MGMT</th>
+                      <th>생존 예후</th>
+                      <th>상세</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {/* 현재 결과 (강조 표시) */}
+                    <tr className="current-result">
+                      <td>
+                        {inferenceDetail.completed_at
+                          ? new Date(inferenceDetail.completed_at).toLocaleDateString('ko-KR')
+                          : '-'}
+                        <span className="current-badge">현재</span>
+                      </td>
+                      <td>
+                        <span className={`grade-badge grade-${inferenceDetail.result_data?.grade?.predicted_class?.toLowerCase()}`}>
+                          {inferenceDetail.result_data?.grade?.predicted_class || '-'}
+                        </span>
+                      </td>
+                      <td>{inferenceDetail.result_data?.idh?.predicted_class || '-'}</td>
+                      <td>{inferenceDetail.result_data?.mgmt?.predicted_class || '-'}</td>
+                      <td>{inferenceDetail.result_data?.survival?.risk_category || '-'}</td>
+                      <td>-</td>
+                    </tr>
+                    {/* 이전 결과들 */}
+                    {otherM1Results.map((result) => {
+                      const resultData = result.result?.result_data as M1Result | null
+                      return (
+                        <tr key={result.request_id}>
+                          <td>
+                            {result.completed_at
+                              ? new Date(result.completed_at).toLocaleDateString('ko-KR')
+                              : '-'}
+                          </td>
+                          <td>
+                            <span className={`grade-badge grade-${resultData?.grade?.predicted_class?.toLowerCase()}`}>
+                              {resultData?.grade?.predicted_class || '-'}
+                            </span>
+                          </td>
+                          <td>{resultData?.idh?.predicted_class || '-'}</td>
+                          <td>{resultData?.mgmt?.predicted_class || '-'}</td>
+                          <td>{resultData?.survival?.risk_category || '-'}</td>
+                          <td>
+                            <Link
+                              to={`/ai/m1/${result.request_id}`}
+                              className="link-btn"
+                            >
+                              보기
+                            </Link>
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
         </div>

@@ -253,8 +253,11 @@ PATIENT_DATA_ROOT: Path = Path(
 # ==================================================
 # CDSS STORAGE (Single Source of Truth)
 # brain_tumor_dev/CDSS_STORAGE를 기준으로 통일
+# Docker 환경: /CDSS_STORAGE (볼륨 마운트)
+# 로컬 환경: BASE_DIR.parent / "CDSS_STORAGE"
 # ==================================================
-CDSS_STORAGE_ROOT = BASE_DIR.parent / "CDSS_STORAGE"
+_docker_cdss_path = Path("/CDSS_STORAGE")
+CDSS_STORAGE_ROOT = _docker_cdss_path if _docker_cdss_path.exists() else BASE_DIR.parent / "CDSS_STORAGE"
 
 CDSS_LIS_STORAGE = CDSS_STORAGE_ROOT / "LIS"
 CDSS_RIS_STORAGE = CDSS_STORAGE_ROOT / "RIS"

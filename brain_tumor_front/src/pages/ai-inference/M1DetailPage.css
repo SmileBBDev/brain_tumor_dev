@@ -393,3 +393,190 @@
   color: var(--text-sub, #6b7280);
   font-size: 0.875rem;
 }
+
+/* ============================================
+   이전 분석 결과 비교 섹션
+   ============================================ */
+
+.previous-results-section {
+  background: var(--bg-card, white);
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  padding: 1.5rem;
+}
+
+.previous-results-section .section-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.results-count {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--primary, #2563eb);
+}
+
+.loading-container.small {
+  padding: 1.5rem;
+}
+
+.spinner.small {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.empty-hint {
+  font-size: 0.75rem;
+  color: var(--text-muted, #9ca3af);
+  margin-top: 0.5rem;
+}
+
+.previous-results-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+
+.tumor-trend-section,
+.previous-results-list {
+  background: var(--bg-secondary, #f9fafb);
+  border-radius: 0.5rem;
+  padding: 1rem;
+}
+
+.subsection-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-main, #1f2937);
+  margin: 0 0 1rem 0;
+}
+
+/* 결과 비교 테이블 */
+.results-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.results-table th,
+.results-table td {
+  padding: 0.75rem 0.5rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border-color, #e5e7eb);
+}
+
+.results-table th {
+  font-weight: 600;
+  color: var(--text-sub, #6b7280);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+}
+
+.results-table td {
+  color: var(--text-main, #1f2937);
+}
+
+.results-table tr:last-child td {
+  border-bottom: none;
+}
+
+.results-table tr.current-result {
+  background: #eff6ff;
+}
+
+.results-table tr.current-result td {
+  font-weight: 500;
+}
+
+.current-badge {
+  display: inline-block;
+  margin-left: 0.5rem;
+  padding: 0.125rem 0.375rem;
+  font-size: 0.625rem;
+  font-weight: 600;
+  color: white;
+  background: var(--primary, #2563eb);
+  border-radius: 0.25rem;
+  text-transform: uppercase;
+}
+
+/* 종양 등급 배지 */
+.grade-badge {
+  display: inline-block;
+  padding: 0.125rem 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.grade-badge.grade-low,
+.grade-badge.grade-lgg {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.grade-badge.grade-high,
+.grade-badge.grade-hgg {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.grade-badge.grade-2,
+.grade-badge.grade-grade2 {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.grade-badge.grade-3,
+.grade-badge.grade-grade3 {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.grade-badge.grade-4,
+.grade-badge.grade-grade4 {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+/* 링크 버튼 */
+.link-btn {
+  color: var(--primary, #2563eb);
+  text-decoration: none;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.link-btn:hover {
+  text-decoration: underline;
+}
+
+/* 비교 안내 메시지 */
+.compare-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: linear-gradient(135deg, #eff6ff 0%, #f0fdf4 100%);
+  border: 1px solid #bfdbfe;
+  border-radius: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.compare-notice-icon {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.compare-notice p {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--text-main, #1f2937);
+  line-height: 1.5;
+}
+
+.compare-notice strong {
+  color: var(--primary, #2563eb);
+}

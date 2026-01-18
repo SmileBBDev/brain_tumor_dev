@@ -61,6 +61,9 @@ export default function ClinicPage() {
   // 진료 종료 시 과거 기록 새로고침용 키
   const [recordRefreshKey, setRecordRefreshKey] = useState(0);
 
+  // 진료 종료 버튼 로딩 상태 (중복 클릭 방지)
+  const [isEndingEncounter, setIsEndingEncounter] = useState(false);
+
   // 진료 중 환자 변경 확인 모달
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
   const [pendingPatientId, setPendingPatientId] = useState<number | null>(null);
@@ -159,8 +162,9 @@ export default function ClinicPage() {
 
   // 진료 종료 (안전 저장)
   const handleEndEncounter = useCallback(async () => {
-    if (!activeEncounter || !patient) return;
+    if (!activeEncounter || !patient || isEndingEncounter) return;
 
+    setIsEndingEncounter(true);
     try {
       await completeEncounter(activeEncounter.id);
       setActiveEncounter(null);
@@ -174,9 +178,11 @@ export default function ClinicPage() {
       console.error('Failed to end encounter:', err);
       const errorMsg = err.response?.data?.detail || '진료 종료에 실패했습니다.';
       toast.error(errorMsg);
+    } finally {
+      setIsEndingEncounter(false);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeEncounter, patient]);
+  }, [activeEncounter, patient, isEndingEncounter]);
 
   // 다른 환자 선택 시 진료 중 확인
   const handlePatientChange = useCallback((newPatientId: number) => {
@@ -323,8 +329,12 @@ export default function ClinicPage() {
               </button>
             )}
             {patient && activeEncounter && canStartEncounter && (
-              <button className="btn btn-success" onClick={handleEndEncounter}>
-                진료 종료
+              <button
+                className="btn btn-success"
+                onClick={handleEndEncounter}
+                disabled={isEndingEncounter}
+              >
+                {isEndingEncounter ? '처리 중...' : '진료 종료'}
               </button>
             )}
             {patient && (

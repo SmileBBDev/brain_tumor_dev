@@ -129,6 +129,12 @@ deactivate
 
 
 
+
+
+
+docker compose -f docker-compose.django.yml down
+docker compose -f docker-compose.django.yml up -d
+
 Mon ai
 
 
@@ -150,6 +156,9 @@ celery -A celery_app worker --loglevel=info
 # 2. FastAPI 서버 (별도 터미널)
 uvicorn main:app --reload --host 0.0.0.0 --port 9000 
 -->
+
+
+
 
 
 
